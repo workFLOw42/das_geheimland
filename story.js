@@ -462,7 +462,7 @@ function updateFigur(dt){
   if(figur.ausschlag > 0.5){ figurAnim('run', 0.2, klemme(v / 5.2, 0.8, 1.3)); figur.steht = 0; }
   else if(figur.ausschlag > 0.05){ figurAnim('walk', 0.25, klemme(v / 1.5, 0.6, 1.4)); figur.steht = 0; }
   else {
-    figur.steht += dt;
+    if(steuerbar()) figur.steht += dt;          // erst nach dem Startbildschirm zaehlen
     if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); fuchsTanzStart(); return; }
     else figurAnim('idle', 0.3, 1);
   }
@@ -692,7 +692,9 @@ function fuchsAbsetzen(p){
 const TANZ_ABST = 5, TANZ_BREIT = 1.5, TANZ_DAUER = 10;
 const TANZ_DREH = ['Fox_Jump_Pivot_InPlace', 'Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace'];
 function fuchsTanzStart(){
-  if(!fuchs.aktiv || fuchs.modus === 'warten' || fuchs.modus === 'tanzen') return;
+  // auch aus dem Warten am Strand heraus: die Gitarre lockt ihn (sonst sass er beim Spielstart hinter der Figur und fehlte im Bild)
+  if(!fuchs.aktiv || fuchs.modus === 'tanzen') return;
+  if(fuchs.modus === 'warten' && fuchs.sitzt) fuchsAnim(FA.aufstehen, 0.2);
   fuchs.modus = 'tanzen'; fuchs.tanz = { phase: 'hin', t: 0, seite: 1, dreh: 0, naechste: 1.2 }; fuchs.sitzt = false; fuchs.ziel = null;
 }
 function fuchsTanzEnde(){

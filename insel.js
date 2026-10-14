@@ -85,7 +85,7 @@ function baueInsel(){
   const h = baueHuette();
   h.position.set(HUETTE.x, ISLAND_Y, HUETTE.z); h.rotation.y = HUETTE.yaw;
   w.add(h);
-  story.interaktion(h, { name: 'Hütte', x: HUETTE.x, z: HUETTE.z, r: 2.3, yHoehe: 4.6,
+  story.interaktion(h, { name: 'Hütte', x: HUETTE.x, z: HUETTE.z, r: 2.3, yHoehe: 4.6, einmal: true,     // Info
     text: ['Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um.'] });
   for(const p of PALMEN_VORN) setzePalme(w, p);
   // weitere Palmen verteilt (nicht vor der Huette)
@@ -321,7 +321,7 @@ function ladeFeuer(w){
     m.traverse(o => { if(o.isMesh){ o.frustumCulled = false;
       if(o.material && o.material.name === 'fire.001'){ o.material.emissive = new THREE.Color(0xff7a20); o.material.emissiveIntensity = 1.2; } } });
     w.add(m);
-    story.interaktion(m, { name: 'Lagerfeuer', x: FEUER.x, z: FEUER.z, r: 0.7, yHoehe: 1.5,
+    story.interaktion(m, { name: 'Lagerfeuer', x: FEUER.x, z: FEUER.z, r: 0.7, yHoehe: 1.5, einmal: true,   // Info
       text: ['Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht.'] });
     if(gl.animations.length){ insel.feuerMixer = new THREE.AnimationMixer(m); for(const a of gl.animations) insel.feuerMixer.clipAction(a).play(); }
     insel.licht = new THREE.PointLight(0xff8a30, 1.3, 22, 1.8);

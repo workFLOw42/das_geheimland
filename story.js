@@ -1048,7 +1048,9 @@ function fuchsNeuesZiel(zu){
 // Danach erscheint ueber einem entdeckten Objekt ein "Y", sobald Joshi nah genug ist (r + INTER_Y_R); Y loest
 // seine aktion aus. Ohne Suchblick: kein Y, nichts passiert.
 //   x, z: Mitte · r: Radius des Objekts (fuer Fuchs-Platz und Y-Naehe) · yHoehe: Hoehe des Y ueber dem Boden ·
-//   text: Saetze der Erzaehlerin bei Y (oder aktion(o)) · welt: Etappe, in der es wichtig ist (Standard: die aktuelle) ·
+//   text: Saetze der Erzaehlerin bei Y (oder aktion(o)) · einmal: true = reines Info-Objekt – nach dem ersten Y
+//   (Text gehoert) kein Y mehr · danach(o): was Y ab dem zweiten Mal tut (statt des Texts) ·
+//   welt: Etappe, in der es wichtig ist (Standard: die aktuelle) ·
 //   innen: true = steht im Huetten-Raum (Live-Wunsch: dort gibt es auch Interaktionsobjekte). Nicht jedes Objekt ist in
 //   jeder Etappe wichtig – angemeldet wird nur, was die Geschichte dort braucht.
 const INTER_SUCH_R = 15, INTER_Y_R = 1.6, GLOW_T = 1.6;
@@ -1058,7 +1060,7 @@ const TEXT_NICHTS_HIER = ['Hier scheint es nichts Interessantes zu geben.'];    
 const GLOW_FARBE = new THREE.Color(0xffd27a);
 const interListe = [];
 function interaktion(obj, opt){
-  const o = Object.assign({ obj, name: '', x: 0, z: 0, r: 1, yHoehe: 1.5, aktion: null, welt: story.etappe, innen: false,
+  const o = Object.assign({ obj, name: '', x: 0, z: 0, r: 1, yHoehe: 1.5, aktion: null, danach: null, einmal: false, erledigt: false, benutzt: 0, welt: story.etappe, innen: false,
     entdeckt: false, glow: 0, glowDauer: 1, zeichen: null, mats: null }, opt);
   interListe.push(o); return o;
 }
@@ -1088,7 +1090,7 @@ function interNaechstes(){
   if(!eva || eva.boat || eva.rover || sw.aktiv) return null;
   const drin = !!(story.innen && story.innen.drin);
   const g = eva.group.position; let best = null, bd = 1e9;
-  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.innen !== drin) continue;
+  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.erledigt || o.innen !== drin) continue;
     const d = Math.hypot(o.x - g.x, o.z - g.z) - o.r; if(d < INTER_Y_R && d < bd){ bd = d; best = o; } }
   return best;
 }
@@ -1104,9 +1106,17 @@ function updateInteraktion(dt){
   }
 }
 function interAktion(o){
+  if(o.spricht) return;                                          // spricht noch: Y tut nichts
   glowStart(o, 0.8);
+  o.benutzt++;
+  if(o.benutzt > 1 && o.danach) return o.danach(o);             // ab dem zweiten Mal (z. B. Funkrauschen)
   if(o.aktion) return o.aktion(o);
-  if(o.text && !o.spricht){ o.spricht = true; sprich(o.text, () => { o.spricht = false; }); }   // Erzaehlerin (weiblich)
+  if(o.text){
+    o.spricht = true;
+    // Info-Objekt: das Y verschwindet sofort; nach dem Text erscheint es nicht wieder
+    if(o.einmal){ o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; }
+    sprich(o.text, () => { o.spricht = false; });                // Erzaehlerin (weiblich)
+  }
 }
 function hookInteraktion(){
   // Y an einem entdeckten Objekt = dessen Aktion (statt Ein-/Aussteigen der Engine)
@@ -1199,12 +1209,15 @@ function sprich(saetze, fertig, rolle){
       return;
     }
     const s = saetze[i];
-    if(synth && story.ton && soundOn && synth.getVoices().length){
+    // Auch ohne geladene Stimmenliste sprechen (Standardstimme des Browsers): die Liste kommt oft erst spaeter, und dann
+    // lief der erste Text nur als Untertitel – gesprochen wurde erst beim zweiten Mal (Live-Befund am Lagerfeuer)
+    if(synth && story.ton && soundOn){
       untertitel('');
       const u = new SpeechSynthesisUtterance(s), st = stimmeFuer(rolle);
       u.lang = 'de-DE'; if(st) u.voice = st;
       u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
       u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
+      if(synth.paused) synth.resume();                // manche Browser stehen nach dem Laden auf Pause
       u.onend = u.onerror = () => { if(sprichtGerade === me) weiter(); };
       synth.speak(u);
       timer = setTimeout(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
@@ -1216,6 +1229,8 @@ function sprich(saetze, fertig, rolle){
   weiter();
 }
 story.sprich = sprich;
+// Stimmen frueh anstossen (Chrome/Edge laden sie verzoegert)
+if(window.speechSynthesis){ window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
 // ---- Startbildschirm -------------------------------------------------------------------------
 // Ein grosser Knopf. A / Enter / Leertaste / Klick. Die Geste schaltet Ton und Stimme frei.
@@ -1237,6 +1252,8 @@ function startbildschirm(weiter){
     removeEventListener('keydown', taste, true);
     story.ton = true; story.gestartet = true;
     if(!soundOn) toggleSound();
+    // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
+    if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
   }
   function taste(e){
@@ -1292,6 +1309,30 @@ const NACH_DURCHSAGE = [
   'Das kam über Funk! Das Funkgerät steht am Lagerfeuer.',
   'Dein Fuchs wartet schon am Strand auf dich.',
 ];
+// Kurzes Funkrauschen (selbst erzeugt: gefiltertes Rauschen mit Knistern und kleinen Aussetzern), das Geraet wackelt
+// und blinkt dabei – wie bei der Durchsage. dauer in s.
+let rauschBuf = null;
+function funkRauschen(dauer){
+  radio.an = true; story.spaeter(dauer, () => { radio.an = false; });
+  if(!soundOn || !audioCtx || audioCtx.state !== 'running') return;
+  const sr = audioCtx.sampleRate, n = Math.floor(sr * dauer);
+  if(!rauschBuf || rauschBuf.length !== n){
+    rauschBuf = audioCtx.createBuffer(1, n, sr);
+    const d = rauschBuf.getChannelData(0); let b = 0;
+    for(let i = 0; i < n; i++){
+      const t = i / sr, env = Math.min(1, t / 0.05) * Math.min(1, (dauer - t) / 0.25);   // weich an/aus
+      const aus = Math.sin(t * 23) > 0.92 ? 0.25 : 1;                                     // kurze Aussetzer
+      b = 0.6 * b + 0.4 * (Math.random() * 2 - 1);                                         // etwas dumpfer
+      const knack = Math.random() < 0.0009 ? (Math.random() * 2 - 1) * 3 : 0;              // Knistern
+      d[i] = (b + knack) * env * aus * 0.5;
+    }
+  }
+  const q = audioCtx.createBufferSource(); q.buffer = rauschBuf;
+  const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;   // nach Funk klingen
+  const g = audioCtx.createGain(); g.gain.value = 0.35;
+  q.connect(bp).connect(g).connect(audioCtx.destination); q.start();
+}
+story.funkRauschen = funkRauschen;
 function updateRadio(dt){
   if(!radio.obj) return;
   radio.t += dt;
@@ -1315,7 +1356,8 @@ function startSzene(){
   const kb = kg.boundingBox.getSize(new THREE.Vector3());          // eigene Achsen der Kiste (ungedreht)
   kk.hx = kb.x / 2; kk.hz = kb.z / 2; kk.h = 0.45 + 0.26;
   interaktion(radio.obj, { name: 'Funkgerät', x: radio.obj.position.x, z: radio.obj.position.z, r: 0.45, yHoehe: 1.25,
-    text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'] });
+    text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'],
+    danach: () => funkRauschen(1.6) });
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
   if(eva){

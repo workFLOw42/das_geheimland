@@ -66,11 +66,13 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 **Stimme:** weiblich (Erzählerin). Gesprochen wird, wenn Joshi ein Objekt mit dem Suchblick (X) entdeckt hat, hingeht und **Y** drückt.
 
-| Objekt | Text |
-|---|---|
-| Lagerfeuer | Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht. |
-| Hütte | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
-| Funkgerät | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. |
+| Objekt | Art | Text |
+|---|---|---|
+| Lagerfeuer | Info – nur einmal | Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht. |
+| Hütte | Info – nur einmal | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
+| Funkgerät | bleibt | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. – danach bei jedem Y nur ein kurzes **Funkrauschen** |
+
+**Info – nur einmal:** nach dem ersten Y (Text gehört) erscheint dort kein Y mehr.
 
 **In der Hütte** *(im Code, noch ohne Text)*: **Bücherregal** und **Tisch** (Taschenmesser, Kompass und Lupe – hier als ein Objekt; später auch einzeln). Texte folgen.
 

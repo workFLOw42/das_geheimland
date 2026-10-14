@@ -1309,30 +1309,40 @@ const NACH_DURCHSAGE = [
   'Das kam über Funk! Das Funkgerät steht am Lagerfeuer.',
   'Dein Fuchs wartet schon am Strand auf dich.',
 ];
-// Kurzes Funkrauschen (selbst erzeugt: gefiltertes Rauschen mit Knistern und kleinen Aussetzern), das Geraet wackelt
-// und blinkt dabei – wie bei der Durchsage. dauer in s.
-let rauschBuf = null;
+// Kurzes Funkrauschen: ein Stueck aus "Searching the radio noise" (freesound_community, Pixabay – funk_snd.js), jedes
+// Mal von einer anderen Stelle, weich ein- und ausgeblendet; das Geraet wackelt und blinkt dabei wie bei der Durchsage.
+// Ist der Ton noch nicht geladen, kommt ersatzweise selbst erzeugtes Rauschen. dauer in s.
+const FUNK_VOL = 0.4, FUNK_AUS = 1.0;          // Lautstaerke, Dauer des Ausblendens (s)
+let funkBuf = null, funkLaedt = false, rauschBuf = null;
+function funkLaden(){
+  if(funkBuf || funkLaedt || !window.FUNK_SND || !audioCtx) return;
+  funkLaedt = true; decodeSound(window.FUNK_SND).then(b => { funkBuf = b; }).catch(e => { funkLaedt = false; console.warn('Funk-Ton', e); });
+}
 function funkRauschen(dauer){
   radio.an = true; story.spaeter(dauer, () => { radio.an = false; });
   if(!soundOn || !audioCtx || audioCtx.state !== 'running') return;
+  funkLaden();
+  const jetzt = audioCtx.currentTime, g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, jetzt); g.gain.linearRampToValueAtTime(FUNK_VOL, jetzt + 0.08);
+  g.gain.setValueAtTime(FUNK_VOL, jetzt + dauer - FUNK_AUS); g.gain.linearRampToValueAtTime(0, jetzt + dauer);   // sanft aus
+  g.connect(audioCtx.destination);
+  const q = audioCtx.createBufferSource();
+  if(funkBuf){
+    q.buffer = funkBuf; q.connect(g);
+    const ab = Math.random() * Math.max(0, funkBuf.duration - dauer);
+    q.start(jetzt, ab, dauer);
+    return;
+  }
+  // Ersatz: gefiltertes Rauschen mit Knistern
   const sr = audioCtx.sampleRate, n = Math.floor(sr * dauer);
   if(!rauschBuf || rauschBuf.length !== n){
-    rauschBuf = audioCtx.createBuffer(1, n, sr);
-    const d = rauschBuf.getChannelData(0); let b = 0;
-    for(let i = 0; i < n; i++){
-      const t = i / sr, env = Math.min(1, t / 0.05) * Math.min(1, (dauer - t) / 0.25);   // weich an/aus
-      const aus = Math.sin(t * 23) > 0.92 ? 0.25 : 1;                                     // kurze Aussetzer
-      b = 0.6 * b + 0.4 * (Math.random() * 2 - 1);                                         // etwas dumpfer
-      const knack = Math.random() < 0.0009 ? (Math.random() * 2 - 1) * 3 : 0;              // Knistern
-      d[i] = (b + knack) * env * aus * 0.5;
-    }
+    rauschBuf = audioCtx.createBuffer(1, n, sr); const d = rauschBuf.getChannelData(0); let b = 0;
+    for(let i = 0; i < n; i++){ b = 0.6 * b + 0.4 * (Math.random() * 2 - 1); d[i] = (b + (Math.random() < 0.0009 ? (Math.random() * 2 - 1) * 3 : 0)) * 0.5; }
   }
-  const q = audioCtx.createBufferSource(); q.buffer = rauschBuf;
-  const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;   // nach Funk klingen
-  const g = audioCtx.createGain(); g.gain.value = 0.35;
-  q.connect(bp).connect(g).connect(audioCtx.destination); q.start();
-}
-story.funkRauschen = funkRauschen;
+  q.buffer = rauschBuf;
+  const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;
+  q.connect(bp).connect(g); q.start(jetzt);
+}story.funkRauschen = funkRauschen;
 function updateRadio(dt){
   if(!radio.obj) return;
   radio.t += dt;
@@ -1357,7 +1367,7 @@ function startSzene(){
   kk.hx = kb.x / 2; kk.hz = kb.z / 2; kk.h = 0.45 + 0.26;
   interaktion(radio.obj, { name: 'Funkgerät', x: radio.obj.position.x, z: radio.obj.position.z, r: 0.45, yHoehe: 1.25,
     text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'],
-    danach: () => funkRauschen(1.6) });
+    danach: () => funkRauschen(3) });         // 3 s, dann sanft ausgeblendet (Live-Wunsch)
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
   if(eva){
@@ -1393,6 +1403,7 @@ function hookLoop(){
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js
     updateInteraktion(dt);
+    if(story.gestartet) funkLaden();               // Funk-Ton vorab dekodieren (nach der Startgeste)
     weltenSichtbar();
     return loopOrig.apply(this, arguments);
   };

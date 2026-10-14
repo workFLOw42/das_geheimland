@@ -70,7 +70,7 @@ Dein Fuchs wartet schon am Strand auf dich.
 |---|---|---|
 | Lagerfeuer | Info – nur einmal | Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht. |
 | Hütte | Info – nur einmal | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
-| Funkgerät | bleibt | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. – danach bei jedem Y nur ein kurzes **Funkrauschen** |
+| Funkgerät | bleibt | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. – danach bei jedem Y nur ein kurzes **Funkrauschen** (3 s, sanft ausgeblendet, jedes Mal eine andere Stelle) |
 
 **Info – nur einmal:** nach dem ersten Y (Text gehört) erscheint dort kein Y mehr.
 

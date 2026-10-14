@@ -67,7 +67,7 @@ foreach($n in $modelle.Keys){
   $skripte += "${n}_glb.js"
 }
 # Toene: sounds/<name>.mp3 -> <name>_snd.js (window.<NAME>_SND)
-foreach($n in @('gitarre')){
+foreach($n in @('gitarre', 'funk')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)

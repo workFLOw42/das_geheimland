@@ -49,4 +49,5 @@ Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixam
 - „Stage Campfire“ von [daedaljs](https://sketchfab.com/3d-models/stage-campfire-82f37f8bf0f645768e32ab7185df13ca) – CC-BY-4.0
 - „Ring-Billed Gull“ (sitzend und fliegend) von Oregon State University Ecampus – CC-BY-4.0
 - Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
+- Funkrauschen „Searching the Radio Noise“ von freesound_community (Pixabay) – Pixabay-Lizenz
 - Modelle und Töne der Flugspiel-Engine: siehe Flugspiel-Repo

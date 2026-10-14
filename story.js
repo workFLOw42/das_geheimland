@@ -15,8 +15,8 @@
 
 const story = window.STORY = { etappe: 1, gestartet: false, ton: false };
 
-// Name der Spielfigur steht noch nicht fest – nur hier aendern.
-const NAME = 'Detektiv';
+// Name der Spielfigur (Live-Entscheidung 14.10.2026: Joshi) – nur hier aendern.
+const NAME = 'Joshi';
 
 // ---- Hilfen ----------------------------------------------------------------------------------
 function glbBytes(daten){

@@ -3,7 +3,7 @@
 Stand: 14.10.2026 – im Code stehen die Texte der **Interaktionsobjekte** (aktiv) und die **Funk-Durchsage** (`story.js`, `DURCHSAGE` / `NACH_DURCHSAGE`, vorerst ausgeschaltet); der Rest ist Entwurf.
 
 - Gesprochen wird über die Sprachausgabe des Browsers; mit Ton aus laufen dieselben Sätze als Untertitel.
-- „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur, noch offen – im Code die Konstante `NAME`).
+- „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur: **Joshi** – im Code die Konstante `NAME`).
 - **Zielgruppe ein fast 6-jähriges Kind:** kurze Sätze, ein Gedanke pro Satz, keine Fremdwörter. Alles Wichtige muss gesprochen werden – lesen kann der Spieler noch nicht.
 - Status: **im Code** = so eingebaut · **Entwurf** = Vorschlag, noch nicht im Spiel.
 
@@ -128,7 +128,7 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 ## Offene Texte
 
-- **Name der Figur** – fehlt noch; er steht in der Durchsage und in fast allen Sätzen.
+- ~~**Name der Figur**~~ – entschieden: **Joshi** (14.10.2026).
 - **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.
 - **Finale am Fotobrett** und **Auflösung** – folgen, wenn der Täter feststeht (siehe Konzept.md).
 - **Erwachen im Kinderzimmer** und **Trophäen** – folgen.

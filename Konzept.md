@@ -7,7 +7,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 ## 👦 Zielgruppe & Spielfigur
 
 - **Für ein fast 6-jähriges Kind:** Das Spiel muss ohne Lesen funktionieren. Alles wird über die Erzählstimme bzw. den Funk, Symbole, Schilder und Pfeile vermittelt. Die Steuerung ist einfach, es gibt kein Scheitern und keinen Zeitdruck.
-- **Spielfigur:** 3D-Modell von Joshi (1,20 m, Mixamo-Rig). **Im Spiel bekommt die Figur einen eigenen Namen – noch offen** (im Text unten: „der Detektiv“, im Code die Konstante `NAME`).
+- **Spielfigur:** 3D-Modell von Joshi (1,20 m, Mixamo-Rig). **Sie heißt im Spiel Joshi** (entschieden am 14.10.2026; im Code die Konstante `NAME`). Im Text unten steht „der Detektiv“ für seine Rolle.
 - **Begleiter: ein Fuchs** (statt des früher geplanten Hundes). Er streift frei und neugierig umher und ist immer in der Nähe des Detektivs.
 
 ## 🎮 Steuerung (wie *Trip to Japan*)
@@ -63,7 +63,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Der Auftakt:** Der Detektiv erwacht nachts in seinem 3D-Kinderzimmer. Neben seinem Bett sitzt sein treuer Begleiter, der Fuchs. *(noch nicht gebaut)*
 - **Die Zaubertür:** Durch die Zimmertür gelangt er an einen nächtlichen Tropenstrand vor eine gemütliche Hütte mit Lagerfeuer. *(Strand, Hütte, Feuer: gebaut)*
 - **Das Mysterium:** Im Geheimland herrscht großes Chaos. Das Kurbel-Funkgerät am Lagerfeuer knackt, und über Funk kommt eine Durchsage (Hörspiel-Stimme):
-  > „Achtung, Detektiv [Name]! Im Geheimland wurde Chaos angerichtet! Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!“
+  > „Achtung, Detektiv Joshi! Im Geheimland wurde Chaos angerichtet! Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!“
 
 ## 📸 2. Das Spuren- & Gameplay-Prinzip (Der 3-Klang)
 
@@ -110,7 +110,7 @@ Damit das Spiel auch beim 2. oder 3. Durchlauf spannend bleibt, rotiert das Syst
 ## 🗺️ Nächste Schritte
 
 1. **Kinderzimmer** als Einstieg (eigene Innenwelt) mit Bett und Zaubertür → Blende → Strand.
-2. **Funk-Durchsage** mit endgültigem Text (und dem Namen der Figur) wieder einschalten.
+2. **Funk-Durchsage** mit endgültigem Text wieder einschalten.
 3. **Polaroid-Kamera** mit Fadenkreuz, Fotos ins Ermittlungsbuch.
 4. **Erster Einsatzort:** Müllwagen-Minispiel (Modell vorhanden: `garbage_truck_by_Lung_ong.glb`), Mülltonnen, Sortieren.
 5. **Täter neu festlegen** (der Fuchs ist Begleiter, siehe Abschnitt 3 und 4).

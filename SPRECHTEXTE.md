@@ -91,6 +91,20 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 ---
 
+## Hinweise auf D-Pad links / Taste T *(im Code)*
+
+**Stimme:** weiblich (Erzählerin) – wie die kleinen Infos in *Trip to Japan*, nur gesprochen. Was sie sagt, hängt davon ab, wie weit Joshi ist:
+
+| Reihenfolge | Wann | Text |
+|---|---|---|
+| 1 | noch nie umgeschaut (die ersten zwei Male) | Mit X schaust Du dich um. |
+| 2 | Satz 1 kam schon zweimal, trotzdem nicht umgeschaut | Stelle dich vor das Lagerfeuer und drücke X zum Umschauen. |
+| 3 | draußen schon umgeschaut, in der Hütte noch nicht | Schau dir doch mal deine Hütte von innen ganz genau an. |
+| 4 | überall umgeschaut, aber noch nicht alles entdeckt | Mit X schaust Du dich um. |
+| – | alles entdeckt | Hier hast Du schon alles entdeckt. *(vorläufig – weitere Hinweise folgen, z. B. zum Buch und zum Funkspruch)* |
+
+---
+
 ## Hinweise zur Steuerung *(Entwurf – kurz, einmal beim ersten Mal)*
 
 **Stimme:** weiblich (Erzählerin)

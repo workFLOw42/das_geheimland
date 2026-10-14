@@ -1142,6 +1142,7 @@ function hookInteraktion(){
 }
 // Suchblick: Fuchs besucht die unentdeckten Objekte in der Naehe, jeweils das naechste zuerst
 function fuchsSuche(){
+  if(story.innen && story.innen.drin) hinweisStand.innenGeschaut = true; else hinweisStand.aussenGeschaut = true;
   if(!fuchs.aktiv || !eva) return;
   const g = eva.group.position;
   const drin = !!(story.innen && story.innen.drin);
@@ -1182,6 +1183,43 @@ function fuchsSchnueffeln(dt, fp){
     return;
   }
   if(S.phase === 'paw' && !fuchsClipLaeuft('Fox_Attack_Paws')){ S.i++; S.phase = 'hin'; S.platz = null; S.t = 0; }
+}
+
+// ---- Hinweise auf D-Pad links (Tastatur T) – wie die kleinen Infos in Trip to Japan, nur gesprochen ------------
+// Die Erzaehlerin sagt, was als Naechstes gut waere. Reihenfolge (Live-Wunsch 14.10.2026):
+//   1. noch nie umgeschaut:                       "Mit X schaust Du dich um."
+//   2. kam Satz 1 schon zweimal (trotzdem nicht):  "Stelle dich vor das Lagerfeuer und drücke X zum Umschauen."
+//   3. draussen schon umgeschaut, in der Huette noch nicht: "Schau dir doch mal deine Huette von innen ganz genau an."
+//   4. sonst (alles entdeckt): noch offen – dann der Satz zum Umschauen ohne Neues
+const HINWEIS = {
+  x:      ['Mit X schaust Du dich um.'],
+  feuer:  ['Stelle dich vor das Lagerfeuer und drücke X zum Umschauen.'],
+  huette: ['Schau dir doch mal deine Hütte von innen ganz genau an.'],
+};
+const hinweisStand = { xSatz: 0, aussenGeschaut: false, innenGeschaut: false, spricht: false };
+story.hinweisStand = hinweisStand;
+function hinweisGeben(){
+  if(hinweisStand.spricht || !story.gestartet) return;
+  const H = hinweisStand;
+  let satz;
+  if(!H.aussenGeschaut && !H.innenGeschaut){
+    if(H.xSatz >= 2) satz = HINWEIS.feuer;
+    else { satz = HINWEIS.x; H.xSatz++; }
+  } else if(!H.innenGeschaut) satz = HINWEIS.huette;
+  else satz = interListe.some(o => o.welt === story.etappe && !o.entdeckt) ? HINWEIS.x : TEXT_ALLES_ENTDECKT;
+  H.spricht = true;
+  sprich(satz, () => { H.spricht = false; });
+}
+story.hinweisGeben = hinweisGeben;
+function hookHinweis(){
+  addEventListener('keydown', e => { if(e.code === 'KeyT' && !e.repeat) hinweisGeben(); });
+  let prev = false;                                              // D-Pad links (14): die Engine wertet es nicht aus
+  (function pad(){
+    const gp = gamepadIndex !== null ? navigator.getGamepads()[gamepadIndex] : null;
+    const d = !!(gp && gp.buttons[14] && gp.buttons[14].pressed);
+    if(d && !prev) hinweisGeben();
+    prev = d; requestAnimationFrame(pad);
+  })();
 }
 
 // ---- Stimme + Untertitel ---------------------------------------------------------------------
@@ -1444,6 +1482,7 @@ window.STORY_HOOK = function(){
   hookWelt();
   hookKoerper();
   hookInteraktion();
+  hookHinweis();
   hookNacht();
   hookFigur();
   hookSchwimmen();

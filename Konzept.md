@@ -18,7 +18,8 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 | A | Leertaste | springen – im Stand normaler Sprung, im Lauf die Sprungrolle |
 | B | B | hinknien / aufstehen |
 | X | X | **Suchblick** (*Look Around*): der Fuchs schnüffelt nach Interaktionsobjekten – der Stick bricht ab |
-| Y | Y | an einem entdeckten Interaktionsobjekt: es erklärt sich (Erzählerin) |
+| Y | Y | an einem entdeckten Interaktionsobjekt: es erklärt sich (Erzählerin); am Steg: ins Boot |
+| D-Pad ← | T | **Hinweis:** die Erzählerin sagt, was als Nächstes gut wäre (z. B. „Mit X schaust Du dich um.“) |
 | rechter Stick | I J K L | Kamera umsehen |
 | RT / LT | E / Q | im Wasser abtauchen / auftauchen |
 | D-Pad ↓ | N | Ton an / aus |

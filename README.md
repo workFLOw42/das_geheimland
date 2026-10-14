@@ -16,6 +16,7 @@ mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Ko
 | Y | Y | an einem entdeckten Objekt: Erzählerin erklärt es |
 | RT / LT | E / Q | im Wasser abtauchen / auftauchen |
 | rechter Stick | I J K L | umschauen |
+| D-Pad ← | T | Hinweis: die Erzählerin sagt, was als Nächstes gut wäre |
 | D-Pad ↓ | N | Ton an/aus |
 
 Steht die Figur eine Weile still, holt sie die Gitarre heraus.

@@ -13,7 +13,9 @@
 (function(){
 'use strict';
 
-const story = window.STORY = { etappe: 1, gestartet: false, ton: false };
+// abenteuerLos: true, sobald Joshi die Ausruestung aus der Huette hat und den Funkspruch angenommen hat (kommt noch) –
+// erst dann kann er ins Segelboot steigen (steg.js)
+const story = window.STORY = { etappe: 1, gestartet: false, ton: false, abenteuerLos: false };
 
 // Name der Spielfigur (Live-Entscheidung 14.10.2026: Joshi) – nur hier aendern.
 const NAME = 'Joshi';
@@ -322,6 +324,7 @@ function figurAnim(name, blend, tempo){
   if(alt) alt.crossFadeTo(a, blend || 0.25, false);
   figur.cur = name;
 }
+story.figurAnim = (n, b, t) => figurAnim(n, b, t);
 function hookFigur(){
   preloadFigur();
   // Die Figur ist EIN Objekt (Skelett!) – kein clone(), sondern in die neue Gruppe umhaengen
@@ -769,6 +772,13 @@ story.fuchsZu = function(ziel){
   fuchs.yaw = eva.yaw + Math.PI; fuchs.ziel = null; fuchs.warte = 1.5;
   if(fuchs.modus !== 'streifen'){ fuchs.modus = 'streifen'; fuchs.sitzt = false; }
 };
+// Fuchs ins Boot (steg.js): sitzt vorn im Bug und schaut aufs Meer; beim Aussteigen zurueck auf den Steg neben Joshi
+story.fuchsInsBoot = function(rein){
+  if(!fuchs.obj || !fuchs.aktiv) return;
+  if(rein){ fuchs.modus = 'boot'; fuchs.sitzt = true; fuchs.tanz = null; fuchs.such = null; fuchs.cur = null; fuchsAnim(FA.sitzen, 0.01); }
+  else if(eva){ fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.warte = 1.5; fuchsAnim(FA.aufstehen, 0.2);
+    const n = nebenFigur(-1.0, 0.5); fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z); fuchs.yaw = eva.yaw + Math.PI; }
+};
 // Fuchs bei (x, z) in die Welt setzen, Blick p.blick (Winkel ab +Z), p.modus (Standard: streifen)
 function fuchsAbsetzen(p){
   if(!fuchs.obj){ fuchs.wartetAuf = p; return; }
@@ -929,6 +939,13 @@ function updateFuchs(dt){
       fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.ziel = null; fuchs.warte = 1.2; fuchs.tun = 'huepfen';
       fuchsAnim(FA.aufstehen, 0.2);
     }
+  } else if(fuchs.modus === 'boot'){
+    // vorn im Bug (1,9 m vor der Mitte, etwas hoeher), Blick aufs Meer, schaukelt mit
+    const b = story.bootPunkt && story.bootPunkt(1.9, 0, 0.05);
+    if(b){ fp.copy(b); fuchs.yaw = story.bootYaw(); fuchs.obj.rotation.y = fuchs.yaw - fuchs.kopf; }
+    if(fuchs.cur === FA.sitzen && Math.random() < dt / 10) fuchsAnim(FA.sitzPause, 0.2);
+    else if(fuchs.cur === FA.sitzPause && !fuchsClipLaeuft(FA.sitzPause)) fuchsAnim(FA.sitzen, 0.2);
+    return;
   } else if(fuchs.modus === 'schnueffeln' && eva){
     fuchsSchnueffeln(dt, fp);
   } else if(fuchs.modus === 'tanzen' && eva){
@@ -1401,6 +1418,7 @@ function hookLoop(){
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
+    if(story.updateSteg) story.updateSteg(dt);     // steg.js: Steg, Segelboot, einsteigen
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js
     updateInteraktion(dt);
     if(story.gestartet) funkLaden();               // Funk-Ton vorab dekodieren (nach der Startgeste)

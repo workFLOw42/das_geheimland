@@ -33,6 +33,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `texturen.js` | gemeinsame Texturen: Tapete, Holzverkleidung, Dielen, Straßen-Spielteppich |
 | `sternbilder.js` | Sternbilder am Nachthimmel (Großer und Kleiner Bär, Kassiopeia, Orion) |
 | `insel.js` | Etappe 1: kleine Insel, Hütte, Palmen, Lagerfeuer, Möwen |
+| `steg.js` | Steg vor der Hütte (Sandplanken + Pfahlsteg, Grenzen) und Segelboot (einsteigen mit Y) |
 | `huette_innen.js` | Innenraum der Hütte als eigene Welt (Blende an der Tür, innen größer als außen) |
 | `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
 | `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
@@ -48,6 +49,7 @@ Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixam
 - „Fox“ von [pxltiger](https://sketchfab.com/3d-models/fox-39f97fe58f0b47ce80b6e02814001dd7) – CC-BY-4.0
 - „Stage Campfire“ von [daedaljs](https://sketchfab.com/3d-models/stage-campfire-82f37f8bf0f645768e32ab7185df13ca) – CC-BY-4.0
 - „Ring-Billed Gull“ (sitzend und fliegend) von Oregon State University Ecampus – CC-BY-4.0
+- „Sailboat“ von JinnMx (CC-BY-4.0)
 - Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
 - Funkrauschen „Searching the Radio Noise“ von freesound_community (Pixabay) – Pixabay-Lizenz
 - Modelle und Töne der Flugspiel-Engine: siehe Flugspiel-Repo

@@ -78,6 +78,10 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 **In der Hütte** *(im Code, noch ohne Text)*: **Bücherregal** und **Tisch** (Taschenmesser, Kompass und Lupe – hier als ein Objekt; später auch einzeln). Texte folgen.
 
+**Segelboot am Steg, bevor das Abenteuer begonnen hat** *(im Code)* – Y im letzten Drittel des Stegs:
+
+> Du hast hier noch nicht alles entdeckt. Bitte schaue dich in Ruhe weiter um.
+
 **Suchblick ohne Neues** *(im Code)* – drückt Joshi X und es gibt in der Nähe nichts (mehr) zu finden:
 
 | Situation | Text |

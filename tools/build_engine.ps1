@@ -56,7 +56,7 @@ foreach($ln in $lines[0..($start-1)]){
 foreach($a in $assets){ Copy-Item -Force (Join-Path $src $a) (Join-Path $dst $a) }
 
 # Eigene Modelle als eingebettete GLBs (wie die Flugspiel-Modelle): models/<name>.glb -> <name>_glb.js
-$modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB' }
+$modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB'; segelboot = 'SEGELBOOT_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
@@ -81,6 +81,7 @@ $skripte += 'story.js'
 $skripte += 'sternbilder.js'
 $skripte += 'texturen.js'
 $skripte += 'insel.js'
+$skripte += 'steg.js'
 $skripte += 'huette_innen.js'
 
 $out = ($head -join "`n") + "`n" +
@@ -88,4 +89,4 @@ $out = ($head -join "`n") + "`n" +
   '<script src="engine/engine.js"></script>' + "`n" +
   "</body>`n</html>`n"
 [IO.File]::WriteAllText((Join-Path $root 'index.html'), $out, $utf8)
-"engine.js: $([math]::Round($engine.Length/1KB)) KB, $($assets.Count) Assets kopiert, $($skripte.Count - 5) Modelle/Toene, index.html erzeugt"
+"engine.js: $([math]::Round($engine.Length/1KB)) KB, $($assets.Count) Assets kopiert, $($skripte.Count - 6) Modelle/Toene, index.html erzeugt"

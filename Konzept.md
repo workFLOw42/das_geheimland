@@ -55,6 +55,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Möwen:** fliegen über der Insel, ein paar sitzen am Strand (fliegen auf, wenn man ihnen zu nahe kommt). Meeresrauschen und Möwengeschrei kommen aus der Engine.
 - **Schwimmen und Waten** wie in *Trip to Japan*: am Strand flach, dann schwimmen; tauchen mit RT / LT.
 - **Startbildschirm** „🌙 Das Geheimland“ mit großem „▶ Los geht's“ (schaltet Ton und Stimme frei).
+- **Steg und Segelboot:** Vor der Hütte (in einer Linie mit Hütte, Lagerfeuer und Funkgerät) liegen kurz vor dem Wasser flache Planken auf dem Sand, die zum Steg auf Pfählen werden. Der Steg hat Grenzen (nicht seitlich oder vorn hinunter). Links daran liegt ein Segelboot, das mit den Wellen schaukelt. Im letzten Drittel des Stegs erscheint ein **Y**: Joshi und der Fuchs steigen ein – Joshi sitzt kniend mittschiffs, der Fuchs vorn im Bug und schaut aufs Meer; Y im Boot = wieder aussteigen. **Einsteigen geht erst, wenn das Abenteuer begonnen hat** (Ausrüstung aus der Hütte + Funkspruch angenommen); vorher sagt die Erzählerin „Du hast hier noch nicht alles entdeckt. Bitte schaue dich in Ruhe weiter um.“
 - **Interaktionsobjekte:** draußen Lagerfeuer, Hütte und Funkgerät; in der Hütte Bücherregal und Tisch (Taschenmesser, Kompass, Lupe – am Tisch ein Objekt, später auch einzeln). Per Suchblick (X) entdecken, dann Y. Hier
 - **Funk-Durchsage** ist gebaut, aber vorerst **ausgeschaltet** (Text kommt später).
 
@@ -63,7 +64,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Der Auftakt:** Der Detektiv erwacht nachts in seinem 3D-Kinderzimmer. Neben seinem Bett sitzt sein treuer Begleiter, der Fuchs. *(noch nicht gebaut)*
 - **Die Zaubertür:** Durch die Zimmertür gelangt er an einen nächtlichen Tropenstrand vor eine gemütliche Hütte mit Lagerfeuer. *(Strand, Hütte, Feuer: gebaut)*
 - **Die Ausrüstung (Auftakt in der Hütte):** Bevor das Abenteuer losgeht, holt Joshi seine Ausrüstung: **ein bestimmtes Buch aus dem Bücherregal** *(welches Buch und was darin steht: kommt noch)* und **die drei Sachen vom Tisch** – Taschenmesser, Kompass und Lupe (dafür werden sie einzeln gebraucht). Erst wenn er alles hat, geht es weiter.
-- **Der Funkspruch:** Sobald Joshi das Buch und die drei Sachen genommen hat, **kommt ein Funkspruch herein** – das Funkgerät am Lagerfeuer meldet sich. Joshi geht hin und **nimmt ihn mit Y an**; damit **beginnt das Abenteuer**.
+- **Der Funkspruch:** Sobald Joshi das Buch und die drei Sachen genommen hat, **kommt ein Funkspruch herein** – das Funkgerät am Lagerfeuer meldet sich über den Ton und **wiederholt das regelmäßig, bis Joshi rangeht** (wo der Fuchs gerade ist, spielt keine Rolle). Joshi geht hin und **nimmt ihn mit Y an**; damit **beginnt das Abenteuer** – und erst dann lässt sich das Segelboot am Steg besteigen.
 - **Das Mysterium:** Im Geheimland herrscht großes Chaos. Über Funk kommt die Durchsage (Hörspiel-Stimme):
   > „Achtung, Detektiv Joshi! Im Geheimland wurde Chaos angerichtet! Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!“
 

@@ -729,7 +729,9 @@ function fuchsFrei(x, z){ return evaSolid(x, z) && watGrund(x, z) === null && !h
 // Die Figur wechselt durch die Huettentuer (huette_innen.js): der Fuchs kommt mit – ausser er wartet noch am Strand
 story.fuchsZu = function(ziel){
   if(!fuchs.obj || !fuchs.aktiv || fuchs.modus === 'warten' || !eva) return;
-  const n = nebenFigur(-1.2, 0.8);
+  // neben die Figur (nicht hinter sie: beim Hinausgehen laege das in der Huette, dort steckte der Fuchs fest)
+  let n = nebenFigur(0.4, 1.1);
+  if(!fuchsFrei(n.x, n.z)) n = nebenFigur(0.4, -1.1);
   fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z);
   fuchs.yaw = eva.yaw + Math.PI; fuchs.ziel = null; fuchs.warte = 1.5;
   if(fuchs.modus !== 'streifen'){ fuchs.modus = 'streifen'; fuchs.sitzt = false; }

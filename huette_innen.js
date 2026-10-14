@@ -213,7 +213,9 @@ function setzeUm(ziel){
     eva.yaw = 0;                                          // Blick in den Raum (-z)
     innen.drin = true;
   } else {
-    const x = H.x, z = H.z + H.T / 2 + 1.0;
+    // ein Stueck vor der Huette (etwa wie beim Spielstart am Feuer), damit die Kamera hinter Joshi nicht in der Huette
+    // haengt; seitlich versetzt, damit er nicht im Lagerfeuer steht (das liegt genau vor der Tuer)
+    const x = H.x - 1.8, z = H.z + H.T / 2 + 4.2;
     g.position.set(x, evaFootY(x, z), z);
     eva.yaw = Math.PI;                                    // Blick zum Strand (+z)
     innen.drin = false;

@@ -6,7 +6,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 
 - **Für ein fast 6-jähriges Kind:** Das Spiel muss ohne Lesen funktionieren. Alles wird über die Erzähl-/Radiostimme, Symbole und Bilder vermittelt. Die Steuerung ist einfach, es gibt kein Scheitern und keinen Zeitdruck.
 - **Spielfigur:** 3D-Modell von Joshi (1,20 m, Mixamo-Rig, Rohdaten `3d Modelle/JFG/JFG_Joshi_mixamo.zip`). **Im Spiel bekommt die Figur einen eigenen Namen – noch offen** (im Text unten: „der Detektiv“).
-- **Begleiter:** sein treuer Hund.
+- **Begleiter:** ein Fuchs. Er streift frei und neugierig umher, spielt beim Hinknien vor der Figur (2 x Pfoten/Schwanz) und setzt sich links neben sie, tanzt zur Gitarre 5 m vor ihr und setzt sich danach vor sie. Figur und Fuchs sind Körper (laufen nicht durcheinander hindurch).
 
 ## 🧱 Technische Grundsätze
 

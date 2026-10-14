@@ -8,8 +8,8 @@
 // locale, ...) gibt es erst ab STORY_HOOK – auf Top-Level hier also nichts davon anfassen.
 //
 // Zielgruppe: ein fast 6-jaehriges Kind. Alles Wichtige sagt die Stimme; Texte sind nur Beiwerk.
-// Steuerung zu Fuss: linker Stick (Pfeiltasten) gehen bis rennen · B springen (im Lauf: Sprungrolle)
-// · A (Enter) hinknien / aufstehen · im Wasser: RT/LT (E/Q) tauchen.
+// Steuerung zu Fuss (wie Trip to Japan): linker Stick (Pfeiltasten) gehen bis rennen · A (Leertaste) springen
+// (im Lauf: Sprungrolle) · B hinknien / aufstehen · X umherschauen · im Wasser: RT/LT (E/Q) tauchen.
 (function(){
 'use strict';
 
@@ -197,7 +197,7 @@ function hookNacht(){
 // bewegt die Engine die Figur.
 const FIGUR_H = 1.20;
 const GITARRE_NACH = 12;      // s Stillstehen, dann holt er die Gitarre raus
-const EINMAL_FIGUR = ['jump', 'roll', 'kneel'];
+const EINMAL_FIGUR = ['jump', 'roll', 'kneel', 'look'];
 const figur = story.figur = { obj: null, inner: null, mixer: null, acts: {}, cur: null, t: 0,
   kniet: false, aktion: null, aktT: 0, rollV: 0, steht: 0, ausschlag: 0, tempo: 0 };
 function preloadFigur(){
@@ -261,13 +261,15 @@ function hookFigur(){
   };
   // Tempo: Stick bis 50 % = gehen, darueber rennen (wie Kenji). Kniend, beim Sprung und vor dem
   // Start steht sie still; Stick bewegen steht wieder auf. Im Wasser: Schwimmen.
-  const updateEvaOrig = updateEva;
+  const updateEvaRoh = updateEva;
+  const updateEvaOrig = function(){ figurSchritt = true; try { return updateEvaRoh.apply(this, arguments); } finally { figurSchritt = false; } };
   updateEva = function(dt, inp){
     if(!eva) return updateEvaOrig(dt, inp);
     if(sw.aktiv && steuerbar()){ schwimmUpdate(dt, inp); return; }
     const roh = -(inp.pitch || 0), a = Math.abs(roh), dreh = Math.abs(inp.yaw || 0);
     if(a > 0.05 || dreh > 0.05){ figur.steht = 0; if(figur.cur === 'guitar'){ gitarreMusik(false); figurAnim('idle', 0.2); } }
     if(figur.kniet && (a > 0.3 || dreh > 0.5) && steuerbar()) aufstehen();
+    if(figur.aktion === 'look' && (a > 0.15 || dreh > 0.3)) figur.aktion = null;   // Stick bricht das Umschauen ab
     if(figur.aktion === 'roll'){
       // Sprungrolle: gleichmaessiger Schwung aus dem Lauf (die Hueftkurve des Clips stockt in der Mitte
       // und sah ruckelig aus). Gegen Ende: Stick gehalten -> nahtlos weiterlaufen, sonst ausbremsen.
@@ -277,15 +279,26 @@ function hookFigur(){
       const v = figur.rollV * (a > 0.3 ? 1 : 1 - 0.8 * k * k * (3 - 2 * k));
       return updateEvaOrig(dt, { pitch: -klemme(v / EVA_SPEED, 0, 1), yaw: (inp.yaw || 0) * 0.3 });
     }
-    if(!steuerbar() || figur.kniet || figur.aktion === 'jump'){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
+    if(!steuerbar() || figur.kniet || figur.aktion === 'jump' || figur.aktion === 'look'){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
     figur.ausschlag = a;
     const f = a <= 0.5 ? a / 0.5 * GEH_MAX : GEH_MAX + (a - 0.5) / 0.5 * (1 - GEH_MAX);
     figur.tempo = f * EVA_SPEED;
     return updateEvaOrig(dt, Object.assign({}, inp, { pitch: -Math.sign(roh) * f }));
   };
-  // B zu Fuss: springen – im Stand der normale Sprung, beim Gehen/Rennen die Sprungrolle
-  evaActionB = function(){ springen(); };
+  // B zu Fuss: hinknien / aufstehen (Engine: buttonB -> evaActionB, Tastatur B und Controller-Knopf 1)
+  evaActionB = function(){ knieUmschalten(); };
   evaJump = function(){};          // der Engine-Huepfer passt nicht zur Figur
+  // Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund
+  const solidFigOrig = evaSolid;
+  // Nur fuer IHRE Schritte (figurSchritt, gesetzt um den Engine-Lauf) – sonst sperrte es auch die Schritte des Fuchses selbst
+  evaSolid = function(x, z){ if(figurSchritt && eva && fuchs.obj && fuchs.aktiv && fuchs.obj.parent){ const f = fuchs.obj.position;
+      const neu = Math.hypot(x - f.x, z - f.z), jetzt = Math.hypot(eva.group.position.x - f.x, eva.group.position.z - f.z);
+      if(neu < ABSTAND_MIN && neu < jetzt) return false; }
+    return solidFigOrig.apply(this, arguments); };
+  // Leertaste setzt in readInput Vollschub, X Schub 0 – zu Fuss soll beides den (unsichtbaren) X-Wing nicht
+  // umstellen: den Schub nach readInput auf den Wert davor zuruecksetzen
+  const readOrig = readInput;
+  readInput = function(){ const thr = state.throttle; const r = readOrig.apply(this, arguments); if(eva) state.throttle = thr; return r; };
   cycleModel = function(){};       // Fahrzeuge waehlt die Geschichte
   // Grosses Astronauten-Symbol beim Aussteigen passt nicht zur Figur
   const showBigOrig = showBig;
@@ -293,7 +306,31 @@ function hookFigur(){
     if(t && /\u{1F9D1}‍\u{1F680}/u.test(t)) t = '';
     return showBigOrig.call(this, t);
   };
-  const mdlEl = document.getElementById('mdl');
+  // Kamera beim Gitarrespielen weiter weg, damit Figur und tanzender Fuchs (5 m vor ihr) ins Bild passen. Die
+  // Engine-Kamera folgt der Figur weich (lerp); darauf kann man nicht jedes Bild multiplizieren (der Abstand wuchs
+  // dann ins Unendliche). Deshalb hier eine eigene, ruhige Kamera: hinter der Figur in KAM_WEIT x Engine-Abstand,
+  // Blick auf die Mitte zwischen Figur und Fuchs-Platz; der rechte Stick (evaOrbit) dreht sie um beide.
+  const camOrigF = updateCamera;
+  const _kw = new THREE.Vector3();
+  updateCamera = function(){
+    const soll = eva && figur.cur === 'guitar' && !sw.aktiv && !(story.innen && story.innen.drin) ? 1 : 0;
+    figur.kamWeit = (figur.kamWeit || 0) + (soll - (figur.kamWeit || 0)) * Math.min(1, 1.2 * dtCam);
+    if(!(eva && figur.kamWeit > 0.01)) return camOrigF.apply(this, arguments);
+    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;
+    const p = eva.group.position, w = figur.kamWeit, yaw = eva.yaw + evaOrbit;
+    const m = nebenFigur(TANZ_ABST * 0.45 * w, 0);                       // Blickpunkt: zwischen Figur und Fuchs
+    let dist = 7 * (1 + (KAM_WEIT - 1) * w);
+    // Steht hinter der Figur etwas (Huette, Palme), naeher heran – bis kurz davor
+    for(let s = 1.5; s <= dist; s += 0.5){
+      const x = p.x + Math.sin(yaw) * s, z = p.z + Math.cos(yaw) * s;
+      if(hitsBuilding(x, ISLAND_Y + 2.5, z, false)){ dist = Math.max(4, s - 1); break; }
+    }
+    const hoch = 3.4 + 2.6 * w;                                          // etwas hoeher: der Blick geht ueber Joshi auf den Fuchs
+    _kw.set(p.x + Math.sin(yaw) * dist, p.y + hoch, p.z + Math.cos(yaw) * dist);
+    camera.position.lerp(_kw, Math.min(1, 3 * dtCam));
+    camera.up.set(0, 1, 0);
+    camera.lookAt(m.x, p.y + 0.8, m.z);
+  };  const mdlEl = document.getElementById('mdl');
   const hudOrig = updateHUD;
   updateHUD = function(){
     const r = hudOrig.apply(this, arguments);
@@ -302,6 +339,8 @@ function hookFigur(){
   };
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
+const KAM_WEIT = 1.5;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
+let figurSchritt = false;     // true, waehrend die Engine die Figur bewegt (evaSolid: Fuchs als Hindernis)
 // Sprungrolle: konstanter Schwung (rollV, aus dem Lauftempo), ab ROLL_BREMS_AB der Clipdauer bremst
 // sie aus, wenn der Stick losgelassen ist.
 const ROLL_TEMPO = 1.15;      // Clip etwas schneller abspielen – fluessiger
@@ -318,20 +357,33 @@ function springen(){
     figurAnim('jump', 0.12, 1);
   }
 }
-// A (Controller) / Enter (Tastatur): hinknien bzw. wieder aufstehen. Die Engine nutzt A zu Fuss
-// nicht (nur als Schubbremse im Flieger), Leertaste waere Vollschub – deshalb Enter.
-const tasten = { prevA: true, enter: false };
+// A (Controller-Knopf 0) / Leertaste: springen · X (Knopf 2) / X: umherschauen. Die Engine nutzt beide zu Fuss
+// nicht (A = Schubbremse, X = Boost, Leertaste = Vollschub – alles nur im Flieger, siehe hookFigur: readInput).
+// Tastendruecke als Ereignis merken: ein kurzer Tipp kann zwischen zwei Bildern liegen.
+const tasten = { prevA: true, prevX: true, a: false, x: false };
 addEventListener('keydown', e => {
-  if(e.defaultPrevented) return;                     // z. B. Enter auf dem Startbildschirm
-  if((e.code === 'Enter' || e.code === 'NumpadEnter') && !e.repeat) tasten.enter = true;
+  if(e.defaultPrevented || e.repeat) return;         // z. B. Enter/Leertaste auf dem Startbildschirm
+  if(e.code === 'Space') tasten.a = true;
+  if(e.code === 'KeyX') tasten.x = true;
 });
-function knieTaste(){
-  let a = false;
-  if(gamepadIndex !== null){ const gp = navigator.getGamepads()[gamepadIndex]; a = !!(gp && gp.buttons[0] && gp.buttons[0].pressed); }
-  const neu = (a && !tasten.prevA) || tasten.enter;
-  tasten.prevA = a; tasten.enter = false;
-  if(!neu || !eva || eva.boat || eva.rover || sw.aktiv || figur.aktion || !steuerbar()) return;
+function figurTasten(){
+  let a = false, x = false;
+  if(gamepadIndex !== null){ const gp = navigator.getGamepads()[gamepadIndex];
+    a = !!(gp && gp.buttons[0] && gp.buttons[0].pressed); x = !!(gp && gp.buttons[2] && gp.buttons[2].pressed); }
+  const neuA = (a && !tasten.prevA) || tasten.a, neuX = (x && !tasten.prevX) || tasten.x;
+  tasten.prevA = a; tasten.prevX = x; tasten.a = tasten.x = false;
+  if(neuA) springen();
+  if(neuX) umschauen();
+}
+function knieUmschalten(){
+  if(!eva || eva.boat || eva.rover || sw.aktiv || figur.aktion || !steuerbar()) return;
   if(figur.kniet) aufstehen(); else hinknien();
+}
+// X: Look Around (60 fps, 4,5 s, auf der Stelle) – einmal ansehen, Stick bricht ab, danach wieder Stehen
+function umschauen(){
+  if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet || !figur.acts.look || !eva.onGround) return;
+  figur.aktion = 'look'; figur.aktT = 0;
+  figurAnim('look', 0.25, 1);
 }
 function hinknien(){
   if(!figur.acts.kneel) return;
@@ -366,7 +418,7 @@ function gitarreMusik(an){
 }
 function updateFigur(dt){
   if(!figur.obj) return;
-  if(figur.cur !== 'guitar' || figur.ausschlag > 0.05 || figur.aktion || figur.kniet || sw.aktiv) gitarreMusik(false);
+  if(figur.cur !== 'guitar' || figur.ausschlag > 0.05 || figur.aktion || figur.kniet || sw.aktiv){ gitarreMusik(false); fuchsTanzEnde(); }
   if(!figur.mixer){
     // altes GLB ohne Rig: beim Laufen leicht wippen
     const a = figur.ausschlag || 0;
@@ -379,10 +431,11 @@ function updateFigur(dt){
   if(figur.aktion){
     figur.aktT += dt;
     const clip = figur.acts[figur.aktion].getClip();
-    const frei = figur.aktion === 'jump' ? SPRUNG_FREI : clip.duration / ROLL_TEMPO - 0.3;
+    const frei = figur.aktion === 'jump' ? SPRUNG_FREI : figur.aktion === 'look' ? clip.duration - 0.35 : clip.duration / ROLL_TEMPO - 0.3;
     const dauer = clip.duration / figur.acts[figur.aktion].timeScale;
     const stick = figur.aktion === 'roll' ? figur.rollStick : figur.ausschlag;
-    if(figur.aktT < frei || (figur.aktT < dauer - 0.1 && stick < 0.1)) return;
+    if(figur.aktion === 'look' && figur.aktT < frei){ figur.steht = 0; return; }   // Umschauen: bis kurz vor Schluss, dann weich zurueck
+    if(figur.aktion !== 'look' && (figur.aktT < frei || (figur.aktT < dauer - 0.1 && stick < 0.1))) return;
     figur.aktion = null;                          // naechster Clip blendet aus dem Endbild
   }
   if(figur.kniet) return;
@@ -392,7 +445,7 @@ function updateFigur(dt){
   else if(figur.ausschlag > 0.05){ figurAnim('walk', 0.25, klemme(v / 1.5, 0.6, 1.4)); figur.steht = 0; }
   else {
     figur.steht += dt;
-    if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); return; }
+    if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); fuchsTanzStart(); return; }
     else figurAnim('idle', 0.3, 1);
   }
 }
@@ -540,9 +593,10 @@ const FUCHS_LANG = 0.9;                    // m Kopf bis Schwanzspitze
 const FA = {
   stehen: 'Fox_Idle', gehen: 'Fox_Walk_InPlace', rennen: 'Fox_Run_InPlace',
   setzen: 'Fox_Sit1', sitzen: 'Fox_Sit2_Idle', sitzPause: 'Fox_Sit_Idle_Break', aufstehen: 'Fox_Sit3_StandUp',
-  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Tail'], huepfen: 'Fox_Jump_Pivot_InPlace',
+  // Spielen vor der knienden Figur: zweimal Pfoten + Schwanz (Live-Wunsch 14.10.2026), dann hinsetzen
+  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Tail', 'Fox_Attack_Paws', 'Fox_Attack_Tail'], huepfen: 'Fox_Jump_Pivot_InPlace',
 };
-const EINMAL = [FA.setzen, FA.aufstehen, FA.sitzPause, FA.huepfen, ...FA.spielen];
+const EINMAL = [FA.setzen, FA.aufstehen, FA.sitzPause, FA.huepfen, ...new Set(FA.spielen), 'Fox_Somersault_InPlace'];
 const fuchs = story.fuchs = { obj: null, mixer: null, acts: {}, cur: null, kopf: 0, yaw: 0, aktiv: false,
   modus: 'warten', ziel: null, warte: 0, t: 0, spielI: 0, sitzt: false, tun: null };
 function preloadFuchs(){
@@ -607,6 +661,59 @@ function fuchsAbsetzen(p){
   fuchs.modus = p.modus || 'streifen'; fuchs.ziel = null; fuchs.warte = 2;
   if(fuchs.modus === 'warten'){ fuchs.acts[FA.sitzen] && (fuchs.cur = null, fuchsAnim(FA.sitzen, 0.01)); fuchs.sitzt = true; }
 }
+// ---- Fuchs tanzt zur Gitarre (Live-Wunsch 14.10.2026) ----------------------------------------------------------
+// Spielt die Figur Gitarre, rennt der Fuchs an einen Platz TANZ_ABST m vor ihr und laeuft dort quer vor ihr hin und
+// her (TANZ_BREIT m), dreht sich immer wieder (Hopser mit Drehung, Salto). Nach TANZ_DAUER s setzt er sich genau vor
+// sie und schaut sie an. Hoert sie auf, streift er wieder.
+const TANZ_ABST = 5, TANZ_BREIT = 1.5, TANZ_DAUER = 10;
+const TANZ_DREH = ['Fox_Jump_Pivot_InPlace', 'Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace'];
+function fuchsTanzStart(){
+  if(!fuchs.aktiv || fuchs.modus === 'warten' || fuchs.modus === 'tanzen') return;
+  fuchs.modus = 'tanzen'; fuchs.tanz = { phase: 'hin', t: 0, seite: 1, dreh: 0, naechste: 1.2 }; fuchs.sitzt = false; fuchs.ziel = null;
+}
+function fuchsTanzEnde(){
+  if(fuchs.modus !== 'tanzen') return;
+  fuchs.modus = 'streifen'; fuchs.ziel = null; fuchs.warte = fuchs.sitzt ? 0.6 : 0.3;
+  if(fuchs.sitzt) fuchsAnim(FA.aufstehen, 0.2);
+  fuchs.sitzt = false; fuchs.tanz = null;
+}
+function fuchsTanz(dt, fp){
+  const T = fuchs.tanz, g = eva.group.position;
+  const ab = story.innen && story.innen.drin ? 2.5 : TANZ_ABST;      // im Huetten-Raum (7 m tief) naeher
+  const mitte = nebenFigur(ab, 0);
+  if(T.phase === 'hin'){
+    const d = fuchsLaufe(dt, mitte.x, mitte.z, Math.hypot(mitte.x - fp.x, mitte.z - fp.z) > 3 ? 7 : 3);
+    if(d < 0.3 || fuchs.blockiert){ T.phase = 'tanz'; T.t = 0; }
+    return;
+  }
+  if(T.phase === 'tanz'){
+    T.t += dt;
+    if(T.t > TANZ_DAUER){ T.phase = 'setzen'; return; }
+    // laeuft eine Drehung? dann auf der Stelle bleiben, bis sie fertig ist
+    if(T.drehClip){ if(fuchsClipLaeuft(T.drehClip)) return; T.drehClip = null; }
+    if((T.naechste -= dt) <= 0){
+      const c = TANZ_DREH[T.dreh++ % TANZ_DREH.length];
+      if(fuchs.acts[c]){ fuchs.acts[c].setLoop(THREE.LoopOnce); fuchs.acts[c].clampWhenFinished = true; fuchs.cur = null; fuchsAnim(c, 0.15); T.drehClip = c; }
+      T.naechste = 1.4 + Math.random() * 1.2;
+      return;
+    }
+    // quer vor der Figur hin und her: Ziel abwechselnd links / rechts der Mitte
+    const z = nebenFigur(ab, T.seite * TANZ_BREIT);
+    const d = fuchsLaufe(dt, z.x, z.z, 2.6);
+    if(d < 0.3 || fuchs.blockiert) T.seite = -T.seite;
+    return;
+  }
+  // setzen: genau vor die Figur, Blick zu ihr
+  if(!fuchs.sitzt){
+    const d = fuchsLaufe(dt, mitte.x, mitte.z, 1.6);
+    if(d < 0.2 || fuchs.blockiert){ fuchs.sitzt = true; fuchsAnim(FA.setzen, 0.25); }
+  } else {
+    fuchsSchaue(dt, g.x, g.z, 3);
+    if(fuchs.cur === FA.setzen && !fuchsClipLaeuft(FA.setzen)) fuchsAnim(FA.sitzen, 0.2);
+    else if(fuchs.cur === FA.sitzen && Math.random() < dt / 9) fuchsAnim(FA.sitzPause, 0.2);
+    else if(fuchs.cur === FA.sitzPause && !fuchsClipLaeuft(FA.sitzPause)) fuchsAnim(FA.sitzen, 0.2);
+  }
+}
 function fuchsRufen(){
   if(!fuchs.aktiv) return;
   fuchs.modus = 'kommen'; fuchs.ziel = null; fuchs.sitzt = false;
@@ -622,16 +729,31 @@ const STREIF_R = 9;            // m: so weit streift er um die Figur herum
 const STREIF_MAX = 16;         // m: weiter weg -> er kommt zuegig hinterher
 const WARTE_BIS = 5;           // m: so nah muss die Figur kommen, dann begleitet er sie
 // Laeuft zum Punkt (zx, zz). tempo m/s. Rueckgabe: Restabstand.
+// Figur und Fuchs sind Koerper: je ein Kreis um den Mittelpunkt (unabhaengig von der Animation). Der Fuchs laeuft
+// um die Figur herum und nie in sie hinein; die Figur laeuft nicht durch den Fuchs (evaSolid, hookFigur).
+const FIGUR_R = 0.3, FUCHS_R = 0.25, ABSTAND_MIN = FIGUR_R + FUCHS_R;
 function fuchsLaufe(dt, zx, zz, tempo){
   const fp = fuchs.obj.position;
   const dx = zx - fp.x, dz = zz - fp.z, d = Math.hypot(dx, dz);
   if(d < 0.05) return d;
-  const soll = Math.atan2(dx, dz);
+  let soll = Math.atan2(dx, dz);
+  // Liegt die Figur auf dem Weg (zwischen Fuchs und Ziel, naeher als Umweg-Radius an der Linie): seitlich vorbei
+  if(eva && eva.group){
+    const g = eva.group.position, gx = g.x - fp.x, gz = g.z - fp.z, gd = Math.hypot(gx, gz);
+    const vor = (gx * dx + gz * dz) / d;                         // wie weit voraus (auf der Linie)
+    const seit = (gx * dz - gz * dx) / d;                        // Abstand zur Linie (Vorzeichen = Seite)
+    const UM = ABSTAND_MIN + 0.35;
+    if(vor > 0 && vor < d + 0.2 && Math.abs(seit) < UM && gd > 0.05){
+      const weg = Math.atan2(gx, gz) + (seit > 0 ? -1 : 1) * Math.min(Math.PI / 2, Math.asin(Math.min(1, UM / gd)) + 0.15);
+      soll = weg;                                                // an der Figur vorbei, auf der Seite des Ziels
+    }
+  }
   const dw = winkelDiff(fuchs.yaw, soll);
   fuchs.yaw += klemme(dw, -5 * dt, 5 * dt);
   const s = Math.min(d, tempo * dt) * Math.max(0.15, Math.cos(dw));
   const nx = fp.x + Math.sin(fuchs.yaw) * s, nz = fp.z + Math.cos(fuchs.yaw) * s;
-  fuchs.blockiert = !fuchsFrei(nx, nz);
+  fuchs.blockiert = !fuchsFrei(nx, nz) || (eva && eva.group && Math.hypot(nx - eva.group.position.x, nz - eva.group.position.z) < ABSTAND_MIN
+    && Math.hypot(nx - eva.group.position.x, nz - eva.group.position.z) < Math.hypot(fp.x - eva.group.position.x, fp.z - eva.group.position.z));   // nicht naeher in die Figur
   if(!fuchs.blockiert){ fp.x = nx; fp.z = nz; fuchsAnim(tempo >= 4 ? FA.rennen : FA.gehen, 0.2); }
   else { fuchs.ziel = null; fuchsAnim(FA.stehen, 0.3); }      // Wasser/Wand: stehen bleiben
   return d;
@@ -660,6 +782,8 @@ function updateFuchs(dt){
       fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.ziel = null; fuchs.warte = 1.2; fuchs.tun = 'huepfen';
       fuchsAnim(FA.aufstehen, 0.2);
     }
+  } else if(fuchs.modus === 'tanzen' && eva){
+    fuchsTanz(dt, fp);
   } else if(fuchs.modus === 'kommen' && eva){
     // direkt vor die Figur (0,9 m), Blick zu ihr
     const v = nebenFigur(0.9, 0);
@@ -672,7 +796,7 @@ function updateFuchs(dt){
   } else if(fuchs.modus === 'spielen' && eva){
     fuchsSchaue(dt, zu.x, zu.z, 6);
     if(!fuchsClipLaeuft(fuchs.cur)){
-      if(++fuchs.spielI < FA.spielen.length) fuchsAnim(FA.spielen[fuchs.spielI], 0.15);
+      if(++fuchs.spielI < FA.spielen.length){ fuchs.cur = null; fuchsAnim(FA.spielen[fuchs.spielI], 0.15); }   // auch gleicher Clip: von vorn
       else fuchs.modus = 'hinsetzen';
     }
   } else if(fuchs.modus === 'hinsetzen' && eva){
@@ -922,7 +1046,7 @@ function hookLoop(){
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
     if(hilfeOffen()) return loopOrig.apply(this, arguments);   // Pause
     timerTick(dt);
-    knieTaste();
+    figurTasten();
     updateFigur(dt);
     figurWache(dt);
     planeGroup.visible = !eva;                // X-Wing nur sichtbar, wenn man drin sitzt

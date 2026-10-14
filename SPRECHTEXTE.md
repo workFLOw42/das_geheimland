@@ -1,6 +1,6 @@
 # Das Geheimland – Alle gesprochenen Sprechtexte
 
-Stand: 14.10.2026 – Entwurf; im Code steht davon bisher nur die Funk-Durchsage (`story.js`, `DURCHSAGE` / `NACH_DURCHSAGE`), und die ist **vorerst ausgeschaltet**.
+Stand: 14.10.2026 – im Code stehen die Texte der **Interaktionsobjekte** (aktiv) und die **Funk-Durchsage** (`story.js`, `DURCHSAGE` / `NACH_DURCHSAGE`, vorerst ausgeschaltet); der Rest ist Entwurf.
 
 - Gesprochen wird über die Sprachausgabe des Browsers; mit Ton aus laufen dieselben Sätze als Untertitel.
 - „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur, noch offen – im Code die Konstante `NAME`).
@@ -62,6 +62,20 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 ---
 
+## Interaktionsobjekte – Etappe 1 (Insel) *(im Code)*
+
+**Stimme:** weiblich (Erzählerin). Gesprochen wird, wenn Joshi ein Objekt mit dem Suchblick (X) entdeckt hat, hingeht und **Y** drückt.
+
+| Objekt | Text |
+|---|---|
+| Lagerfeuer | Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht. |
+| Hütte | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
+| Funkgerät | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. |
+
+*In der Hütte folgen noch Interaktionsobjekte – welche, steht noch nicht fest.*
+
+---
+
 ## Hinweise zur Steuerung *(Entwurf – kurz, einmal beim ersten Mal)*
 
 **Stimme:** weiblich (Erzählerin)
@@ -71,6 +85,8 @@ Dein Fuchs wartet schon am Strand auf dich.
 | erstes Mal am Strand | Mit dem Stick läufst du. Drück ihn weit, dann rennst du! |
 | nach einer Weile | Drück A, dann springst du! |
 | Fuchs sitzt nah | Drück B, dann kniest du dich hin – dein Fuchs kommt zum Spielen. |
+| erstes Mal an einem wichtigen Ort | Drück X und schau dich um – vielleicht findet dein Fuchs etwas! |
+| Y erscheint | Siehst du das Y? Drück Y! |
 | vor der Hütte | Geh durch die Tür in die Hütte! |
 
 ---

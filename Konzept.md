@@ -17,7 +17,8 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 | linker Stick | Pfeiltasten | gehen (bis halber Ausschlag), darüber rennen, drehen |
 | A | Leertaste | springen – im Stand normaler Sprung, im Lauf die Sprungrolle |
 | B | B | hinknien / aufstehen |
-| X | X | umherschauen (*Look Around*) – der Stick bricht es ab |
+| X | X | **Suchblick** (*Look Around*): der Fuchs schnüffelt nach Interaktionsobjekten – der Stick bricht ab |
+| Y | Y | an einem entdeckten Interaktionsobjekt: es erklärt sich (Erzählerin) |
 | rechter Stick | I J K L | Kamera umsehen |
 | RT / LT | E / Q | im Wasser abtauchen / auftauchen |
 | D-Pad ↓ | N | Ton an / aus |
@@ -31,7 +32,8 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Gitarre:** Der Fuchs rennt herbei und **tanzt 10 s** quer vor Joshi in etwa 5 m Abstand (hin und her, Hopser mit halber Drehung, Schwanzschlag, zwei Saltos), dann setzt er sich **genau vor ihn** und schaut ihn an; nach 10 s Sitzen beginnt der Tanz von vorn, solange Joshi spielt. Die Kamera geht dabei weiter zurück und **kreist langsam um beide** (eine Runde in etwa 40 s); der rechte Stick übernimmt.
 - **Körper:** Joshi und der Fuchs haben je einen Kollisionskreis – sie laufen nicht durcheinander hindurch; der Fuchs läuft um Joshi herum.
 - **Schatten:** beide haben einen weichen Bodenschatten.
-- **Für Detektiv-Momente vorgesehen:** Joshis *Look Around* sowie die Fuchs-Animationen *Sit_Yes* (nicken) und *Sit_No* (Kopf schütteln).
+- **Suchblick (X) und Interaktionsobjekte:** Für die Geschichte wichtige Objekte tun erst etwas, wenn Joshi sich mit **X** umschaut. Dann schnüffelt der Fuchs umher, macht vor jedem noch unentdeckten Objekt in der Nähe kurz einen Pfoten-Hopser, und das Objekt **leuchtet für einen Moment auf**. Geht Joshi danach an ein entdecktes Objekt heran, erscheint ein **„Y“** darüber (geht er weg, verschwindet es); **Y** lässt die Erzählerin etwas dazu sagen (Texte: SPRECHTEXTE.md). Ohne Suchblick erscheint kein Y, und es passiert nichts.
+- **Für weitere Detektiv-Momente vorgesehen:** die Fuchs-Animationen *Sit_Yes* (nicken) und *Sit_No* (Kopf schütteln).
 
 ## 🧱 Technische Grundsätze
 
@@ -40,6 +42,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Kein Flugverkehr am Himmel**, kein sichtbarer X-Wing, solange nicht geflogen wird. Fliegen kommt später (das Kind kennt und liebt das Flugspiel).
 - **Basis ist die Flugspiel-Engine** (unverändert, Spiellogik per Wrapper – wie *Trip to Japan*). Damit stehen Fliegen, Boote, Mondrover und Weltraum für spätere Einsatzorte bereit.
 - **Alles, was gezeichnet wird, hat eine Grenze in seinen echten Maßen** (`story.koerper`): Rechteck aus der Größe des Objekts, gedreht wie es, oder ein Kreis für runde Dinge; so hoch wie das Objekt – über Niedriges kann man springen. Ausnahmen von Hand: die Hütte (Wände mit Tür) und Palmen (nur der Stamm zählt, nicht die Wedel). Joshi und der Fuchs sind ebenfalls Körper.
+- **Interaktionsobjekte sind global** (`story.interaktion`): Die Idee funktioniert überall gleich – aber nicht jedes Objekt ist in jeder Etappe wichtig; angemeldet wird je Etappe nur, was die Geschichte dort braucht. Auch in Innenräumen (in der Hütte folgen welche, noch offen).
 - **Animationen mit 60 fps** (Mixamo, Pipeline siehe README).
 
 ## ✅ Umgesetzt: Etappe 1 – die Insel bei Nacht
@@ -52,6 +55,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Möwen:** fliegen über der Insel, ein paar sitzen am Strand (fliegen auf, wenn man ihnen zu nahe kommt). Meeresrauschen und Möwengeschrei kommen aus der Engine.
 - **Schwimmen und Waten** wie in *Trip to Japan*: am Strand flach, dann schwimmen; tauchen mit RT / LT.
 - **Startbildschirm** „🌙 Das Geheimland“ mit großem „▶ Los geht's“ (schaltet Ton und Stimme frei).
+- **Interaktionsobjekte:** Lagerfeuer, Hütte und Funkgerät – per Suchblick (X) entdecken, dann Y.
 - **Funk-Durchsage** ist gebaut, aber vorerst **ausgeschaltet** (Text kommt später).
 
 ## 💡 1. Rahmenhandlung & Einstieg

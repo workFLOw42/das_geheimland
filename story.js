@@ -474,6 +474,7 @@ function umschauen(){
   if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet || !figur.acts.look || !eva.onGround) return;
   figur.aktion = 'look'; figur.aktT = 0;
   figurAnim('look', 0.25, 1);
+  fuchsSuche();                                   // Suchblick: der Fuchs schnueffelt nach Interaktionsobjekten
 }
 function hinknien(){
   if(!figur.acts.kneel) return;
@@ -928,6 +929,8 @@ function updateFuchs(dt){
       fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.ziel = null; fuchs.warte = 1.2; fuchs.tun = 'huepfen';
       fuchsAnim(FA.aufstehen, 0.2);
     }
+  } else if(fuchs.modus === 'schnueffeln' && eva){
+    fuchsSchnueffeln(dt, fp);
   } else if(fuchs.modus === 'tanzen' && eva){
     fuchsTanz(dt, fp);
   } else if(fuchs.modus === 'kommen' && eva && fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)){
@@ -1036,6 +1039,118 @@ function fuchsNeuesZiel(zu){
     return;
   }
   fuchs.warte = 1;
+}
+
+// ---- Interaktionsobjekte (global) -------------------------------------------------------------------------
+// Fuer die Geschichte wichtige Objekte melden sich mit story.interaktion(obj, { name, x, z, r, yHoehe, aktion }) an.
+// Sie tun erst etwas, wenn Joshi sie mit dem Suchblick (X) entdeckt hat: dann schnueffelt der Fuchs umher, macht vor
+// jedem noch unentdeckten Objekt in der Naehe (INTER_SUCH_R) kurz einen Pfoten-Hopser, und das Objekt leuchtet auf.
+// Danach erscheint ueber einem entdeckten Objekt ein "Y", sobald Joshi nah genug ist (r + INTER_Y_R); Y loest
+// seine aktion aus. Ohne Suchblick: kein Y, nichts passiert.
+//   x, z: Mitte · r: Radius des Objekts (fuer Fuchs-Platz und Y-Naehe) · yHoehe: Hoehe des Y ueber dem Boden ·
+//   text: Saetze der Erzaehlerin bei Y (oder aktion(o)) · welt: Etappe, in der es wichtig ist (Standard: die aktuelle) ·
+//   innen: true = steht im Huetten-Raum (Live-Wunsch: dort gibt es auch Interaktionsobjekte). Nicht jedes Objekt ist in
+//   jeder Etappe wichtig – angemeldet wird nur, was die Geschichte dort braucht.
+const INTER_SUCH_R = 15, INTER_Y_R = 1.6, GLOW_T = 1.6;
+const INNEN_BODEN = 150;      // Boden des Huetten-Raums (huette_innen.js BODEN_Y)
+const GLOW_FARBE = new THREE.Color(0xffd27a);
+const interListe = [];
+function interaktion(obj, opt){
+  const o = Object.assign({ obj, name: '', x: 0, z: 0, r: 1, yHoehe: 1.5, aktion: null, welt: story.etappe, innen: false,
+    entdeckt: false, glow: 0, glowDauer: 1, zeichen: null, mats: null }, opt);
+  interListe.push(o); return o;
+}
+story.interaktion = interaktion;
+story.interListe = interListe;
+// Leuchten: Emissive aller Materialien des Objekts kurz Richtung warmes Gelb (Original wird gemerkt und zurueckgesetzt)
+function setGlow(o, k){
+  if(!o.mats){ o.mats = []; o.obj.traverse(n => { if(!n.isMesh) return;
+    for(const m of (Array.isArray(n.material) ? n.material : [n.material]))
+      if(m && m.emissive && !o.mats.some(x => x.m === m)) o.mats.push({ m, e: m.emissive.clone(), i: m.emissiveIntensity !== undefined ? m.emissiveIntensity : 1 }); }); }
+  for(const x of o.mats){ x.m.emissive.copy(x.e).lerp(GLOW_FARBE, k * 0.75); if(x.m.emissiveIntensity !== undefined) x.m.emissiveIntensity = x.i + k * 0.5; }
+}
+function glowStart(o, t){ o.glow = o.glowDauer = t; }
+// "Y" wie der gelbe Controller-Knopf
+let yTex = null;
+function yZeichen(){
+  if(!yTex){ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(64, 68, 56, 0, 7); g.fill();
+    g.fillStyle = '#f5c518'; g.beginPath(); g.arc(64, 62, 54, 0, 7); g.fill(); g.lineWidth = 6; g.strokeStyle = '#ffffff'; g.stroke();
+    g.fillStyle = '#1a1a1a'; g.font = 'bold 76px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Y', 64, 66);
+    yTex = new THREE.CanvasTexture(c); }
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: yTex, depthTest: false, transparent: true }));
+  s.scale.setScalar(0.6); s.renderOrder = 999; return s;
+}
+// Das naechste entdeckte Objekt in Y-Reichweite (nur zu Fuss, draussen)
+function interNaechstes(){
+  if(!eva || eva.boat || eva.rover || sw.aktiv) return null;
+  const drin = !!(story.innen && story.innen.drin);
+  const g = eva.group.position; let best = null, bd = 1e9;
+  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.innen !== drin) continue;
+    const d = Math.hypot(o.x - g.x, o.z - g.z) - o.r; if(d < INTER_Y_R && d < bd){ bd = d; best = o; } }
+  return best;
+}
+let interT = 0;
+function updateInteraktion(dt){
+  interT += dt;
+  const nah = interNaechstes();
+  for(const o of interListe){
+    if(o.glow > 0){ o.glow = Math.max(0, o.glow - dt); setGlow(o, Math.max(0, Math.sin((1 - o.glow / o.glowDauer) * Math.PI))); }
+    const zeigen = o === nah;
+    if(zeigen && !o.zeichen){ o.zeichen = yZeichen(); welt(o.welt).add(o.zeichen); }
+    if(o.zeichen){ o.zeichen.visible = zeigen; if(zeigen) o.zeichen.position.set(o.x, (o.innen ? INNEN_BODEN : ISLAND_Y) + o.yHoehe + Math.sin(interT * 3) * 0.07, o.z); }
+  }
+}
+function interAktion(o){
+  glowStart(o, 0.8);
+  if(o.aktion) return o.aktion(o);
+  if(o.text && !o.spricht){ o.spricht = true; sprich(o.text, () => { o.spricht = false; }); }   // Erzaehlerin (weiblich)
+}
+function hookInteraktion(){
+  // Y an einem entdeckten Objekt = dessen Aktion (statt Ein-/Aussteigen der Engine)
+  const yOrig = buttonY;
+  buttonY = function(){ const o = interNaechstes(); if(o){ interAktion(o); return; } return yOrig.apply(this, arguments); };
+}
+// Suchblick: Fuchs besucht die unentdeckten Objekte in der Naehe, jeweils das naechste zuerst
+function fuchsSuche(){
+  if(!fuchs.aktiv || !eva) return;
+  const g = eva.group.position;
+  const drin = !!(story.innen && story.innen.drin);
+  const rest = interListe.filter(o => o.welt === story.etappe && !o.entdeckt && o.innen === drin && Math.hypot(o.x - g.x, o.z - g.z) < INTER_SUCH_R);
+  if(!rest.length) return;
+  const liste = []; let px = fuchs.obj.position.x, pz = fuchs.obj.position.z;
+  while(rest.length){ rest.sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz)); const o = rest.shift(); liste.push(o); px = o.x; pz = o.z; }
+  if(fuchs.sitzt || fuchs.modus === 'warten') fuchsAnim(FA.aufstehen, 0.2);
+  fuchs.sitzt = false; fuchs.tanz = null; fuchs.ziel = null;
+  fuchs.modus = 'schnueffeln'; fuchs.such = { liste, i: 0, phase: 'hin', t: 0, platz: null };
+}
+function fuchsSchnueffeln(dt, fp){
+  const S = fuchs.such;
+  if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)) return;
+  const o = S.liste[S.i];
+  if(!o){ fuchs.modus = 'streifen'; fuchs.such = null; fuchs.warte = 1; return; }
+  if(S.phase === 'hin'){
+    if(!S.platz){
+      // Platz vor dem Objekt auf der Seite zu Joshi (damit man es sieht); ist er belegt, ringsum den naechsten freien
+      const g = eva.group.position; let dx = g.x - o.x, dz = g.z - o.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      for(const a of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.4, -2.4, 3.1]){ const c = Math.cos(a), s = Math.sin(a);
+        const x = o.x + (dx * c - dz * s) * (o.r + 0.55), z = o.z + (dx * s + dz * c) * (o.r + 0.55);
+        if(fuchsFrei(x, z)){ S.platz = { x, z }; break; } }
+      if(!S.platz) S.platz = { x: fp.x, z: fp.z };
+    }
+    S.t += dt;
+    const d = fuchsLaufe(dt, S.platz.x, S.platz.z, 2.2);
+    if(d < 0.25 || S.t > 7){ S.phase = 'schnupper'; S.t = 0; fuchsAnim(FA.stehen, 0.2); }
+    return;
+  }
+  S.t += dt;
+  fuchsSchaue(dt, o.x, o.z, 5);
+  if(S.phase === 'schnupper'){
+    fuchs.yaw += Math.sin(S.t * 9) * 0.9 * dt;                    // schnuppert, Kopf hin und her
+    if(S.t > 0.7){ S.phase = 'paw'; S.t = 0; fuchsNeu('Fox_Attack_Paws'); o.entdeckt = true; glowStart(o, GLOW_T); }
+    return;
+  }
+  if(S.phase === 'paw' && !fuchsClipLaeuft('Fox_Attack_Paws')){ S.i++; S.phase = 'hin'; S.platz = null; S.t = 0; }
 }
 
 // ---- Stimme + Untertitel ---------------------------------------------------------------------
@@ -1195,6 +1310,8 @@ function startSzene(){
   const kg = radio.obj.children[0].geometry; kg.computeBoundingBox();
   const kb = kg.boundingBox.getSize(new THREE.Vector3());          // eigene Achsen der Kiste (ungedreht)
   kk.hx = kb.x / 2; kk.hz = kb.z / 2; kk.h = 0.45 + 0.26;
+  interaktion(radio.obj, { name: 'Funkgerät', x: radio.obj.position.x, z: radio.obj.position.z, r: 0.45, yHoehe: 1.25,
+    text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'] });
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
   if(eva){
@@ -1229,6 +1346,7 @@ function hookLoop(){
     if(story.updateE1) story.updateE1(dt);
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js
+    updateInteraktion(dt);
     weltenSichtbar();
     return loopOrig.apply(this, arguments);
   };
@@ -1250,6 +1368,7 @@ window.STORY_HOOK = function(){
   hookHudAus();
   hookWelt();
   hookKoerper();
+  hookInteraktion();
   hookNacht();
   hookFigur();
   hookSchwimmen();

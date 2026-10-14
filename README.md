@@ -12,7 +12,8 @@ mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Ko
 | linker Stick | Pfeiltasten | gehen (bis halber Ausschlag) bis rennen, drehen |
 | A | Leertaste | springen – im Stand normaler Sprung, im Lauf Sprungrolle |
 | B | B | hinknien / aufstehen (der Fuchs kommt zum Spielen) |
-| X | X | umherschauen (Stick bricht ab) |
+| X | X | Suchblick – der Fuchs findet wichtige Objekte (Stick bricht ab) |
+| Y | Y | an einem entdeckten Objekt: Erzählerin erklärt es |
 | RT / LT | E / Q | im Wasser abtauchen / auftauchen |
 | rechter Stick | I J K L | umschauen |
 | D-Pad ↓ | N | Ton an/aus |

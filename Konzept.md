@@ -8,6 +8,11 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Spielfigur:** 3D-Modell von Joshi (1,20 m, Mixamo-Rig, Rohdaten `3d Modelle/JFG/JFG_Joshi_mixamo.zip`). **Im Spiel bekommt die Figur einen eigenen Namen – noch offen** (im Text unten: „der Detektiv“).
 - **Begleiter:** sein treuer Hund.
 
+## 🧱 Technische Grundsätze
+
+- **Innenräume sind eigene Welten.** Betreten oder Verlassen (Tür) = kurze Blende, danach steht man in einer anderen Welt. Jede Innenwelt ist durch ihre Außenwände begrenzt; durch Fenster sieht man höchstens ein Bild der Außenwelt, hinkommen kann man nicht. So gibt es nie Kameraprobleme in engen Räumen, ein Raum darf innen größer sein als außen („Tardis“), und beim Wechsel kann Speicher freigegeben werden. Häuser mit mehreren Räumen = mehrere verbundene Welten.
+- **Kein HUD.** Radar, Gyroskop und linke Anzeige sind aus. Falls doch eines gebraucht wird: nur der Name der Figur und ihr Gesicht als kleines Icon – kein Astronauten-Symbol, kein „Modell“.
+- **Kein Flugverkehr am Himmel**, kein sichtbarer X-Wing, solange nicht geflogen wird.
 ## 💡 1. Rahmenhandlung & Einstieg
 
 - **Der Auftakt:** Der Detektiv erwacht nachts in seinem 3D-Kinderzimmer. Neben seinem Bett sitzt sein treuer Begleiter-Hund.

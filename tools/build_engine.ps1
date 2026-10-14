@@ -79,10 +79,11 @@ foreach($n in @('gitarre')){
 if(Test-Path (Join-Path $root 'moewe_glb.js')){ $skripte += 'moewe_glb.js' }
 $skripte += 'story.js'
 $skripte += 'insel.js'
+$skripte += 'huette_innen.js'
 
 $out = ($head -join "`n") + "`n" +
   (($skripte | ForEach-Object { '<script src="' + $_ + '"></script>' }) -join "`n") + "`n" +
   '<script src="engine/engine.js"></script>' + "`n" +
   "</body>`n</html>`n"
 [IO.File]::WriteAllText((Join-Path $root 'index.html'), $out, $utf8)
-"engine.js: $([math]::Round($engine.Length/1KB)) KB, $($assets.Count) Assets kopiert, $($skripte.Count - 2) Modelle/Toene, index.html erzeugt"
+"engine.js: $([math]::Round($engine.Length/1KB)) KB, $($assets.Count) Assets kopiert, $($skripte.Count - 3) Modelle/Toene, index.html erzeugt"

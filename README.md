@@ -29,6 +29,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `engine/` | Flugspiel-Engine + Modelle, **unverändert** kopiert von `tools/build_engine.ps1` |
 | `story.js` | Spiellogik: Welt, Nacht, Spielfigur, Schwimmen, Fuchs, Sprache, Startbildschirm |
 | `insel.js` | Etappe 1: kleine Insel, Hütte, Palmen, Lagerfeuer, Möwen |
+| `huette_innen.js` | Innenraum der Hütte als eigene Welt (Blende an der Tür, innen größer als außen) |
 | `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
 | `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
 

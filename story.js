@@ -100,6 +100,13 @@ function hookWelt(){
   evaStartJet = function(){};
   // Sein Lade-Callback ruft placeAtStart und wuerde die Figur wieder einsammeln (SFG-Falle)
   preloadFord = function(){};
+  // Kein Flugverkehr am Himmel (KI-Flotte, Alpha-Jet-Vorbeiflug) – Live-Wunsch 14.10.
+  updateTrafficAll = function(dt){ worldClock += dt; };
+  // Der X-Wing bleibt als unsichtbarer Anker der Engine stehen (state.pos haelt Inselzellen, Meer,
+  // Kamera beim Aussteigen) – zu sehen ist er nicht, sein Schatten auch nicht. Fliegen kommt spaeter.
+  const schattenOrig = updateShadow, ovalOrig = updateOvalShadow;
+  updateShadow = function(){ if(eva){ planeShadow.visible = false; return; } return schattenOrig.apply(this, arguments); };
+  updateOvalShadow = function(){ if(eva) return; return ovalOrig.apply(this, arguments); };
   _islandCache.clear(); _subBerthCache.clear(); _xwpCache.clear(); _parkCache.clear();
 
   // Der X-Wing parkt am Oststrand (Nase zum Wasser) – fuer spaeter, wenn geflogen wird.
@@ -161,7 +168,9 @@ function preloadFigur(){
     if(gltf.animations.length){
       figur.mixer = new THREE.AnimationMixer(obj);
       for(const clip of gltf.animations){
-        // Hueftspur: x/z auf den ersten Wert festhalten (die Rolle rollte sonst 60 cm vor und zurueck)
+        // Hueftspur: x/z auf den ersten Wert festhalten – die Figur bewegt die Engine. Bei der Rolle
+        // wandert die Huefte im Clip ~60 cm nach vorn und zurueck (Mixamo "in place" zieht sie am Ende
+        // zurueck) – festgehalten; den Vorwaertsschwung gibt updateEva (gleichmaessig, siehe ROLL_TEMPO).
         for(const t of clip.tracks){
           if(!/Hips\.position$/.test(t.name)) continue;
           const v = t.values, x0 = v[0], z0 = v[2];
@@ -175,13 +184,17 @@ function preloadFigur(){
     if(eva && eva.group){ eva.group.clear(); eva.group.add(figur.obj); }
   });
 }
+// Wechselt den Clip mit Ueberblendung. Nur der neue und der ausblendende laufen; alle anderen werden
+// gestoppt (vorher hingen alle 13 Clips mit Gewicht 1 im Mixer – siehe figurWache).
 function figurAnim(name, blend, tempo){
   const a = figur.acts[name];
   if(!a) return;
   if(tempo !== undefined) a.timeScale = tempo;
   if(figur.cur === name) return;
-  a.reset().play();
-  if(figur.cur && figur.acts[figur.cur]) figur.acts[figur.cur].crossFadeTo(a, blend || 0.25, false);
+  const alt = figur.cur && figur.acts[figur.cur];
+  for(const n in figur.acts){ const b = figur.acts[n]; if(b !== a && b !== alt) b.stop(); }
+  a.reset(); a.setEffectiveWeight(1); a.play();
+  if(alt) alt.crossFadeTo(a, blend || 0.25, false);
   figur.cur = name;
 }
 function hookFigur(){
@@ -203,10 +216,14 @@ function hookFigur(){
     const roh = -(inp.pitch || 0), a = Math.abs(roh), dreh = Math.abs(inp.yaw || 0);
     if(a > 0.05 || dreh > 0.05){ figur.steht = 0; if(figur.cur === 'guitar'){ gitarreMusik(false); figurAnim('idle', 0.2); } }
     if(figur.kniet && (a > 0.3 || dreh > 0.5) && steuerbar()) aufstehen();
-    if(figur.aktion === 'roll'){                                // Sprungrolle: geradeaus weiter
-      figur.ausschlag = 0;
-      const k = figur.rollV / EVA_SPEED * (figur.aktT < ROLL_WEG_T ? 1 : 0);
-      return updateEvaOrig(dt, { pitch: -k });
+    if(figur.aktion === 'roll'){
+      // Sprungrolle: gleichmaessiger Schwung aus dem Lauf (die Hueftkurve des Clips stockt in der Mitte
+      // und sah ruckelig aus). Gegen Ende: Stick gehalten -> nahtlos weiterlaufen, sonst ausbremsen.
+      figur.rollStick = a;
+      const t = figur.aktT, ende = figur.acts.roll.getClip().duration / ROLL_TEMPO;
+      const k = klemme((t - ROLL_BREMS_AB * ende) / ((1 - ROLL_BREMS_AB) * ende), 0, 1);
+      const v = figur.rollV * (a > 0.3 ? 1 : 1 - 0.8 * k * k * (3 - 2 * k));
+      return updateEvaOrig(dt, { pitch: -klemme(v / EVA_SPEED, 0, 1), yaw: (inp.yaw || 0) * 0.3 });
     }
     if(!steuerbar() || figur.kniet || figur.aktion === 'jump'){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
     figur.ausschlag = a;
@@ -233,17 +250,20 @@ function hookFigur(){
   };
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
-const ROLL_WEG_T = 1.9;       // s: so lange rollt er vorwaerts (Clip 2,37 s, danach steht er auf)
+// Sprungrolle: konstanter Schwung (rollV, aus dem Lauftempo), ab ROLL_BREMS_AB der Clipdauer bremst
+// sie aus, wenn der Stick losgelassen ist.
+const ROLL_TEMPO = 1.15;      // Clip etwas schneller abspielen – fluessiger
+const ROLL_BREMS_AB = 0.6;
 const SPRUNG_FREI = 1.5;      // s: danach darf der Stick den Sprung abbrechen
 function springen(){
   if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet) return;
   if(figur.tempo > 0.3 && figur.acts.roll){
     figur.aktion = 'roll'; figur.aktT = 0;
-    figur.rollV = klemme(figur.tempo, 2.2, 4.0);
-    figur.cur = null; figurAnim('roll', 0.12, 1);
+    figur.rollV = klemme(figur.tempo, 2.2, 3.6); figur.rollStick = 1;
+    figurAnim('roll', 0.15, ROLL_TEMPO);
   } else if(figur.acts.jump){
     figur.aktion = 'jump'; figur.aktT = 0;
-    figur.cur = null; figurAnim('jump', 0.12, 1);
+    figurAnim('jump', 0.12, 1);
   }
 }
 // A (Controller) / Enter (Tastatur): hinknien bzw. wieder aufstehen. Die Engine nutzt A zu Fuss
@@ -264,7 +284,7 @@ function knieTaste(){
 function hinknien(){
   if(!figur.acts.kneel) return;
   figur.kniet = true;
-  figur.cur = null; figurAnim('kneel', 0.35, 1);
+  figurAnim('kneel', 0.35, 1);
   fuchsRufen();
 }
 function aufstehen(){
@@ -307,9 +327,11 @@ function updateFigur(dt){
   if(figur.aktion){
     figur.aktT += dt;
     const clip = figur.acts[figur.aktion].getClip();
-    const frei = figur.aktion === 'jump' ? SPRUNG_FREI : clip.duration - 0.25;
-    if(figur.aktT < frei || (figur.aktT < clip.duration - 0.1 && figur.ausschlag < 0.1)) return;
-    figur.aktion = null;
+    const frei = figur.aktion === 'jump' ? SPRUNG_FREI : clip.duration / ROLL_TEMPO - 0.3;
+    const dauer = clip.duration / figur.acts[figur.aktion].timeScale;
+    const stick = figur.aktion === 'roll' ? figur.rollStick : figur.ausschlag;
+    if(figur.aktT < frei || (figur.aktT < dauer - 0.1 && stick < 0.1)) return;
+    figur.aktion = null;                          // naechster Clip blendet aus dem Endbild
   }
   if(figur.kniet) return;
   if(sw.aktiv){ figurAnim('swim', 0.3, 0.6 + figur.ausschlag * 0.6); figur.steht = 0; return; }
@@ -321,6 +343,31 @@ function updateFigur(dt){
     if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); return; }
     else figurAnim('idle', 0.3, 1);
   }
+}
+// ---- Figur-Absicherung + Diagnose (?debug) – wie kenjiWache in Spiel_SFG -----------------------
+// Gemeldet: die Figur verschwindet nach einer Weile Gitarrespielen (lokal im Test nicht nachstellbar).
+// Jedes Bild: in eva.group einhaengen, sichtbar, kein Culling. Mit ?debug steht unten links der Zustand.
+const DEBUG = /[?&]debug\b/.test(location.search);
+let dbgEl = null, dbgT = 0;
+function figurWache(dt){
+  if(!figur.obj || !eva || !eva.group || eva.rover || eva.boat) return;
+  if(figur.obj.parent !== eva.group){ eva.group.clear(); eva.group.add(figur.obj); story.figurRepariert = (story.figurRepariert || 0) + 1; }
+  eva.group.visible = true;
+  figur.obj.traverse(o => { o.visible = true; if(o.isMesh) o.frustumCulled = false; });
+  if(!DEBUG) return;
+  dbgT -= dt; if(dbgT > 0) return; dbgT = 0.5;
+  if(!dbgEl){
+    dbgEl = document.createElement('div');
+    dbgEl.style.cssText = 'position:absolute;left:8px;bottom:28px;color:#ff0;font:12px monospace;'
+      + 'background:rgba(0,0,0,.5);padding:4px 6px;z-index:40;pointer-events:none;white-space:pre;';
+    document.body.appendChild(dbgEl);
+  }
+  const p = eva.group.position, w = new THREE.Vector3(); let mesh = null;
+  figur.obj.traverse(o => { if(o.isMesh) mesh = o; });
+  if(mesh) mesh.getWorldPosition(w);
+  const laufen = Object.keys(figur.acts).filter(n => figur.acts[n].isRunning()).map(n => n + ':' + figur.acts[n].getEffectiveWeight().toFixed(2));
+  dbgEl.textContent = 'Figur ' + figur.cur + ' steht=' + figur.steht.toFixed(1) + ' eva=' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ',' + p.z.toFixed(1)
+    + ' mesh=' + w.x.toFixed(1) + ',' + w.y.toFixed(1) + ',' + w.z.toFixed(1) + ' repariert=' + (story.figurRepariert || 0) + '\nClips: ' + laufen.join(' ');
 }
 // Punkt relativ zur Figur: vor = Meter nach vorn (Blickrichtung), links = Meter nach links
 function nebenFigur(vor, links){
@@ -487,8 +534,16 @@ function fuchsClipLaeuft(name){
   const a = fuchs.acts[name];
   return fuchs.cur === name && a && a.time < a.getClip().duration - 0.05;
 }
-// Wo darf er laufen? Gras und Sand – nicht ins Wasser, nicht in Waende
-function fuchsFrei(x, z){ return (isOnLand(x, z) || isOnBeach(x, z)) && !hitsBuilding(x, ISLAND_Y + 0.5, z, false); }
+// Wo darf er laufen? Gras, Sand und der Huetten-Innenraum – nicht ins Wasser (auch nicht ins Flache), nicht in Waende
+function fuchsFrei(x, z){ return evaSolid(x, z) && watGrund(x, z) === null && !hitsBuilding(x, ISLAND_Y + 0.5, z, false); }
+// Die Figur wechselt durch die Huettentuer (huette_innen.js): der Fuchs kommt mit – ausser er wartet noch am Strand
+story.fuchsZu = function(ziel){
+  if(!fuchs.obj || !fuchs.aktiv || fuchs.modus === 'warten' || !eva) return;
+  const n = nebenFigur(-1.2, 0.8);
+  fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z);
+  fuchs.yaw = eva.yaw + Math.PI; fuchs.ziel = null; fuchs.warte = 1.5;
+  if(fuchs.modus !== 'streifen'){ fuchs.modus = 'streifen'; fuchs.sitzt = false; }
+};
 // Fuchs bei (x, z) in die Welt setzen, Blick p.blick (Winkel ab +Z), p.modus (Standard: streifen)
 function fuchsAbsetzen(p){
   if(!fuchs.obj){ fuchs.wartetAuf = p; return; }
@@ -817,15 +872,31 @@ function hookLoop(){
     timerTick(dt);
     knieTaste();
     updateFigur(dt);
+    figurWache(dt);
+    planeGroup.visible = !eva;                // X-Wing nur sichtbar, wenn man drin sitzt
     updateFuchs(dt);
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
+    if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     weltenSichtbar();
     return loopOrig.apply(this, arguments);
   };
 }
 
+// ---- HUD: ausgeblendet (Live-Wunsch 14.10.) ----------------------------------------------------
+// Kein Radar, kein Gyroskop, keine linke Anzeige (Modell/Hoehe/Speed/Sprung/Symbole), kein
+// Controller-Hinweis. Das grosse Bestaetigungssymbol (#big) bleibt, ist aber leer gefiltert.
+// Ideen, falls doch ein HUD gebraucht wird: statt "Modell: Detektiv" + Astronauten-Symbol nur der
+// Name (Joshi) und Joshis Gesicht als kleines Icon (aus dem Figur-Render ausschneiden) – sonst nichts.
+const HUD_AUS = ['hud', 'radar', 'gyro', 'pad'];
+function hookHudAus(){
+  const st = document.createElement('style');
+  st.textContent = HUD_AUS.map(id => '#' + id).join(',') + '{display:none!important}';
+  document.head.appendChild(st);
+}
+
 window.STORY_HOOK = function(){
+  hookHudAus();
   hookWelt();
   hookNacht();
   hookFigur();
@@ -838,6 +909,8 @@ window.STORY_START = function(){
   fadeHold = 0; flashFade(1.0);    // den Hangar-Vorhang der Engine nicht abwarten
   evaExit();                       // die Figur steht neben dem X-Wing ...
   startSzene();                    // ... und wird in die Huette gestellt
-  startbildschirm(() => spaeter(2.0, durchsage));
+  // Durchsage vorerst aus (Live-Wunsch 14.10.: Text erstmal weglassen) – Funkgeraet bleibt stehen
+  // startbildschirm(() => spaeter(2.0, durchsage));
+  startbildschirm(() => {});
 };
 })();

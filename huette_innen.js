@@ -192,8 +192,13 @@ function hookInnen(){
   const camOrig = updateCamera;
   const _soll = new THREE.Vector3();
   updateCamera = function(){
-    const r = camOrig.apply(this, arguments);
-    if(innen.drin && eva){
+    // Innen ersetzt diese Kamera die der Engine ganz (vorher liefen beide, und jede zog in ihre Richtung –
+    // das ruckelte massiv)
+    if(!(innen.drin && eva)) return camOrig.apply(this, arguments);
+    {
+      // Umsehen mit dem rechten Stick (I/J/K/L) wie draussen, ohne Eingabe zurueck hinter die Figur
+      if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;
+      else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
       const p = eva.group.position, yaw = eva.yaw + evaOrbit, m = 0.3;
       _soll.set(p.x + Math.sin(yaw) * 3.4, BODEN_Y + 1.9, p.z + Math.cos(yaw) * 3.4);
       // an den Waenden klemmen – vorn an der Tuerwand INNEN (nie in die Oeffnung, dort sah man das Meer)
@@ -211,7 +216,6 @@ function hookInnen(){
       camera.up.set(0, 1, 0);
       camera.lookAt(p.x, p.y + 0.75, p.z);
     }
-    return r;
   };
   // Meer und Moewen drinnen gedaempft
   const ambOrig = updateAmbient;

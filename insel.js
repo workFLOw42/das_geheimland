@@ -131,11 +131,17 @@ function baueHuette(){
       if(o){ stueck(0, o[2]); stueck(o[3], H); }
       else stueck(0, H);
     }
-    // Brettfugen (dunkle Linien) fuer den Holz-Look, aussen und innen
+    // Brettfugen (dunkle Linien) fuer den Holz-Look, aussen und innen – nur auf der Wand, nicht quer
+    // durch Tuer- und Fensteroeffnungen (sah im Eingang wie Latten aus)
     for(let y = 0.3; y < H; y += 0.3){
-      for(const sgn of [1, -1]){
-        const f = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.025, 0.01), dunkel);
-        f.position.set(0, y, sgn * (D / 2 + 0.004)); wg.add(f);
+      for(let i = 0; i < xs.length - 1; i++){
+        const a = xs[i], b = xs[i + 1];
+        const o = oeffnungen.find(q => Math.abs(q[0] - a) < 1e-6 && Math.abs(q[1] - b) < 1e-6);
+        if(b - a < 0.001 || (o && y > o[2] && y < o[3])) continue;
+        for(const sgn of [1, -1]){
+          const f = new THREE.Mesh(new THREE.BoxGeometry(b - a, 0.025, 0.01), dunkel);
+          f.position.set((a + b) / 2, y, sgn * (D / 2 + 0.004)); wg.add(f);
+        }
       }
     }
     // Fensterrahmen

@@ -121,19 +121,71 @@ function hookWelt(){
 // Das Geheimland beginnt nachts: dunkelblauer Himmel, Sterne, gedimmtes Licht. SKY_DAY ist ein
 // const-Objekt der Engine – die Farbe selbst darf man umsetzen, updateSpaceBlend mischt dann
 // von dort ins All. Licht und Sterne werden nach dem Original-Aufruf nachgezogen.
-const NACHT_HIMMEL = 0x0d1a3a;
+// Sternhimmel: Sternenkuppel (3 x 780 Sterne) + Milchstrassen-Panorama der Engine (beide sonst nur im
+// All) und ein Mond schraeg hinter der Huette. Alle drei ohne Nebel – der Erdnebel endet bei 3 km,
+// die Kuppel liegt bei 1,2 Mio. m und waere sonst verschluckt. Das Mondlicht (sun) kommt aus seiner Richtung.
+const NACHT_HIMMEL = 0x0b1633;
+const NACHT_MW = 0.75;                           // Milchstrasse: deutlich, aber nicht grell (Engine im All: 1,6)
+// Mond schraeg hinter der Huette (vom Startplatz am Feuer aus im Blick), nicht zu hoch – dann sieht ihn die Verfolgerkamera
+const MOND = { az: Math.PI + 0.45, hoch: 0.2, r: 22000, dist: 900000 };   // Richtung (rad ab +z), Hoehenwinkel, Radius, Abstand
+const mond = { obj: null, halo: null, laedt: false };
+function nachtOhneNebel(obj){
+  obj.traverse(o => { if(!o.material) return; for(const m of (Array.isArray(o.material) ? o.material : [o.material])){ m.fog = false; m.needsUpdate = true; } });
+}
+function baueMond(){
+  if(mond.laedt || !window.MOON_GLB) return;
+  mond.laedt = true;                             // nur EINMAL laden (der Callback kommt erst spaeter)
+  preloadSphereGLB(window.MOON_GLB, MOND.r, (g) => {
+    g.traverse(o => { if(!o.isMesh) return;
+      const src = Array.isArray(o.material) ? o.material[0] : o.material;
+      // selbstleuchtend: der Mond soll hell sein, egal wo das Licht der Szene steht
+      o.material = new THREE.MeshBasicMaterial({ map: src && (src.map || src.emissiveMap), color: 0xfff6dc, fog: false });
+      o.frustumCulled = false; o.renderOrder = -1; });
+    scene.add(g);                                                   // global-ok: Himmel gehoert keiner Welt
+    mond.obj = g;
+    // weicher Lichthof um den Mond
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), gr = x.createRadialGradient(64, 64, 10, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,245,210,.55)'); gr.addColorStop(0.35, 'rgba(200,215,255,.18)'); gr.addColorStop(1, 'rgba(200,215,255,0)');
+    x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+    mond.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), fog: false, depthWrite: false, transparent: true }));
+    mond.halo.scale.setScalar(MOND.r * 3.2); mond.halo.renderOrder = -2;
+    scene.add(mond.halo);                                           // global-ok: Himmel
+  });
+}
 function hookNacht(){
   SKY_DAY.set(NACHT_HIMMEL);
+  cloudMat.color.setHex(0x3a4766);                  // Wolken nachts dunkel-blaugrau statt weiss
   const orig = updateSpaceBlend;
+  const _r = new THREE.Vector3();
   updateSpaceBlend = function(dt){
     const r = orig.apply(this, arguments);
     if(locale === 'earth'){
       const tag = spaceBlend;                    // 0 = am Boden, 1 = im All
       hemiLight.intensity = 0.45 + 0.1 * tag;    // Mondlicht: man soll noch alles gut erkennen
       sun.intensity = 0.35 + 0.5 * tag;
-      if(starDome){ starDome.visible = true; starDome.position.copy(camera.position); }
-      if(starMat) starMat.opacity = Math.max(starMat.opacity, 0.9);
-    }
+      if(starDome){ if(!starDome.userData.nacht){ nachtOhneNebel(starDome); starDome.userData.nacht = true; }
+        starDome.visible = true; starDome.position.copy(camera.position); }
+      if(starMat) starMat.opacity = Math.max(starMat.opacity, 1);
+      // Panorama additiv: das Foto hat schwarzen Weltraum und deckte den dunkelblauen Nachthimmel ab –
+      // addiert bleibt das Blau, und Band und Nebel leuchten darauf. Im All (tag -> 1) wieder wie die Engine.
+      if(mwMat){ const add = tag < 0.5;
+        if(mwMat.userData.add !== add){ mwMat.userData.add = add; mwMat.blending = add ? THREE.AdditiveBlending : THREE.NormalBlending; mwMat.transparent = add; mwMat.needsUpdate = true; } }
+      if(mwDome){ if(!mwDome.userData.nacht){ nachtOhneNebel(mwDome); mwDome.userData.nacht = true; }
+        mwDome.visible = true; mwDome.position.copy(camera.position);
+        // schraeg ueber den Himmel gelegt, damit das Band von der Insel aus gut zu sehen ist
+        mwDome.rotation.set(0.9, 0.4, 0.35);
+        if(mwMat){ const s = Math.max(NACHT_MW, tag * MW_BRIGHT); mwMat.color.setRGB(s, s, s); } }
+      baueMond();
+      if(mond.obj){
+        _r.set(Math.sin(MOND.az) * Math.cos(MOND.hoch), Math.sin(MOND.hoch), Math.cos(MOND.az) * Math.cos(MOND.hoch));
+        mond.obj.position.copy(camera.position).addScaledVector(_r, MOND.dist);
+        mond.halo.position.copy(camera.position).addScaledVector(_r, MOND.dist * 1.02);   // knapp hinter dem Mond
+        mond.obj.visible = mond.halo.visible = true;
+        sun.position.copy(_r).multiplyScalar(400);                  // Mondlicht kommt vom Mond
+        sun.color.setHex(0xc8d6ff);
+      }
+    } else if(mond.obj){ mond.obj.visible = mond.halo.visible = false; sun.color.setHex(0xffffff); }
     return r;
   };
 }

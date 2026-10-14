@@ -23,7 +23,14 @@ const EINSTIEG_AB = STEG.zUfer + (STEG.zEnde - STEG.zUfer) * 2 / 3;   // letztes
 const TEXT_NOCH_NICHT = ['Du hast hier noch nicht alles entdeckt. Bitte schaue dich in Ruhe weiter um.'];
 const RAND = 0.35;      // m: so weit vom Stegrand bleibt die Figur (Koerper) – man faellt nicht hinunter
 story.steg = STEG; story.boot = BOOT;
-const s = { gruppe: null, boot: null, bootInnen: null, imBoot: false, t: 0, wechsel: null, sperre: 0, zeichen: null };
+// bx/bz/yaw: wo das Boot gerade ist (es faehrt, siehe updateFahrt), v = Fahrt (m/s)
+const s = { gruppe: null, boot: null, bootInnen: null, imBoot: false, t: 0, wechsel: null, sperre: 0, zeichen: null,
+  bx: BOOT.x, bz: BOOT.z, yaw: 0, v: 0, eingabe: null, koerper: null };
+const FAHRT_MAX = 3.2, FAHRT_RUECK = 0.8;   // m/s vorwaerts / rueckwaerts
+const DREH_MAX = 0.55;                      // rad/s in voller Fahrt (im Stand dreht es kaum)
+const FAHRT_WEIT = 260;                     // m: so weit faehrt es vom Steg weg (dahinter laedt die Engine keine Inseln)
+const ANLEGEN = 9;                          // m: so nah am Liegeplatz kann man aussteigen
+const TEXT_ZURUECK = ['Fahr erst zurück zum Steg. Dann kannst du aussteigen.'];
 story.stegZustand = s;
 
 // ---- Boden und Grenzen -----------------------------------------------------------------------
@@ -36,32 +43,60 @@ function stegY(z){
   const k = Math.min(1, (z - STEG.zUfer) / 3);
   return sand + (STEG.H - sand) * k;
 }
-// Darf die Figur nach (x, z)? Auf dem Steg: nur innerhalb der Raender, nicht ueber das Ende hinaus.
+// Gilt fuer (x, z) der Steg als Boden? Nur fuer den, der OBEN ist (Live-Wunsch 15.10.: man soll seitlich und am Ende
+// ins Wasser fallen und schwimmen koennen – wer im Wasser ist, schwimmt UNTER dem Steg durch und klettert nicht
+// hinauf; nur die flache Rampe am Ufer kann man vom Wasser aus betreten).
+const STUFE = 0.45;     // m: so hoch kann die Figur hinaufsteigen
+// y: Hoehe dessen, der fragt – fuer Joshis eigene Schritte (story.schrittVon) seine Hoehe; der Fuchs & Co. stehen
+// immer oben.
+function stegGilt(x, z, y){
+  if(!aufSteg(x, z)) return false;
+  if(!eva || z <= STEG.zUfer) return true;
+  if(story.schwimm && story.schwimm.aktiv) return false;
+  if(y === undefined){ const von = story.schrittVon && story.schrittVon(); if(!von) return true; y = von.y; }
+  return y > stegY(z) - STUFE;
+}
+// Darf die Figur nach (x, z)? Auf dem Steg frei; nur entlang des Boots ist die linke Kante eine Grenze (dort liegt
+// das Boot, hinein kommt man mit Y).
 function stegFrei(x, z){
-  if(!aufSteg(x, z)) return null;                               // nicht auf dem Steg: andere Regeln
-  if(Math.abs(x - STEG.x) > STEG.B / 2 - RAND) return z < STEG.zUfer;   // Rand: auf dem Sandteil darf man seitlich runter
-  if(z > STEG.zEnde - RAND) return false;                       // vorn: Ende
+  if(!stegGilt(x, z)) return null;                              // nicht auf dem Steg: andere Regeln
+  if(z > s.bz - BOOT.laenge / 2 - 0.3 && z < s.bz + BOOT.laenge / 2 + 0.3 && x < STEG.x - STEG.B / 2 + RAND && s.bx === BOOT.x) return false;
   return true;
 }
-// Ist (x, z) knapp neben dem Steg im Wasser (dort, wo man hinunterfiele)? Dann: Grenze
-function nebenStegImWasser(x, z){
-  return z > STEG.zUfer && z < STEG.zEnde + 0.6 && Math.abs(x - STEG.x) < STEG.B / 2 + 0.6 && !aufSteg(x, z) && !imBootPlatz(x, z);
-}
-function imBootPlatz(x, z){ return Math.abs(x - BOOT.x) < 1.3 && Math.abs(z - BOOT.z) < BOOT.laenge / 2; }
+function amBoot(x, z){ return Math.abs(x - BOOT.x) < 1.6 && Math.abs(z - BOOT.z) < BOOT.laenge / 2 + 0.4; }
 function hookSteg(){
   const solidOrig = evaSolid, fussOrig = evaFootY, wasserOrig = isOpenWater, insWasserOrig = evaEnterDinghy;
   evaSolid = function(x, z){
-    if(locale === 'earth'){
-      const f = stegFrei(x, z); if(f !== null) return f;
-      if(eva && aufSteg(eva.group.position.x, eva.group.position.z) && nebenStegImWasser(x, z)) return false;   // nicht vom Steg ins Wasser
-    }
+    if(locale === 'earth'){ const f = stegFrei(x, z); if(f !== null) return f; }
     return solidOrig.apply(this, arguments);
   };
-  evaFootY = function(x, z){ if(locale === 'earth' && aufSteg(x, z)) return stegY(z); return fussOrig.apply(this, arguments); };
-  isOpenWater = function(x, z){ if(locale === 'earth' && (aufSteg(x, z) || nebenStegImWasser(x, z))) return false; return wasserOrig.apply(this, arguments); };
-  // vom Steg aus nie ins Wasser fallen (die Engine sucht an der Kante bis 9 m voraus nach Wasser)
-  evaEnterDinghy = function(){ if(eva && aufSteg(eva.group.position.x, eva.group.position.z)) return; return insWasserOrig.apply(this, arguments); };
+  evaFootY = function(x, z){ if(locale === 'earth' && stegGilt(x, z)) return stegY(z); return fussOrig.apply(this, arguments); };
+  isOpenWater = function(x, z){ if(locale === 'earth' && stegGilt(x, z)) return false; return wasserOrig.apply(this, arguments); };
+  // Vom Steg ins Wasser: die Engine sucht an der Kante bis 9 m voraus nach Wasser und setzte die Figur sonst hinter
+  // das Boot. Vom Steg aus also nur direkt neben der Kante (1,5 m) und nie am Boot vorbei.
+  evaEnterDinghy = function(x, z){
+    if(eva && locale === 'earth' && stegGilt(eva.group.position.x, eva.group.position.z, eva.group.position.y)){
+      const p = eva.group.position;
+      if(Math.hypot(x - p.x, z - p.z) > 1.5 || amBoot(x, z)) return;
+    }
+    return insWasserOrig.apply(this, arguments);
+  };
+  // Seitlich vom Steg ins flache Wasser (Watzone am Ufer): die Engine setzte die Figur sofort 0,7 m tiefer auf den
+  // Grund – stattdessen faellt sie sichtbar hinunter (Schwerkraft der Engine).
+  // Nur am Steg (die Huettentuer setzt die Figur 150 m tiefer – das ist kein Sturz).
+  const updOrig = updateEva;
+  updateEva = function(dt){
+    const p = eva && eva.group.position;
+    const amSteg = p && locale === 'earth' && !s.imBoot && Math.abs(p.x - STEG.x) < STEG.B / 2 + 1 && p.z > STEG.zUfer && p.z < STEG.zEnde + 1;
+    const vorher = amSteg ? p.y : null;
+    const r = updOrig.apply(this, arguments);
+    if(vorher !== null && eva && eva.onGround && vorher - eva.group.position.y > 0.2 && vorher - eva.group.position.y < 2 && !(story.schwimm && story.schwimm.aktiv)){
+      eva.group.position.y = vorher; eva.onGround = false; eva.vy = 0;
+    }
+    return r;
+  };
 }
+story.stegBoden = (x, z) => (locale === 'earth' && eva && stegGilt(x, z, eva.group.position.y)) ? stegY(z) : null;
 
 // ---- Bauen -----------------------------------------------------------------------------------
 function baue(){
@@ -113,7 +148,10 @@ function ladeBoot(w){
     m.scale.multiplyScalar(k);
     // Wasserlinie: das blaue Unterwasserschiff (im Modell bis y ~0,8) soll unter Wasser sein (Live-Hinweis: Blau am Ruder =
     // Wasserlinie), der hoelzerne Bootsboden (y 0,96) aber darueber bleiben – sonst stuende das Meer im Boot
-    const WASSERLINIE = 0.8;
+    // Wasserlinie (ausgemessen): blauer Rumpf bis y 0,74 an der Seite, 0,94 am Ruder; tiefste Stelle innen = weisse
+    // Innenwand bei 0,46. Bei 0,35 bleibt das Meer unter dem Bootsinneren (kein Wasser im Boot, auch auf dem Wellenberg),
+    // und es ist noch etwas Blau zu sehen – an der Seite und am Ruder (Live-Hinweis).
+    const WASSERLINIE = 0.35;
     m.position.set(-c.x * k, -WASSERLINIE * k, -c.z * k);
     // Farben nachts: Segel und Rumpf etwas aufhellen (fast schwarz), matt
     m.traverse(o => { if(o.isMesh && o.material){ for(const mt of (Array.isArray(o.material) ? o.material : [o.material])){ mt.metalness = 0;
@@ -122,14 +160,63 @@ function ladeBoot(w){
     // Live-Befund: der Bug des Modells liegt bei +z (nicht -z) – ungedreht zeigt er schon aufs Meer (+z in der Welt).
     // (Mit der 180-Grad-Drehung schaute das Boot zum Strand.)
     innen.rotation.y = 0;
+    // Das Modell selbst liegt um rund 14 Grad schief (ausgemessen: Bordwand links 0,4 m tiefer als rechts) – Live-Wunsch:
+    // nur noch die Haelfte davon, eine leichte Kraengung ist beim Segelboot schoen
+    innen.rotation.z = -0.12;
     const g = new THREE.Group(); g.add(innen); g.position.set(BOOT.x, 0, BOOT.z);
+    // leichter Schatten im Wasser (wie Joshi und der Fuchs): weiches Oval in Rumpfgroesse, knapp ueber der Oberflaeche
+    const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sx = sc.getContext('2d'), gr = sx.createRadialGradient(32, 32, 4, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(0.6, 'rgba(0,0,0,.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = gr; sx.fillRect(0, 0, 64, 64);
+    const schatten = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, fog: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    schatten.rotation.x = -Math.PI / 2; schatten.scale.set(3.4, BOOT.laenge * 1.15, 1); schatten.renderOrder = 1;
+    w.add(schatten); s.schatten = schatten;
+    // Helle Gischt entlang der Wasserlinie (Live-Wunsch: mehr Kontrast zum dunklen Meer): ein schmaler, weicher Ring in
+    // Rumpfform auf der Wasseroberflaeche, innen hell, aussen auslaufend; Tiefentest an (der Rumpf verdeckt ihn vorn)
+    // Ring als eigene Geometrie (innen leer, aussen weich): Ellipse in Rumpfgroesse, 48 Segmente, innerer und aeusserer
+    // Rand; Vertexfarben fuer das Auslaufen (innen weiss, aussen transparent)
+    const N = 48, rx0 = 1.18, rz0 = BOOT.laenge * 0.5, breit = 0.55;
+    const pos = [], col = [], idx = [];
+    for(let i = 0; i <= N; i++){
+      const a = i / N * Math.PI * 2, c = Math.cos(a), s2 = Math.sin(a);
+      const spitz = 1 - 0.18 * Math.max(0, s2);                    // vorn (Bug, +z) etwas spitzer
+      pos.push(c * rx0 * spitz, 0, s2 * rz0, c * (rx0 + breit) * spitz, 0, s2 * (rz0 + breit));
+      col.push(0.92, 0.96, 1, 0.92, 0.96, 1);
+      if(i < N){ const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    const alpha = []; for(let i = 0; i <= N; i++) alpha.push(0.9, 0);  // innen deckend, aussen auslaufend
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute('alpha', new THREE.Float32BufferAttribute(alpha, 1)); geo.setIndex(idx);
+    const gmat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,
+      uniforms: { staerke: { value: 0.8 } },
+      vertexShader: 'attribute float alpha; varying float va; varying vec3 vc; attribute vec3 color; void main(){ va = alpha; vc = color; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform float staerke; varying float va; varying vec3 vc; void main(){ gl_FragColor = vec4(vc, va * staerke); }' });
+    const gischt = new THREE.Mesh(geo, gmat); gischt.renderOrder = 2; gischt.frustumCulled = false;
+    w.add(gischt); s.gischt = gischt;
     w.add(g); s.boot = g; s.bootInnen = innen;
     // Plaetze im Boot (Live-Skizze): Fuchs vorn im Bug vor dem Mast (Modell z ~ 3,0), Joshi im Heck (Modell z ~ -2,6).
     // Bootskoordinate = (Modell-z - Rumpfmitte) * k
     s.platzFuchs = (3.0 - c.z) * k; s.platzJoshi = (-2.6 - c.z) * k;
-    s.deckY = (0.96 - WASSERLINIE) * k + 0.05;                     // Holzboden im Boot (Modell y 0,96) ueber der Wasserlinie
-    story.koerper(null, { x: BOOT.x, z: BOOT.z, hx: 1.25, hz: BOOT.laenge / 2, h: 8 });   // man laeuft nicht ins Boot (nur mit Y)
+    s.deckY = (0.62 - WASSERLINIE) * k;                            // Bootsboden innen (zwischen Innenwand 0,46 und Holz 0,96)
+    s.koerper = story.koerper(null, { x: BOOT.x, z: BOOT.z, hx: 1.0, hz: BOOT.laenge / 2, rot: 0, h: 8 });   // man laeuft nicht ins Boot (nur mit Y); faehrt mit
+    meerImBootAus();
   });
+}
+// Kein Wasser im Boot (Live-Wunsch, zusaetzlich zur Wasserlinie): das Meer wird im Umriss des Rumpfs nicht gezeichnet.
+// Das Meer ist ein Mesh der Engine (ground); sein Shader bekommt die Weltposition und verwirft alles, was in Boots-
+// koordinaten innerhalb der Rumpf-Ellipse liegt (etwas kleiner als die Bordwand, damit aussen keine Luecke entsteht).
+const bootUni = { bootInv: { value: new THREE.Matrix4() }, bootAn: { value: 0 } };
+function meerImBootAus(){
+  const mat = ground.material;                                  // global-ok: Meer der Engine
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.bootInv = bootUni.bootInv; sh.uniforms.bootAn = bootUni.bootAn;
+    sh.vertexShader = 'varying vec3 vBootW;\n' + sh.vertexShader.replace('#include <project_vertex>',
+      '#include <project_vertex>\n  vBootW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = 'uniform mat4 bootInv; uniform float bootAn; varying vec3 vBootW;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>',
+      '#include <clipping_planes_fragment>\n  if(bootAn > 0.5){ vec3 bl = (bootInv * vec4(vBootW, 1.0)).xyz; float ex = bl.x / 1.05, ez = bl.z / ' + (BOOT.laenge * 0.47).toFixed(2) + ';' +
+      ' if(ex * ex + ez * ez < 1.0) discard; }');
+  };
+  mat.needsUpdate = true;
 }
 
 // ---- Einsteigen / Aussteigen (Y) ----------------------------------------------------------------
@@ -165,6 +252,8 @@ function setzeUm(ziel){
   } else {
     s.imBoot = false;
     f.kniet = false;
+    // angelegt: das Boot liegt wieder an seinem Platz am Steg
+    s.bx = BOOT.x; s.bz = BOOT.z; s.yaw = 0; s.v = 0;
     const x = STEG.x, z = BOOT.z;
     g.position.set(x, stegY(z), z);
     eva.yaw = 0; g.rotation.y = eva.yaw;                          // Blick zum Strand
@@ -177,7 +266,11 @@ function hookBoot(){
   const yOrig = buttonY;
   buttonY = function(){
     if(s.wechsel) return;
-    if(s.imBoot){ wechsle('steg'); return; }
+    if(s.imBoot){
+      if(Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) < ANLEGEN){ wechsle('steg'); return; }
+      if(!s.hinweis){ s.hinweis = true; story.sprich(TEXT_ZURUECK, () => { s.hinweis = false; }); }
+      return;
+    }
     if(amEinstieg()){
       if(story.abenteuerLos){ wechsle('boot'); return; }
       if(!s.hinweis){ s.hinweis = true; story.sprich(TEXT_NOCH_NICHT, () => { s.hinweis = false; }); }
@@ -197,17 +290,60 @@ function hookBoot(){
     _k.set(b.x - Math.sin(yaw) * 5.2 - Math.cos(yaw) * 2.6, b.y + 3.0, b.z - Math.cos(yaw) * 5.2 + Math.sin(yaw) * 2.6);
     camera.position.lerp(_k, Math.min(1, 3 * dtCam)); camera.up.set(0, 1, 0); camera.lookAt(_z);
   };
-  // Im Boot: nicht laufen, nicht drehen (sitzt) – die Figur folgt dem schaukelnden Boot
+  // Im Boot: Joshi sitzt, der linke Stick faehrt das Boot (vor/zurueck, lenken) – siehe updateFahrt
   const updEvaOrig = updateEva;
-  updateEva = function(dt, inp){ if(s.imBoot && eva) return; return updEvaOrig.apply(this, arguments); };
+  updateEva = function(dt, inp){ if(s.imBoot && eva){ s.eingabe = inp; return; } return updEvaOrig.apply(this, arguments); };
 }
+// ---- Fahren (Live-Frage 15.10.: "kann das Boot wirklich losfahren?") ---------------------------------------------
+// Linker Stick vor = Fahrt voraus, zurueck = langsam rueckwaerts, seitlich = lenken (lenkt nur mit Fahrt, wie ein
+// Segelboot). Nicht an Land, nicht in die flache Watzone am Strand, nicht in den Steg. Steckt es schon fest, darf es
+// immer hinaus (Lehre aus dem Bagger: Grenzen duerfen nie festhalten).
+// Die Engine zaehlt in isOpenWater auch Bauwerke (hitsBuilding) – dazu gehoerte die Grenze des Boots selbst: es
+// blockierte sich (gemessen). Waehrend der Pruefung ist sie deshalb aus.
+function bootFrei(x, z, yaw){
+  if(s.koerper) s.koerper.aus = true;
+  try { return bootFreiRoh(x, z, yaw); } finally { if(s.koerper) s.koerper.aus = false; }
+}
+function bootFreiRoh(x, z, yaw){
+  const fx = Math.sin(yaw), fz = Math.cos(yaw), L = BOOT.laenge / 2;
+  for(const [v, q] of [[L, 0], [-L, 0], [0, 1.0], [0, -1.0], [L * 0.6, 0.8], [L * 0.6, -0.8], [-L * 0.6, 0.8], [-L * 0.6, -0.8]]){
+    const px = x + fx * v + fz * q, pz = z + fz * v - fx * q;
+    if(!isOpenWater(px, pz) || story.watGrund(px, pz) !== null) return false;
+    if(Math.abs(px - STEG.x) < STEG.B / 2 + 0.3 && pz > STEG.zSand && pz < STEG.zEnde + 0.4) return false;   // Steg + Pfaehle
+  }
+  return Math.hypot(x - BOOT.x, z - BOOT.z) < FAHRT_WEIT;
+}
+function updateFahrt(dt){
+  const inp = s.eingabe || {}; s.eingabe = null;
+  const gas = -(inp.pitch || 0), lenk = inp.yaw || 0;
+  const soll = gas > 0 ? gas * FAHRT_MAX : gas * FAHRT_RUECK;
+  s.v += (soll - s.v) * Math.min(1, dt * (Math.abs(soll) > Math.abs(s.v) ? 0.7 : 1.2));   // traege anfahren, etwas schneller bremsen
+  s.yaw -= lenk * DREH_MAX * Math.min(1, Math.abs(s.v) / 1.5 + 0.15) * Math.sign(s.v || 1) * dt;
+  const nx = s.bx + Math.sin(s.yaw) * s.v * dt, nz = s.bz + Math.cos(s.yaw) * s.v * dt;
+  // steckt es schon fest (z. B. am Liegeplatz knapp an der Watzone), darf es nur WEG von der Insel (Mitte 0,0)
+  const raus = !bootFrei(s.bx, s.bz, s.yaw) && Math.hypot(nx, nz) > Math.hypot(s.bx, s.bz);
+  if(bootFrei(nx, nz, s.yaw) || raus){ s.bx = nx; s.bz = nz; }
+  else s.v *= 0.3;                                              // angestossen: fast stehen bleiben
+}
+story.bootFrei = bootFrei;
 story.updateSteg = function(dt){
   if(story.etappe !== 1) return;
   baue();
   s.t += dt;
   // Boot schaukelt mit der Duenung
   // Boot schwimmt auf der Duenung, schaukelt nur leicht (es lag sichtbar schief)
-  if(s.boot){ const b = s.boot; b.position.y = seaYAt(BOOT.x, BOOT.z) * 0.9; b.rotation.z = Math.sin(s.t * 0.9) * 0.015; b.rotation.x = Math.sin(s.t * 0.6 + 1) * 0.01; b.updateMatrixWorld(true); }
+  // Schatten auf der Welle – wie der Ovalschatten der Engine beim Feuerwehrboot: auf den HOECHSTEN Wellenpunkt unter
+  // seiner Flaeche (Mitte + Bug/Heck + Seiten), nicht auf die Mitte – sonst tauchte der Rand ein bzw. lief Schatten und
+  // Boot mit den Wellen auseinander (Lehre aus dem Flugspiel). Mit Tiefentest verdeckt der Rumpf seinen Schatten.
+  if(s.imBoot && !s.wechsel) updateFahrt(dt);
+  if(s.schatten){ const L = BOOT.laenge * 0.55; let hoch = -1e9;
+    for(const [dx, dz] of [[0, 0], [0, L], [0, -L], [1.5, 0], [-1.5, 0], [1.1, L * 0.6], [-1.1, L * 0.6], [1.1, -L * 0.6], [-1.1, -L * 0.6]]) hoch = Math.max(hoch, seaYAt(s.bx + dx, s.bz + dz));
+    s.schatten.position.set(s.bx + 0.15, hoch + 0.03, s.bz); s.schatten.rotation.z = s.yaw;
+    if(s.gischt){ s.gischt.position.set(s.bx, hoch + 0.05, s.bz); s.gischt.rotation.y = s.yaw;
+      s.gischt.material.uniforms.staerke.value = 0.7 + Math.sin(s.t * 2.3) * 0.15 + Math.min(0.3, Math.abs(s.v) * 0.1); } }   // in Fahrt etwas mehr Gischt
+  if(s.boot){ const b = s.boot; b.position.set(s.bx, seaYAt(s.bx, s.bz), s.bz); b.rotation.set(Math.sin(s.t * 0.6 + 1) * 0.01, s.yaw, Math.sin(s.t * 0.9) * 0.015, 'YXZ'); b.updateMatrixWorld(true);
+    bootUni.bootInv.value.copy(b.matrixWorld).invert(); bootUni.bootAn.value = 1;
+    if(s.koerper){ s.koerper.x = s.bx; s.koerper.z = s.bz; s.koerper.rot = s.yaw; } }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit
   if(s.imBoot && eva && s.boot){
     // Joshi kniet hinten im Heck, zwischen hinterer Bank und Ruder (Live-Skizze; Modell z ~ -2,6), auf dem Bootsboden
@@ -228,6 +364,8 @@ story.updateSteg = function(dt){
   if(zeigen && !s.zeichen){ s.zeichen = yZeichen(); story.welt(1).add(s.zeichen); }
   if(s.zeichen){
     s.zeichen.visible = zeigen;
+    // im Boot: das Y zum Aussteigen nur, wenn das Boot am Steg liegt
+    if(s.imBoot && Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) >= ANLEGEN) s.zeichen.visible = false;
     if(zeigen){ const p = s.imBoot ? eva.group.position : new THREE.Vector3(BOOT.x, STEG.H, BOOT.z);
       s.zeichen.position.set(p.x, (s.imBoot ? p.y + 1.6 : STEG.H + 2.4) + Math.sin(s.t * 3) * 0.07, p.z); }
   }

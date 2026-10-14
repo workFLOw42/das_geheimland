@@ -9,7 +9,7 @@
 //
 // Zielgruppe: ein fast 6-jaehriges Kind. Alles Wichtige sagt die Stimme; Texte sind nur Beiwerk.
 // Steuerung zu Fuss (wie Trip to Japan): linker Stick (Pfeiltasten) gehen bis rennen · A (Leertaste) springen
-// (im Lauf: Sprungrolle) · B hinknien / aufstehen · X umherschauen · im Wasser: RT/LT (E/Q) tauchen.
+// (im Lauf: Sprungrolle) · B hinknien / aufstehen · X umherschauen · im Wasser: rechter Stick vor/zurueck (E/Q) tauchen.
 (function(){
 'use strict';
 
@@ -119,15 +119,25 @@ function fussHoehe(y){
   const luft = (figur.aktion === 'jump' && figur.aktT > 0.5 && figur.aktT < 1.05) || (figur.aktion === 'roll' && figur.aktT > 0.3 && figur.aktT < 0.9);
   return ISLAND_Y + (luft ? SPRUNG_HOEHE : 0);
 }
+// Wie tief steckt (x, z) in der Grenze k? > 0 = drin (m), <= 0 = frei
+function eindringen(k, x, z){
+  if(k.r !== undefined) return k.r + KOERPER_R - Math.hypot(x - k.x, z - k.z);
+  const c = Math.cos(k.rot || 0), s = Math.sin(k.rot || 0), dx = x - k.x, dz = z - k.z;
+  const lx = dx * c - dz * s, lz = dx * s + dz * c;            // in die Achsen des Objekts
+  return Math.min(k.hx + KOERPER_R - Math.abs(lx), k.hz + KOERPER_R - Math.abs(lz));
+}
+// Live-Befund (Bagger in der Huette): steckt Joshi schon IN einer Grenze (nach Blende, Absetzen, Sprungende), kam er
+// nicht mehr los, weil jeder Schritt gesperrt war. Darum: ein Schritt, der ihn nicht TIEFER hineinbringt, ist frei.
+story.schrittVon = () => (figurSchritt && eva) ? eva.group.position : null;
 function trifftKoerper(x, y, z){
-  const fuss = fussHoehe(y);
+  const fuss = fussHoehe(y), von = story.schrittVon();
   for(const k of koerperListe){
-    if(k.welt !== story.etappe) continue;
+    if(k.welt !== story.etappe || k.aus) continue;              // aus: z. B. das Boot, waehrend es seinen eigenen Weg prueft
     if(fuss > ISLAND_Y + (k.h || 1.5)) continue;               // Fuesse hoeher als das Hindernis: darueber hinweg
-    if(k.r !== undefined){ if(Math.hypot(x - k.x, z - k.z) < k.r + KOERPER_R) return true; continue; }
-    const c = Math.cos(k.rot || 0), s = Math.sin(k.rot || 0), dx = x - k.x, dz = z - k.z;
-    const lx = dx * c - dz * s, lz = dx * s + dz * c;          // in die Achsen des Objekts
-    if(Math.abs(lx) < k.hx + KOERPER_R && Math.abs(lz) < k.hz + KOERPER_R) return true;
+    const t = eindringen(k, x, z);
+    if(t <= 0) continue;
+    if(von && t <= eindringen(k, von.x, von.z) + 1e-6) continue;   // steckt schon drin: hinaus (oder entlang) darf er
+    return true;
   }
   return false;
 }
@@ -178,6 +188,10 @@ function hookWelt(){
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
       if(story.innen && story.innen.drin) ovalShadow.position.y = 150.05;   // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich
       if(story.imBoot && story.imBoot()) ovalShadow.visible = false;         // im Boot: der Schatten laege auf dem Wasser
+      // Auf dem Steg: die Engine kennt ihn nicht und legte den Schatten aufs Wasser darunter (live gemeldet)
+      const steg = story.stegBoden && story.stegBoden(ovalShadow.position.x, ovalShadow.position.z);
+      if(steg !== null && steg !== undefined) ovalShadow.position.y = steg + 0.03;
+      ovalShadowMat.opacity *= SCHATTEN_DECK;
     }
     return r;
   };
@@ -375,7 +389,8 @@ function hookFigur(){
   // Leertaste setzt in readInput Vollschub, X Schub 0 – zu Fuss soll beides den (unsichtbaren) X-Wing nicht
   // umstellen: den Schub nach readInput auf den Wert davor zuruecksetzen
   const readOrig = readInput;
-  readInput = function(){ const thr = state.throttle; const r = readOrig.apply(this, arguments); if(eva) state.throttle = thr; return r; };
+  // Beim Schwimmen gehoert der rechte Stick dem Tauchen (tauchEingabe) – die Kamera soll dabei nicht kippen
+  readInput = function(){ const thr = state.throttle; const r = readOrig.apply(this, arguments); if(eva) state.throttle = thr; if(sw.aktiv) lookY = 0; return r; };
   cycleModel = function(){};       // Fahrzeuge waehlt die Geschichte
   // Grosses Astronauten-Symbol beim Aussteigen passt nicht zur Figur
   const showBigOrig = showBig;
@@ -430,7 +445,8 @@ function hookFigur(){
   };
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
-const FIGUR_SCHATTEN = 0.5;   // m Radius des Bodenschattens unter Joshi
+const FIGUR_SCHATTEN = 0.38;  // m Radius des Bodenschattens unter Joshi (Live-Wunsch: kleiner, der Staub beim Laufen gibt Kontrast)
+const SCHATTEN_DECK = 0.6;    // Anteil der Engine-Deckkraft (0,18..0,40) – etwas durchsichtiger
 const KNIE_WINKEL = -1.05;     // rad: so weit schwenkt die Kamera beim Knien zur Seite (rechts von Joshi)
 const KAM_RUNDE = 40;         // s fuer eine Kreisfahrt der Kamera beim Gitarrespielen
 const KAM_WEIT = 1.6;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
@@ -544,6 +560,59 @@ function updateFigur(dt){
     else figurAnim('idle', 0.3, 1);
   }
 }
+// ---- Staub beim Laufen (Live-Wunsch 15.10.): hebt sich ein Fuss vom Sand/Gras, wirbelt dort ein kleines Woelkchen auf
+// (Kontrast zum kleineren, blasseren Schatten). Erkannt am Zehenknochen: war er unten und steigt ueber STAUB_HOCH -> Woelkchen.
+// Nicht auf dem Steg, im Wasser, beim Schwimmen oder im Innenraum.
+const STAUB_UNTEN = 0.08, STAUB_HOCH = 0.12, STAUB_DAUER = 0.8, STAUB_MAX = 30;
+const staub = { teile: [], tex: null, fuesse: null, frei: 0 };
+function staubTextur(){
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+  gr.addColorStop(0, 'rgba(255,255,255,.9)'); gr.addColorStop(0.5, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+function staubPuff(p, stark){
+  if(!staub.tex) staub.tex = staubTextur();
+  let t = staub.teile.find(q => q.alter >= STAUB_DAUER);
+  if(!t){
+    if(staub.teile.length >= STAUB_MAX) return;
+    // nachts kein leuchtendes Beige: gedecktes Sandgrau (Sprites sind unbeleuchtet)
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: staub.tex, color: 0xc2b694, transparent: true, depthWrite: false, opacity: 0 }));
+    sp.renderOrder = 3; welt(1).add(sp);
+    t = { sp, alter: STAUB_DAUER }; staub.teile.push(t);
+  }
+  t.alter = 0; t.stark = stark; t.sp.visible = true;
+  t.sp.position.set(p.x + (Math.random() - 0.5) * 0.06, p.y + 0.03, p.z + (Math.random() - 0.5) * 0.06);
+  t.dx = (Math.random() - 0.5) * 0.12; t.dz = (Math.random() - 0.5) * 0.12;
+}
+const _fp = new THREE.Vector3();
+function updateStaub(dt){
+  for(const t of staub.teile){
+    if(t.alter >= STAUB_DAUER){ t.sp.visible = false; continue; }
+    t.alter += dt; const k = Math.min(1, t.alter / STAUB_DAUER);
+    t.sp.position.x += t.dx * dt; t.sp.position.z += t.dz * dt; t.sp.position.y += 0.18 * dt * (1 - k);
+    t.sp.scale.setScalar(0.14 + 0.4 * Math.sqrt(k) * t.stark);
+    t.sp.material.opacity = 0.55 * t.stark * (1 - k) * Math.min(1, t.alter / 0.08);
+  }
+  if(!figur.obj || !eva || locale !== 'earth') return;
+  if(!staub.fuesse){
+    staub.fuesse = [];
+    figur.obj.traverse(o => { if(o.isBone && /ToeBase$/.test(o.name)) staub.fuesse.push({ bone: o, unten: true }); });
+  }
+  const g = eva.group.position;
+  const geht = figur.ausschlag > 0.05 && eva.onGround && !figur.kniet && !sw.aktiv && !(story.innen && story.innen.drin)
+    && !(story.imBoot && story.imBoot()) && !(story.aufSteg && story.aufSteg(g.x, g.z)) && watGrund(g.x, g.z) === null
+    && (isOnLand(g.x, g.z) || isOnBeach(g.x, g.z));
+  for(const f of staub.fuesse){
+    f.bone.getWorldPosition(_fp);
+    const h = _fp.y - evaFootY(_fp.x, _fp.z);
+    if(h < STAUB_UNTEN) f.unten = true;
+    else if(f.unten && h > STAUB_HOCH){ f.unten = false; if(geht) staubPuff({ x: _fp.x, y: evaFootY(_fp.x, _fp.z), z: _fp.z }, figur.ausschlag > 0.5 ? 1 : 0.65); }
+  }
+}
+story.staub = staub;
+
 // ---- Figur-Absicherung + Diagnose (?debug) – wie kenjiWache in Spiel_SFG -----------------------
 // Gemeldet: die Figur verschwindet nach einer Weile Gitarrespielen (lokal im Test nicht nachstellbar).
 // Jedes Bild: in eva.group einhaengen, sichtbar, kein Culling. Mit ?debug steht unten links der Zustand.
@@ -579,7 +648,7 @@ function nebenFigur(vor, links){
 
 // ---- Schwimmen (aus Spiel_SFG) ----------------------------------------------------------------
 // Laeuft die Figur ins Meer, watet sie erst (flacher Grund am Strand), dann schwimmt sie: linker
-// Stick bewegt und dreht, RT taucht ab, LT taucht auf (Tastatur: E / Q). An Land steht sie wieder.
+// Stick bewegt und dreht, rechter Stick vor taucht ab, zurueck taucht auf (Tastatur: E / Q). An Land steht sie wieder.
 const SCHWIMM_V   = 1.6;     // m/s
 const TAUCH_V     = 1.2;     // m/s auf und ab
 const SCHWIMM_TIEF = 0.35;   // m: so tief liegt der Koerper an der Oberflaeche im Wasser (Figur 1,20 m; Swim-Clip liegt waagerecht)
@@ -599,8 +668,9 @@ function tauchEingabe(){
   if(gamepadIndex !== null){
     const gp = navigator.getGamepads()[gamepadIndex];
     if(gp){
-      d -= gp.buttons[7] ? gp.buttons[7].value : 0;    // RT = runter
-      d += gp.buttons[6] ? gp.buttons[6].value : 0;    // LT = rauf
+      // rechter Stick wie das U-Boot (Flugspiel, Trip to Japan): nach vorn = abtauchen, zurueck = auftauchen
+      const ry = gp.axes[3] || 0;
+      if(Math.abs(ry) > 0.2) d += (ry - Math.sign(ry) * 0.2) / 0.8;
     }
   }
   return klemme(d, -1, 1);
@@ -727,7 +797,7 @@ function preloadFuchs(){
     fuchs.obj = wrap; fuchs.mixer = mixer; fuchs.cur = FA.stehen;
     // eigener weicher Bodenschatten (dasselbe Material wie Joshis Ovalschatten), haengt am Fuchs, liegt flach
     fuchs.schatten = new THREE.Mesh(new THREE.CircleGeometry(1, 24), ovalShadowMat.clone());   // eigene Kopie: die Engine aendert die Deckkraft des Originals mit Joshis Sprunghoehe
-    fuchs.schatten.material.opacity = 0.35;
+    fuchs.schatten.material.opacity = 0.22;                      // etwas durchsichtiger (Live-Wunsch 15.10.)
     fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.06;
     fuchs.schatten.rotation.z = fuchs.kopf;                      // Laengsachse zum Kopf
     wrap.add(fuchs.schatten);
@@ -1454,6 +1524,7 @@ function hookLoop(){
     figurTasten();
     updateFigur(dt);
     figurWache(dt);
+    updateStaub(dt);
     planeGroup.visible = !eva;                // X-Wing nur sichtbar, wenn man drin sitzt
     updateFuchs(dt);
     updateRadio(dt);

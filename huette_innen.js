@@ -265,12 +265,21 @@ const KOERPER = 0.3;
 // einer Wand bis 9 m voraus nach Wasser und haette sonst hinter der Rueckwand das Schwimmen gestartet.
 const HUELLE = 15;
 function imRaum(x, z){ return Math.abs(x - RAUM.x) < RAUM.B / 2 + HUELLE && Math.abs(z - RAUM.z) < RAUM.T / 2 + HUELLE; }
-function raumFrei(x, z){
+// Wie tief steckt (x, z) in Waenden und Moebeln (m, 0 = frei)?
+function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z;
-  if(Math.abs(lx) > RAUM.B / 2 - KOERPER || lz < -RAUM.T / 2 + KOERPER) return false;
-  if(lz > RAUM.T / 2 - KOERPER && !(Math.abs(lx) < TUER_B / 2 - 0.15 && lz < RAUM.T / 2 + 0.6)) return false;   // nur durch die Tuer
-  for(const m of innen.moebel || []) if(Math.abs(lx - m.x) < m.hx + KOERPER && Math.abs(lz - m.z) < m.hz + KOERPER) return false;
-  return true;
+  let t = Math.max(0, Math.abs(lx) - (RAUM.B / 2 - KOERPER), -RAUM.T / 2 + KOERPER - lz);
+  if(lz > RAUM.T / 2 - KOERPER && !(Math.abs(lx) < TUER_B / 2 - 0.15 && lz < RAUM.T / 2 + 0.6)) t = Math.max(t, lz - (RAUM.T / 2 - KOERPER), 1e-3);   // nur durch die Tuer
+  for(const m of innen.moebel || []) t = Math.max(t, Math.min(m.hx + KOERPER - Math.abs(lx - m.x), m.hz + KOERPER - Math.abs(lz - m.z)));
+  return t;
+}
+function raumFrei(x, z){
+  const t = raumTiefe(x, z);
+  if(t <= 0) return true;
+  // Live-Befund (Bagger): wer schon IN einer Grenze steckt, kam nicht mehr los. Joshis Schritt, der ihn nicht tiefer
+  // hineinbringt, ist frei – hinaus geht es also immer.
+  const von = story.schrittVon && story.schrittVon();
+  return !!von && t <= raumTiefe(von.x, von.z) + 1e-6;
 }
 function hookInnen(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding;

@@ -801,11 +801,15 @@ function fuchsTanzEnde(){
 }
 function fuchsTanz(dt, fp){
   const T = fuchs.tanz, g = eva.group.position;
-  const ab = story.innen && story.innen.drin ? 2.5 : TANZ_ABST;      // im Huetten-Raum (7 m tief) naeher
+  // Abstand: 5 m (im Huetten-Raum 2,5 m) – liegt der Platz in einem Hindernis (Huette, Feuer ...), so nah heran,
+  // bis er frei ist (sonst lief der Fuchs an der Wand hin und her und kam nie an)
+  let ab = story.innen && story.innen.drin ? 2.5 : TANZ_ABST;
+  while(ab > 1.6){ const q = nebenFigur(ab, 0); if(fuchsFrei(q.x, q.z) && fuchsFrei(nebenFigur(ab, TANZ_BREIT).x, nebenFigur(ab, TANZ_BREIT).z) && fuchsFrei(nebenFigur(ab, -TANZ_BREIT).x, nebenFigur(ab, -TANZ_BREIT).z)) break; ab -= 0.3; }
   const mitte = nebenFigur(ab, 0);
   if(T.phase === 'hin'){
     const d = fuchsLaufe(dt, mitte.x, mitte.z, Math.hypot(mitte.x - fp.x, mitte.z - fp.z) > 3 ? 7 : 3);
-    if(d < 0.3 || fuchs.blockiert){ T.phase = 'tanz'; T.t = 0; }
+    T.hinT = (T.hinT || 0) + dt;
+    if(d < 0.3 || fuchs.blockiert || T.hinT > 6){ T.phase = 'tanz'; T.t = 0; T.hinT = 0; }   // spaetestens nach 6 s: hier tanzen
     return;
   }
   if(T.phase === 'tanz'){
@@ -873,15 +877,32 @@ function fuchsLaufe(dt, zx, zz, tempo){
       soll = weg;                                                // an der Figur vorbei, auf der Seite des Ziels
     }
   }
+  // Um Hindernisse herum (Feuer, Kiste, Palme, Huette): ist die Richtung blockiert, schrittweise links/rechts bis 120 Grad
+  // probieren und die erste freie nehmen. Die einmal gewaehlte Seite bleibt eine Weile (umSeite), sonst pendelte er.
+  const schritt = Math.max(0.12, tempo * dt);
+  const frei = (w) => { const x = fp.x + Math.sin(w) * schritt, z = fp.z + Math.cos(w) * schritt; return fuchsSchrittFrei(fp, x, z); };
+  if(!frei(soll)){
+    let gefunden = null;
+    const seiten = fuchs.umSeite ? [fuchs.umSeite, -fuchs.umSeite] : [1, -1];
+    for(let a = 0.3; a <= 2.1 && gefunden === null; a += 0.3) for(const sd of seiten){ if(frei(soll + sd * a)){ gefunden = soll + sd * a; fuchs.umSeite = sd; break; } }
+    if(gefunden !== null){ soll = gefunden; fuchs.umT = 0.6; }
+  } else if((fuchs.umT = (fuchs.umT || 0) - dt) <= 0) fuchs.umSeite = 0;
   const dw = winkelDiff(fuchs.yaw, soll);
-  fuchs.yaw += klemme(dw, -5 * dt, 5 * dt);
-  const s = Math.min(d, tempo * dt) * Math.max(0.15, Math.cos(dw));
+  fuchs.yaw += klemme(dw, -6 * dt, 6 * dt);
+  const s = Math.min(d, tempo * dt) * Math.max(0.3, Math.cos(dw));
   const nx = fp.x + Math.sin(fuchs.yaw) * s, nz = fp.z + Math.cos(fuchs.yaw) * s;
-  fuchs.blockiert = !fuchsFrei(nx, nz) || (eva && eva.group && Math.hypot(nx - eva.group.position.x, nz - eva.group.position.z) < ABSTAND_MIN
-    && Math.hypot(nx - eva.group.position.x, nz - eva.group.position.z) < Math.hypot(fp.x - eva.group.position.x, fp.z - eva.group.position.z));   // nicht naeher in die Figur
+  fuchs.blockiert = !fuchsSchrittFrei(fp, nx, nz);
   if(!fuchs.blockiert){ fp.x = nx; fp.z = nz; fuchsAnim(tempo >= 4 ? FA.rennen : FA.gehen, 0.2); }
-  else { fuchs.ziel = null; fuchsAnim(FA.stehen, 0.3); }      // Wasser/Wand: stehen bleiben
+  else if(!frei(soll)){ fuchs.ziel = null; fuchsAnim(FA.stehen, 0.3); }   // wirklich kein Weg (Wasser): stehen bleiben
+  else fuchs.blockiert = false;                                             // dreht noch in die freie Richtung
   return d;
+}
+// Darf der Fuchs von fp nach (x, z)? Fester Grund, kein Hindernis und nicht naeher in die Figur hinein
+function fuchsSchrittFrei(fp, x, z){
+  if(!fuchsFrei(x, z)) return false;
+  if(eva && eva.group){ const g = eva.group.position, neu = Math.hypot(x - g.x, z - g.z);
+    if(neu < ABSTAND_MIN && neu < Math.hypot(fp.x - g.x, fp.z - g.z)) return false; }
+  return true;
 }
 function fuchsSchaue(dt, x, z, rate){
   const fp = fuchs.obj.position;

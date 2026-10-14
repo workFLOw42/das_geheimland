@@ -2,7 +2,7 @@
 
 Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.js – Teil von „Die Abenteuer von Joshi & Samu“.
 
-**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 14.10.2026
+**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 14.10.2026 · Sprechtexte: [SPRECHTEXTE.md](SPRECHTEXTE.md)
 
 ## 👦 Zielgruppe & Spielfigur
 
@@ -28,7 +28,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Fuchs streift:** frei und neugierig um Joshi herum – schnuppert, setzt sich kurz, hüpft vor Freude; entfernt sich Joshi, kommt er hinterher. Ins Wasser geht er nicht (wartet am Ufer).
 - **Zu Beginn** sitzt der Fuchs am Strand und schaut aufs Meer, bis Joshi zu ihm kommt.
 - **Hinknien (B):** Der Fuchs rennt herbei, spielt direkt vor Joshi (2 × Pfoten + Schwanz) und setzt sich dann **links neben ihn**.
-- **Gitarre:** Der Fuchs rennt herbei und **tanzt 10 s** quer vor Joshi in etwa 5 m Abstand (hin und her, Hopser mit Drehung, Salto), dann setzt er sich **genau vor ihn** und schaut ihn an. Die Kamera geht dabei weiter zurück, damit beide im Bild sind.
+- **Gitarre:** Der Fuchs rennt herbei und **tanzt 10 s** quer vor Joshi in etwa 5 m Abstand (hin und her, Hopser mit Drehung, Salto), dann setzt er sich **genau vor ihn** und schaut ihn an. Die Kamera geht dabei weiter zurück und **kreist langsam um beide** (eine Runde in etwa 40 s); der rechte Stick übernimmt.
 - **Körper:** Joshi und der Fuchs haben je einen Kollisionskreis – sie laufen nicht durcheinander hindurch; der Fuchs läuft um Joshi herum.
 - **Schatten:** beide haben einen weichen Bodenschatten.
 - **Für Detektiv-Momente vorgesehen:** Joshis *Look Around* sowie die Fuchs-Animationen *Sit_Yes* (nicken) und *Sit_No* (Kopf schütteln).
@@ -46,7 +46,8 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Kleine Insel** (etwa 2/3 kleiner als die Flugspiel-Inseln): Gras, Sandstrand, verteilte Palmen, Meer mit Wellen.
 - **Hütte** kurz vor dem Strand: Holz mit Strohdach, Tür und Fenstern vorne und an den Seiten. Man läuft gegen die Wände und durch die Tür hinein. **Innen** (eigene Welt, größer als außen): Sternentapete, Holzverkleidung, Dielen, Balkendecke, Bett, Tisch mit Laterne, Regal (Platz für die späteren Trophäen), Teppich, gemalte Fenster mit Mond.
 - **Vor der Hütte** zwei Palmen, dazwischen das animierte **Lagerfeuer**, daneben das rote **Kurbel-Funkgerät**.
-- **Nachthimmel:** viele Sterne, die Milchstraße, ein Mond mit Lichthof über der Hütte; dunkle Wolken.
+- **Sternklare Nacht** (keine Wolken – nachts wirkten sie wie schwebende Steine): gedämpfte Hintergrundsterne, die Milchstraße, ein gedämpfter Mond mit Lichthof.
+- **Sternbilder**, hell und mit ganz dezenten Linien, gut sichtbar statt astronomisch exakt platziert: **Großer Bär** (mit dem Großen Wagen, dazu Kopf und Beine) und **Kleiner Bär** (Kleiner Wagen mit dem Polarstern) sowie **Kassiopeia** im Norden über der Hütte, **Orion** im Süden über dem Meer. Grundlage für das spätere Wissens-Thema Sternbilder.
 - **Möwen:** fliegen über der Insel, ein paar sitzen am Strand (fliegen auf, wenn man ihnen zu nahe kommt). Meeresrauschen und Möwengeschrei kommen aus der Engine.
 - **Schwimmen und Waten** wie in *Trip to Japan*: am Strand flach, dann schwimmen; tauchen mit RT / LT.
 - **Startbildschirm** „🌙 Das Geheimland“ mit großem „▶ Los geht's“ (schaltet Ton und Stimme frei).
@@ -72,11 +73,15 @@ Jeder Einsatzort folgt einer klaren, handlungsorientierten Struktur:
 
 ## 🕵️‍♂️ 3. Das Finale am Fotobrett: Die Foto-Analyse
 
+> ⚠️ **Offen:** Der Fuchs ist jetzt der Begleiter des Detektivs – als Täter passt er so nicht mehr. Täter und Auflösung werden noch neu entschieden; der Text unten ist der bisherige Stand.
+
 - **Das Spurenbrett:** Der Detektiv kehrt an den Strand zurück und legt alle 6 geschossenen Polaroid-Fotos nebeneinander auf das Ermittler-Brett.
 - **Die Überlagerung:** Er legt ein transparentes Pfoten-Messraster seines eigenen Fuchses über die Schrammen und Abdrücke auf den 6 Bildern. Die Maße stimmen zu 100 % überein!
 - **Die Auflösung:** Der Detektiv stellt den Fuchs zur Rede. Der Fuchs schaut verlegen, läuft hinter die Hütte und zieht stolz seinen vergrabenen Lieblingsknochen hervor. Auf der Suche nach seinem Knochen hat er versehentlich das Chaos angerichtet!
 
 ## 🎲 4. Der Täter-Generator (Wiederspielwert)
+
+> ⚠️ **Offen:** Täter A (bisher der Hund, jetzt der Fuchs) wird noch neu entschieden – siehe Abschnitt 3.
 
 Damit das Spiel auch beim 2. oder 3. Durchlauf spannend bleibt, rotiert das System beim Neustart Täter und Motiv:
 
@@ -103,7 +108,8 @@ Damit das Spiel auch beim 2. oder 3. Durchlauf spannend bleibt, rotiert das Syst
 2. **Funk-Durchsage** mit endgültigem Text (und dem Namen der Figur) wieder einschalten.
 3. **Polaroid-Kamera** mit Fadenkreuz, Fotos ins Ermittlungsbuch.
 4. **Erster Einsatzort:** Müllwagen-Minispiel (Modell vorhanden: `garbage_truck_by_Lung_ong.glb`), Mülltonnen, Sortieren.
-5. Fehlende Modelle: Kinderzimmer-Möbel, Polaroid-Kamera, Mülltonnen, Blaurabe, Feldhamster, Eichhörnchen, Knochen.
+5. **Täter neu festlegen** (der Fuchs ist Begleiter, siehe Abschnitt 3 und 4).
+6. **Fehlende Modelle:** Kinderzimmer-Möbel, Polaroid-Kamera, Mülltonnen, Blaurabe, Feldhamster, Knochen (Eichhörnchen: liegt in `3d Modelle\Spiele`).
 
 ## 📚 Quellen
 

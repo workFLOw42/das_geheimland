@@ -136,9 +136,10 @@ function hookWelt(){
 // All) und ein Mond schraeg hinter der Huette. Alle drei ohne Nebel – der Erdnebel endet bei 3 km,
 // die Kuppel liegt bei 1,2 Mio. m und waere sonst verschluckt. Das Mondlicht (sun) kommt aus seiner Richtung.
 const NACHT_HIMMEL = 0x0b1633;
-const NACHT_MW = 0.75;                           // Milchstrasse: deutlich, aber nicht grell (Engine im All: 1,6)
+const STERNE_HELL = 0.55;                         // Deckkraft der Hintergrundsterne (1 = wie im All)
+const NACHT_MW = 0.6;                           // Milchstrasse: deutlich, aber nicht grell (Engine im All: 1,6)
 // Mond schraeg hinter der Huette (vom Startplatz am Feuer aus im Blick), nicht zu hoch – dann sieht ihn die Verfolgerkamera
-const MOND = { az: Math.PI + 0.45, hoch: 0.2, r: 22000, dist: 900000 };   // Richtung (rad ab +z), Hoehenwinkel, Radius, Abstand
+const MOND = { az: Math.PI - 0.95, hoch: 0.24, r: 22000, dist: 900000 };   // Richtung (rad ab +z), Hoehenwinkel, Radius, Abstand
 const mond = { obj: null, halo: null, laedt: false };
 function nachtOhneNebel(obj){
   obj.traverse(o => { if(!o.material) return; for(const m of (Array.isArray(o.material) ? o.material : [o.material])){ m.fog = false; m.needsUpdate = true; } });
@@ -150,14 +151,14 @@ function baueMond(){
     g.traverse(o => { if(!o.isMesh) return;
       const src = Array.isArray(o.material) ? o.material[0] : o.material;
       // selbstleuchtend: der Mond soll hell sein, egal wo das Licht der Szene steht
-      o.material = new THREE.MeshBasicMaterial({ map: src && (src.map || src.emissiveMap), color: 0xfff6dc, fog: false });
+      o.material = new THREE.MeshBasicMaterial({ map: src && (src.map || src.emissiveMap), color: 0xcfc8b4, fog: false });   // etwas gedaempft
       o.frustumCulled = false; o.renderOrder = -1; });
     scene.add(g);                                                   // global-ok: Himmel gehoert keiner Welt
     mond.obj = g;
     // weicher Lichthof um den Mond
     const c = document.createElement('canvas'); c.width = c.height = 128;
     const x = c.getContext('2d'), gr = x.createRadialGradient(64, 64, 10, 64, 64, 64);
-    gr.addColorStop(0, 'rgba(255,245,210,.55)'); gr.addColorStop(0.35, 'rgba(200,215,255,.18)'); gr.addColorStop(1, 'rgba(200,215,255,0)');
+    gr.addColorStop(0, 'rgba(255,245,210,.32)'); gr.addColorStop(0.35, 'rgba(200,215,255,.1)'); gr.addColorStop(1, 'rgba(200,215,255,0)');
     x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
     mond.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), fog: false, depthWrite: false, transparent: true }));
     mond.halo.scale.setScalar(MOND.r * 3.2); mond.halo.renderOrder = -2;
@@ -166,7 +167,8 @@ function baueMond(){
 }
 function hookNacht(){
   SKY_DAY.set(NACHT_HIMMEL);
-  cloudMat.color.setHex(0x3a4766);                  // Wolken nachts dunkel-blaugrau statt weiss
+  // Sternklare Nacht: keine Wolken (nachts wirkten sie wie schwebende Steine). Sie bleiben in der Szene, nur unsichtbar.
+  for(const c of clouds) c.visible = false;
   const orig = updateSpaceBlend;
   const _r = new THREE.Vector3();
   updateSpaceBlend = function(dt){
@@ -177,7 +179,7 @@ function hookNacht(){
       sun.intensity = 0.35 + 0.5 * tag;
       if(starDome){ if(!starDome.userData.nacht){ nachtOhneNebel(starDome); starDome.userData.nacht = true; }
         starDome.visible = true; starDome.position.copy(camera.position); }
-      if(starMat) starMat.opacity = Math.max(starMat.opacity, 1);
+      if(starMat) starMat.opacity = Math.max(starMat.opacity, STERNE_HELL + (1 - STERNE_HELL) * tag);   // Hintergrundsterne gedaempft, die Sternbilder (sternbilder.js) stechen heraus
       // Panorama additiv: das Foto hat schwarzen Weltraum und deckte den dunkelblauen Nachthimmel ab –
       // addiert bleibt das Blau, und Band und Nebel leuchten darauf. Im All (tag -> 1) wieder wie die Engine.
       if(mwMat){ const add = tag < 0.5;
@@ -327,8 +329,11 @@ function hookFigur(){
     const soll = eva && figur.cur === 'guitar' && !sw.aktiv && !(story.innen && story.innen.drin) ? 1 : 0;
     figur.kamWeit = (figur.kamWeit || 0) + (soll - (figur.kamWeit || 0)) * Math.min(1, 1.2 * dtCam);
     if(!(eva && figur.kamWeit > 0.01)) return camOrigF.apply(this, arguments);
+    // Kreisfahrt: langsam um Joshi und den Fuchs herum (eine Runde in KAM_RUNDE s); der rechte Stick dreht selbst
     if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;
-    const p = eva.group.position, w = figur.kamWeit, yaw = eva.yaw + evaOrbit;
+    else if(soll) evaOrbit += (Math.PI * 2 / KAM_RUNDE) * dtCam * figur.kamWeit;
+    else evaOrbit += (0 - Math.atan2(Math.sin(evaOrbit), Math.cos(evaOrbit))) * Math.min(1, 1.5 * dtCam);   // zurueck hinter die Figur
+    const p = eva.group.position, yaw = eva.yaw + evaOrbit, w = figur.kamWeit;
     const m = nebenFigur(TANZ_ABST * 0.45 * w, 0);                       // Blickpunkt: zwischen Figur und Fuchs
     let dist = 7 * (1 + (KAM_WEIT - 1) * w);
     // Steht hinter der Figur etwas (Huette, Palme), naeher heran – bis kurz davor
@@ -351,7 +356,8 @@ function hookFigur(){
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
 const FIGUR_SCHATTEN = 0.5;   // m Radius des Bodenschattens unter Joshi
-const KAM_WEIT = 1.5;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
+const KAM_RUNDE = 40;         // s fuer eine Kreisfahrt der Kamera beim Gitarrespielen
+const KAM_WEIT = 1.6;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
 let figurSchritt = false;     // true, waehrend die Engine die Figur bewegt (evaSolid: Fuchs als Hindernis)
 // Sprungrolle: konstanter Schwung (rollV, aus dem Lauftempo), ab ROLL_BREMS_AB der Clipdauer bremst
 // sie aus, wenn der Stick losgelassen ist.
@@ -1072,6 +1078,7 @@ function hookLoop(){
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
+    if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js
     weltenSichtbar();
     return loopOrig.apply(this, arguments);
   };

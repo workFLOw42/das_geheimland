@@ -1,0 +1,109 @@
+# Das Geheimland – Alle gesprochenen Sprechtexte
+
+Stand: 14.10.2026 – Entwurf; im Code steht davon bisher nur die Funk-Durchsage (`story.js`, `DURCHSAGE` / `NACH_DURCHSAGE`), und die ist **vorerst ausgeschaltet**.
+
+- Gesprochen wird über die Sprachausgabe des Browsers; mit Ton aus laufen dieselben Sätze als Untertitel.
+- „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur, noch offen – im Code die Konstante `NAME`).
+- **Zielgruppe ein fast 6-jähriges Kind:** kurze Sätze, ein Gedanke pro Satz, keine Fremdwörter. Alles Wichtige muss gesprochen werden – lesen kann der Spieler noch nicht.
+- Status: **im Code** = so eingebaut · **Entwurf** = Vorschlag, noch nicht im Spiel.
+
+---
+
+## 🎙️ Rollen & Stimmen
+
+| Rolle im Code | Stimme | Wer spricht |
+|---|---|---|
+| *(keine)* | **weiblich** | Erzählerin |
+| `radio` | **männlich**, etwas tiefer | Stimme über Funk (Kurbel-Funkgerät am Lagerfeuer) |
+
+---
+
+## Einstieg: Kinderzimmer *(Entwurf – Kinderzimmer noch nicht gebaut)*
+
+**Stimme:** weiblich (Erzählerin)
+
+Es ist mitten in der Nacht. Alles ist still.
+
+{Name} kann nicht schlafen. Neben dem Bett sitzt sein Fuchs und spitzt die Ohren.
+
+Da! Die Zimmertür leuchtet ganz geheimnisvoll …
+
+Geh zur Tür!
+
+---
+
+## Ankunft am Strand *(Entwurf)*
+
+**Stimme:** weiblich (Erzählerin)
+
+Wow … ein Strand! Es ist Nacht, und der Himmel ist voller Sterne.
+
+Das ist das Geheimland.
+
+---
+
+## Funk-Durchsage am Lagerfeuer *(im Code, ausgeschaltet)*
+
+**Stimme:** `radio` – das Funkgerät wackelt und blinkt, solange es spricht.
+
+*knack* … *rausch* …
+
+Achtung, {Name}! Achtung!
+
+Im Geheimland wurde Chaos angerichtet!
+
+Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!
+
+**Danach – Stimme:** weiblich (Erzählerin)
+
+Das kam über Funk! Das Funkgerät steht am Lagerfeuer.
+
+Dein Fuchs wartet schon am Strand auf dich.
+
+---
+
+## Hinweise zur Steuerung *(Entwurf – kurz, einmal beim ersten Mal)*
+
+**Stimme:** weiblich (Erzählerin)
+
+| Situation | Text |
+|---|---|
+| erstes Mal am Strand | Mit dem Stick läufst du. Drück ihn weit, dann rennst du! |
+| nach einer Weile | Drück A, dann springst du! |
+| Fuchs sitzt nah | Drück B, dann kniest du dich hin – dein Fuchs kommt zum Spielen. |
+| vor der Hütte | Geh durch die Tür in die Hütte! |
+
+---
+
+## Sternbilder *(Entwurf – Wissens-Thema, z. B. wenn man lange in den Himmel schaut)*
+
+**Stimme:** weiblich (Erzählerin) – das jeweilige Sternbild leuchtet dabei kurz heller.
+
+| Sternbild | Text |
+|---|---|
+| Großer Bär | Siehst du die sieben hellen Sterne? Das ist der Große Wagen. Er gehört zu einem großen Bären aus Sternen! |
+| Kleiner Bär | Und da ist der Kleine Bär. Ganz vorn sitzt der Polarstern. Er zeigt immer nach Norden. |
+| Kassiopeia | Dieses Sternbild sieht aus wie ein W. Es heißt Kassiopeia. |
+| Orion | Da drüben steht der Himmelsjäger Orion. Siehst du die drei Sterne in einer Reihe? Das ist sein Gürtel. |
+
+---
+
+## Spurensicherung *(Entwurf – kommt mit der Polaroid-Kamera)*
+
+**Stimme:** weiblich (Erzählerin)
+
+| Situation | Text |
+|---|---|
+| Spur entdeckt | Schau mal! Da ist eine Spur. Mach ein Foto davon! |
+| Foto gemacht | Klick! Das Foto kommt in dein Ermittlungsbuch. |
+| Fuchs bestätigt (nickt) | Dein Fuchs nickt. Da bist du auf der richtigen Spur! |
+| Fuchs schüttelt den Kopf | Hm … dein Fuchs schüttelt den Kopf. Such lieber noch woanders. |
+
+---
+
+## Offene Texte
+
+- **Name der Figur** – fehlt noch; er steht in der Durchsage und in fast allen Sätzen.
+- **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.
+- **Finale am Fotobrett** und **Auflösung** – folgen, wenn der Täter feststeht (siehe Konzept.md).
+- **Erwachen im Kinderzimmer** und **Trophäen** – folgen.

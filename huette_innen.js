@@ -3,7 +3,7 @@
 // hoechstens ein Bild der Aussenwelt, hinkommen kann man nicht. Laedt nach insel.js, vor der Engine. Der Raum schwebt weit draussen ueber dem Meer (RAUM, BODEN_Y), von der
 // Insel aus nicht zu sehen. Geht die Figur durch die Huettentuer, blendet es ab, und sie steht drinnen an der Tuer;
 // durch die Tuer innen wieder hinaus -> vor der Huette. So gibt es in der engen Huette kein Kameraproblem.
-// Innen: Tapete (Waende), Holzverkleidung unten, Dielenboden, Balkendecke, Bett, Tisch, Regal, Teppich,
+// Innen: Tapete (Waende), Holzverkleidung unten, Dielenboden, Balkendecke, Bett, Tisch, Regal, Strassenteppich,
 // Laterne. Spaeter kommen hier die Trophaeen und das Ermittler-Brett hin.
 (function(){
 'use strict';
@@ -16,47 +16,11 @@ const BODEN_Y = 150;
 const TUER_B = 1.1, TUER_H = 2.1;
 const innen = story.innen = { drin: false, gruppe: null, blende: 0, wechsel: null, sperre: 0 };
 
-// ---- Texturen (Canvas) -----------------------------------------------------------------------
-function canvasTex(w, h, mal, wdh){
+// Texturen (Tapete, Dielen, Verkleidung, Strassenteppich) kommen gemeinsam aus texturen.js (story.tex)
+function canvasTex(w, h, mal){
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   mal(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  if(wdh) t.repeat.set(wdh[0], wdh[1]);
-  return t;
-}
-// Tapete: warmes Gelb mit Streifen und kleinen Sternen (Kinderzimmer-Stimmung)
-function tapete(){
-  return canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#f3dfa2'; g.fillRect(0, 0, w, h);
-    g.fillStyle = '#e9cf86'; for(let x = 0; x < w; x += 64) g.fillRect(x, 0, 28, h);
-    g.fillStyle = '#c98a3a';
-    for(let y = 32; y < h; y += 64) for(let x = 46; x < w; x += 64){
-      const s = 7; g.beginPath();
-      for(let i = 0; i < 10; i++){ const r = i % 2 ? s * 0.45 : s, a = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
-      g.closePath(); g.fill();
-    }
-  });
-}
-// Dielen: laengs, mit Fugen und Maserung
-function dielen(){
-  return canvasTex(256, 256, (g, w, h) => {
-    const farben = ['#9a6b3d', '#8d6035', '#a57444', '#93663a'];
-    for(let i = 0; i < 8; i++){
-      g.fillStyle = farben[i % 4]; g.fillRect(i * 32, 0, 32, h);
-      g.fillStyle = 'rgba(60,35,15,.25)';
-      for(let k = 0; k < 6; k++) g.fillRect(i * 32 + 4 + ((k * 7 + i * 3) % 24), 0, 1, h);
-      g.fillStyle = '#4a2e14'; g.fillRect(i * 32, 0, 2, h);
-      g.fillRect(i * 32, (i * 53) % h, 32, 2);
-    }
-  });
-}
-// Holzverkleidung (unten an der Wand): senkrechte Bretter, dunkler als der Boden
-function verkleidung(){
-  return canvasTex(256, 64, (g, w, h) => {
-    for(let i = 0; i < 16; i++){ g.fillStyle = i % 2 ? '#6e4423' : '#7a4c28'; g.fillRect(i * 16, 0, 16, h); g.fillStyle = '#3e2410'; g.fillRect(i * 16, 0, 1, h); }
-    g.fillStyle = '#4a2c14'; g.fillRect(0, 0, w, 4);
-  });
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 }
 
 // ---- Raum bauen ------------------------------------------------------------------------------
@@ -64,9 +28,9 @@ function baueRaum(){
   if(innen.gruppe) return;
   const g = new THREE.Group();
   const B = RAUM.B, T = RAUM.T, H = RAUM.H;
-  const tapM = new THREE.MeshLambertMaterial({ map: tapete() });
-  const verkM = new THREE.MeshLambertMaterial({ map: verkleidung() });
-  const bodenM = new THREE.MeshLambertMaterial({ map: dielen() });
+  const tapM = new THREE.MeshLambertMaterial({ map: story.tex.tapete() });
+  const verkM = new THREE.MeshLambertMaterial({ map: story.tex.verkleidung() });
+  const bodenM = new THREE.MeshLambertMaterial({ map: story.tex.dielen() });
   const holz = new THREE.MeshLambertMaterial({ color: 0x8a5a33 });
   const dunkel = new THREE.MeshLambertMaterial({ color: 0x5b3a1f });
   const SOCKEL = 1.0;                                   // Hoehe der Holzverkleidung
@@ -126,7 +90,7 @@ function baueRaum(){
   for(let x = -B / 2 + 1; x < B / 2; x += 1.6){
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, T), dunkel); b.position.set(x, H - 0.11, 0); g.add(b);
   }
-  // Moebel: Bett (links hinten), Tisch mit Laterne (rechts), Regal (Rueckwand), runder Teppich
+  // Moebel: Bett (links hinten), Tisch mit Laterne (rechts), Regal (Rueckwand), Strassen-Spielteppich
   const decken = new THREE.MeshLambertMaterial({ color: 0x3f6fb5 });
   const bett = new THREE.Group(); bett.position.set(-B / 2 + 1.0, 0, -T / 2 + 1.5);
   const rahmen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 2.2), holz); rahmen.position.y = 0.2; bett.add(rahmen);
@@ -144,10 +108,8 @@ function baueRaum(){
   for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.32), dunkel); s.position.set(sx * 1.0, 0.85, 0); regal.add(s); }
   g.add(regal);
   innen.regal = regal;                                  // spaeter: Trophaeen
-  const teppich = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshLambertMaterial({ color: 0xb8433a }));
-  teppich.rotation.x = -Math.PI / 2; teppich.position.set(0.4, 0.02, 0.8); g.add(teppich);
-  const tr = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.2, 32), new THREE.MeshLambertMaterial({ color: 0xf0c75a }));
-  tr.rotation.x = -Math.PI / 2; tr.position.set(0.4, 0.025, 0.8); g.add(tr);
+  // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
+  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.02, 0.9); g.add(teppich);
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
   const ll = new THREE.PointLight(0xffc070, 1.6, 14, 1.4); ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
   const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund);

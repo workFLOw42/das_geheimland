@@ -79,6 +79,66 @@ function weltEntsorgen(n){
 story.welt = welt;
 story.weltEntsorgen = weltEntsorgen;
 
+// ---- Koerper: Grenzen fuer alles, was in einer Welt steht ---------------------------------------------------
+// Grundsatz (Live-Wunsch 14.10.2026): jedes gezeichnete Objekt bekommt eine Grenze in seinen echten Massen.
+//   story.koerper(obj)                     – Rechteck aus der Bounding-Box (Breite, Tiefe, Hoehe), gedreht wie obj
+//   story.koerper(obj, { kreis: true })    – Kreis um die Mitte (runde Dinge: Feuer, Stamm, Tonne)
+//   story.koerper(null, { x, z, r | hx, hz, rot, h }) – von Hand (z. B. nur der Stamm einer Palme)
+// Die Grenze gilt fuer Joshi und den Fuchs (KOERPER_R kommt dazu) und nur in ihrer Welt (Etappe); ueber Dinge, die
+// niedriger sind als die Sprunghoehe, kann man drueberspringen. Ausnahme Huette: Waende von Hand (Tuer!).
+const KOERPER_R = 0.25;
+const koerperListe = [];
+function koerper(obj, opt){
+  opt = opt || {};
+  let k;
+  if(obj){
+    obj.updateMatrixWorld(true);
+    const rot = obj.rotation ? obj.rotation.y : 0;
+    // Box in den eigenen Achsen messen (sonst waere sie bei gedrehten Dingen zu gross)
+    const vor = obj.rotation.y; obj.rotation.y = 0; obj.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(obj), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
+    obj.rotation.y = vor; obj.updateMatrixWorld(true);
+    // Mitte zurueckdrehen (die Box wurde ungedreht um obj.position gemessen)
+    const dx = c.x - obj.position.x, dz = c.z - obj.position.z, co = Math.cos(rot), si = Math.sin(rot);
+    const mx = obj.position.x + dx * co + dz * si, mz = obj.position.z - dx * si + dz * co;
+    k = opt.kreis ? { x: mx, z: mz, r: Math.max(s.x, s.z) / 2, h: bb.max.y - ISLAND_Y }
+                  : { x: mx, z: mz, hx: s.x / 2, hz: s.z / 2, rot, h: bb.max.y - ISLAND_Y };
+  } else k = Object.assign({}, opt);
+  k.welt = opt.welt !== undefined ? opt.welt : story.etappe;
+  koerperListe.push(k);
+  return k;
+}
+// Fusshoehe: die Engine fragt Waende immer 1 m ueber den Fuessen ab (hitsBuilding(x, fuss + 1, z)) – verglichen
+// wird deshalb mit den FUESSEN. Der Sprung ist eine Animation (die Figur hebt sich nicht wirklich): in der Luftphase
+// zaehlen die Fuesse als SPRUNG_HOEHE hoch – drueber kommt man also nur bei sehr niedrigen Dingen.
+const SPRUNG_HOEHE = 0.4;
+function fussHoehe(y){
+  if(!figurSchritt) return y - 1;                              // Fuchs & Co.: ihre Abfrage liegt hoeher als der Boden
+  const luft = (figur.aktion === 'jump' && figur.aktT > 0.5 && figur.aktT < 1.05) || (figur.aktion === 'roll' && figur.aktT > 0.3 && figur.aktT < 0.9);
+  return ISLAND_Y + (luft ? SPRUNG_HOEHE : 0);
+}
+function trifftKoerper(x, y, z){
+  const fuss = fussHoehe(y);
+  for(const k of koerperListe){
+    if(k.welt !== story.etappe) continue;
+    if(fuss > ISLAND_Y + (k.h || 1.5)) continue;               // Fuesse hoeher als das Hindernis: darueber hinweg
+    if(k.r !== undefined){ if(Math.hypot(x - k.x, z - k.z) < k.r + KOERPER_R) return true; continue; }
+    const c = Math.cos(k.rot || 0), s = Math.sin(k.rot || 0), dx = x - k.x, dz = z - k.z;
+    const lx = dx * c - dz * s, lz = dx * s + dz * c;          // in die Achsen des Objekts
+    if(Math.abs(lx) < k.hx + KOERPER_R && Math.abs(lz) < k.hz + KOERPER_R) return true;
+  }
+  return false;
+}
+story.koerper = koerper;
+story.koerperListe = koerperListe;
+function hookKoerper(){
+  const hitsOrig = hitsBuilding;
+  hitsBuilding = function(x, y, z){ if(locale === 'earth' && trifftKoerper(x, y, z)) return true; return hitsOrig.apply(this, arguments); };
+  // Welt entsorgt -> ihre Grenzen mit
+  const entsOrig = weltEntsorgen;
+  story.weltEntsorgen = function(n){ for(let i = koerperListe.length - 1; i >= 0; i--) if(koerperListe[i].welt === n) koerperListe.splice(i, 1); return entsOrig(n); };
+}
+
 // ---- Nur die Startinsel, keine Traeger/Hangar/Vorfeld (die kleine Insel baut insel.js) -------
 function hookWelt(){
   wantHangarStart = false;
@@ -1047,6 +1107,12 @@ function startSzene(){
   radio.obj.position.set(F.x + 1.7, ISLAND_Y, F.z - 0.6);
   radio.obj.rotation.y = 0.5;
   welt(1).add(radio.obj);
+  // Grenze = genau die Kiste (0,60 x 0,45 m) aus ihren echten Massen, gedreht wie sie; Hoehe bis Oberkante Geraet
+  // (die 6 mm duenne Antenne zaehlt nicht mit)
+  const kk = koerper(radio.obj); const geraet = radio.obj.userData.geraet;
+  const kg = radio.obj.children[0].geometry; kg.computeBoundingBox();
+  const kb = kg.boundingBox.getSize(new THREE.Vector3());          // eigene Achsen der Kiste (ungedreht)
+  kk.hx = kb.x / 2; kk.hz = kb.z / 2; kk.h = 0.45 + 0.26;
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
   if(eva){
@@ -1101,6 +1167,7 @@ function hookHudAus(){
 window.STORY_HOOK = function(){
   hookHudAus();
   hookWelt();
+  hookKoerper();
   hookNacht();
   hookFigur();
   hookSchwimmen();

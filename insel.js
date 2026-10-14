@@ -58,7 +58,7 @@ function hookInsel(){
   const hitsOrig = hitsBuilding;
   hitsBuilding = function(x, y, z){
     if(locale === 'earth' && trifftHuette(x, y, z)) return true;
-    if(locale === 'earth' && trifftPalme(x, z)) return true;
+    // Palmen, Feuer, Funkgeraet: Grenzen ueber story.koerper (story.js, gilt global)
     return hitsOrig.apply(this, arguments);
   };
   _islandCache.clear(); _subBerthCache.clear(); _xwpCache.clear(); _parkCache.clear();
@@ -77,13 +77,6 @@ function trifftHuette(x, y, z){
   if(v > ht - d && Math.abs(u) < TUER_B / 2 - 0.2) return false;
   return true;
 }
-// Palmenstaemme: duenne Hindernisse
-const palmenAlle = [];
-function trifftPalme(x, z){
-  for(const p of palmenAlle) if(Math.hypot(x - p.x, z - p.z) < 0.45) return true;
-  return false;
-}
-
 // ---- Bauen -----------------------------------------------------------------------------------
 const insel = { gebaut: false, feuerMixer: null, licht: null, t: 0 };
 function baueInsel(){
@@ -103,6 +96,9 @@ function baueInsel(){
   }
   ladeFeuer(w);
   story.lagerAm = { x: FEUER.x, z: FEUER.z };
+  // Grenze genau so gross wie der Steinrand (r 0,70 m, ausgemessen) und so hoch wie die Flamme (0,72 m) – plus der
+  // Koerper von Joshi bzw. Fuchs (KOERPER_R, sonst stuenden sie halb im Feuer). Darueber springen geht also.
+  story.koerper(null, { x: FEUER.x, z: FEUER.z, r: 0.70, h: 0.72 });   // Steinrand r 0,70 m, Flamme 0,72 m (ausgemessen)
 }
 // Huette 4,2 x 3,6 m aus Holz: Waende mit Tueroeffnung vorn, Fenster vorn links/rechts und an
 // beiden Seiten (offen – man sieht hinein), Strohdach, innen Bett, Tisch und Laterne.
@@ -156,9 +152,38 @@ function baueHuette(){
     }
     return wg;
   }
+  // Innenseiten tapezieren (wie im Innenraum), damit man es von aussen durch Tuer und Fenster sieht. Die Wand-
+  // gruppe zeigt mit +z nach aussen; die Innenseite liegt bei -D/2. Gleiche Oeffnungen wie die Wand.
+  const tapM = new THREE.MeshLambertMaterial({ map: story.tex.tapete() });
+  const verkM = new THREE.MeshLambertMaterial({ map: story.tex.verkleidung() });
+  const SOCKEL = 0.8;
+  function innenTapete(laenge, oeffnungen){
+    const tg = new THREE.Group();
+    const xs = [-laenge / 2 + 0.08];
+    for(const o of oeffnungen){ xs.push(o[0], o[1]); }
+    xs.push(laenge / 2 - 0.08);
+    for(let i = 0; i < xs.length - 1; i++){
+      const a = xs[i], b = xs[i + 1]; if(b - a < 0.001) continue;
+      const o = oeffnungen.find(q => Math.abs(q[0] - a) < 1e-6 && Math.abs(q[1] - b) < 1e-6);
+      const flaeche = (y0, y1) => {
+        for(const [m, u0, u1] of [[verkM, y0, Math.min(y1, SOCKEL)], [tapM, Math.max(y0, SOCKEL), y1]]){
+          if(u1 - u0 < 0.001) continue;
+          const mat = m.clone(); mat.map = m.map.clone(); mat.map.needsUpdate = true;
+          mat.map.repeat.set((b - a) / 1.6, m === tapM ? (u1 - u0) / 1.6 : 1);
+          const f = new THREE.Mesh(new THREE.PlaneGeometry(b - a, u1 - u0), mat);
+          f.position.set((a + b) / 2, (u0 + u1) / 2, -D / 2 - 0.004); f.rotation.y = Math.PI; tg.add(f);
+        }
+      };
+      if(o){ flaeche(0.06, o[2]); flaeche(o[3], H); } else flaeche(0.06, H);
+    }
+    return tg;
+  }
   const FEN = (u) => [u - 0.35, u + 0.35, 0.95, 1.6];
   // Vorderwand (+z): Fenster links, Tuer Mitte, Fenster rechts
-  const vorn = wand(B, [FEN(-1.4), [-TUER_B / 2, TUER_B / 2, 0, TUER_H], FEN(1.4)]);
+  const OEF_VORN = [FEN(-1.4), [-TUER_B / 2, TUER_B / 2, 0, TUER_H], FEN(1.4)];
+  // Innenseite jeder Wandgruppe ist -z (dort liegt die Tapete): die Rueckwand (-T/2) ist um 180 Grad gedreht, die
+  // Vorderwand (+T/2) bleibt ungedreht – ihre -z-Seite zeigt nach innen. Oeffnungen sind symmetrisch.
+  const vorn = wand(B, OEF_VORN); vorn.add(innenTapete(B, OEF_VORN));
   vorn.position.z = T / 2; g.add(vorn);
   // Tuerrahmen
   for(const [w2, h2, x2, y2] of [[0.1, TUER_H, -TUER_B / 2 - 0.05, TUER_H / 2], [0.1, TUER_H, TUER_B / 2 + 0.05, TUER_H / 2], [TUER_B + 0.2, 0.1, 0, TUER_H + 0.05]]){
@@ -169,12 +194,15 @@ function baueHuette(){
   tuer.geometry.translate((TUER_B - 0.08) / 2, 0, 0);
   tuer.position.set(-TUER_B / 2 + 0.04, TUER_H / 2, T / 2 - 0.05); tuer.rotation.y = -1.7; g.add(tuer);
   // Rueckwand ohne Oeffnung, Seiten mit je einem Fenster
-  const hinten = wand(B, []); hinten.position.z = -T / 2; g.add(hinten);
+  const hinten = wand(B, []); hinten.add(innenTapete(B, [])); hinten.position.z = -T / 2; hinten.rotation.y = Math.PI; g.add(hinten);   // -z zeigt nach innen
   for(const sx of [-1, 1]){
-    const seite = wand(T, [FEN(0)]); seite.rotation.y = Math.PI / 2; seite.position.x = sx * B / 2; g.add(seite);
+    const seite = wand(T, [FEN(0)]); seite.add(innenTapete(T, [FEN(0)]));
+    seite.rotation.y = sx * Math.PI / 2; seite.position.x = sx * B / 2; g.add(seite);     // +z der Wand zeigt nach aussen
   }
   // Holzboden (leicht erhoeht) und Eckpfosten
-  const bo = new THREE.Mesh(new THREE.BoxGeometry(B, 0.06, T), boden); bo.position.y = 0.03; g.add(bo);
+  const bodenTex = story.tex.dielen(); bodenTex.repeat.set(B / 2.5, T / 2.5);
+  const bo = new THREE.Mesh(new THREE.BoxGeometry(B, 0.06, T), new THREE.MeshLambertMaterial({ map: bodenTex })); bo.position.y = 0.03; g.add(bo);
+  const tep = story.tex.teppichMesh(1.5, 1.0); tep.position.set(0.5, 0.065, 0.5); g.add(tep);   // kleiner Strassenteppich
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.16, H + 0.05, 0.16), dunkel); p.position.set(sx * B / 2, H / 2, sz * T / 2); g.add(p);
   }
@@ -261,7 +289,8 @@ function setzePalme(w, p){
   g.rotation.y = p.dreh !== undefined ? p.dreh : (p.x < 0 ? Math.PI : 0);   // vorn: beide neigen nach aussen
   g.traverse(o => { if(o.isMesh) o.castShadow = true; });
   w.add(g);
-  palmenAlle.push({ x: p.x, z: p.z });
+  // Grenze nur der Stamm (die Wedel oben machten die Box 5 m breit): Radius am Fuss + etwas, so hoch wie die Palme
+  story.koerper(null, { x: p.x, z: p.z, r: 0.24, h: p.h });
 }
 // Ein Wedel: schmaler, nach aussen haengender Streifen (gebogene Flaeche mit Zacken)
 function palmblatt(L, mat){

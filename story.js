@@ -684,9 +684,9 @@ const _fb = new THREE.Vector3();
 const FA = {
   stehen: 'Fox_Idle', gehen: 'Fox_Walk_InPlace', rennen: 'Fox_Run_InPlace',
   setzen: 'Fox_Sit1', sitzen: 'Fox_Sit2_Idle', sitzPause: 'Fox_Sit_Idle_Break', aufstehen: 'Fox_Sit3_StandUp',
-  // Spielen vor der knienden Figur: zweimal mit den Pfoten (Live-Wunsch 14.10.2026), dann hinsetzen.
-  // Der Schwanzschlag (Attack_Tail) gehoert jetzt zum Tanz (TANZ_DREH).
-  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Paws'], huepfen: 'Fox_Jump_Pivot_InPlace',
+  // Spielen vor der knienden Figur: dreimal mit den Pfoten (Live-Wunsch 14.10.2026 – der erste faellt noch halb in die
+  // Ankunft), dann hinsetzen. Der Schwanzschlag (Attack_Tail) gehoert zum Tanz (TANZ_DREH).
+  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Paws', 'Fox_Attack_Paws'], huepfen: 'Fox_Jump_Pivot_InPlace',
 };
 const EINMAL = [FA.setzen, FA.aufstehen, FA.sitzPause, FA.huepfen, ...new Set(FA.spielen), 'Fox_Somersault_InPlace', 'Fox_Attack_Tail'];
 const fuchs = story.fuchs = { obj: null, mixer: null, acts: {}, cur: null, kopf: 0, yaw: 0, aktiv: false,
@@ -784,7 +784,9 @@ function fuchsAbsetzen(p){
 // her (TANZ_BREIT m), dreht sich immer wieder (Hopser mit Drehung, Salto). Nach TANZ_DAUER s setzt er sich genau vor
 // sie und schaut sie an. Hoert sie auf, streift er wieder.
 const TANZ_ABST = 5, TANZ_BREIT = 1.5, TANZ_DAUER = 10;
-const TANZ_DREH = ['Fox_Jump_Pivot_InPlace', 'Fox_Attack_Tail', 'Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace', 'Fox_Attack_Tail'];
+// Je Runde (10 s) kommen etwa 3-4 Drehungen dran – die Reihenfolge sorgt fuer zwei Saltos pro Runde
+const TANZ_DREH = ['Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace', 'Fox_Somersault_InPlace', 'Fox_Attack_Tail'];
+const SITZ_PAUSE = 10;        // s Sitzen, dann von vorn (Tanz bzw. Pfoten), solange Gitarre bzw. Knien dauert
 function fuchsTanzStart(){
   // auch aus dem Warten am Strand heraus: die Gitarre lockt ihn (sonst sass er beim Spielstart hinter der Figur und fehlte im Bild)
   if(!fuchs.aktiv || fuchs.modus === 'tanzen') return;
@@ -807,6 +809,7 @@ function fuchsTanz(dt, fp){
     return;
   }
   if(T.phase === 'tanz'){
+    if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)) return;   // nach der Sitzpause erst aufstehen
     T.t += dt;
     if(T.t > TANZ_DAUER){ T.phase = 'setzen'; return; }
     // laeuft eine Drehung? dann auf der Stelle bleiben, bis sie fertig ist
@@ -826,8 +829,10 @@ function fuchsTanz(dt, fp){
   // setzen: genau vor die Figur, Blick zu ihr
   if(!fuchs.sitzt){
     const d = fuchsLaufe(dt, mitte.x, mitte.z, 1.6);
-    if(d < 0.2 || fuchs.blockiert){ fuchs.sitzt = true; fuchsAnim(FA.setzen, 0.25); }
+    if(d < 0.2 || fuchs.blockiert){ fuchs.sitzt = true; fuchs.sitzT = 0; fuchsAnim(FA.setzen, 0.25); }
   } else {
+    // nach SITZ_PAUSE s wieder aufstehen und den ganzen Tanz von vorn (Joshi spielt weiter)
+    if((fuchs.sitzT += dt) > SITZ_PAUSE){ fuchs.sitzt = false; fuchsAnim(FA.aufstehen, 0.2); Object.assign(T, { phase: 'tanz', t: 0, dreh: 0, naechste: 0.8, drehClip: null }); return; }
     fuchsSchaue(dt, g.x, g.z, 3);
     if(fuchs.cur === FA.setzen && !fuchsClipLaeuft(FA.setzen)) fuchsAnim(FA.sitzen, 0.2);
     else if(fuchs.cur === FA.sitzen && Math.random() < dt / 9) fuchsAnim(FA.sitzPause, 0.2);
@@ -904,6 +909,8 @@ function updateFuchs(dt){
     }
   } else if(fuchs.modus === 'tanzen' && eva){
     fuchsTanz(dt, fp);
+  } else if(fuchs.modus === 'kommen' && eva && fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)){
+    // erst fertig aufstehen (nach der Sitzpause), dann wieder hin
   } else if(fuchs.modus === 'kommen' && eva){
     // vor die Figur, leicht zur Seite versetzt (1,1 m vor, 0,35 m links) – sonst verdeckte Joshi ihn fuer die Kamera
     const v = nebenFigur(1.1, 0.35);
@@ -924,8 +931,10 @@ function updateFuchs(dt){
     const l = nebenFigur(0.15, 0.85);
     if(!fuchs.sitzt){
       const d = fuchsLaufe(dt, l.x, l.z, 1.6);
-      if(d < 0.15 || fuchs.blockiert){ fuchs.sitzt = true; fuchsAnim(FA.setzen, 0.25); }
+      if(d < 0.15 || fuchs.blockiert){ fuchs.sitzt = true; fuchs.sitzT = 0; fuchsAnim(FA.setzen, 0.25); }
     } else {
+      // nach SITZ_PAUSE s wieder aufstehen und noch einmal mit den Pfoten spielen (Joshi kniet weiter)
+      if((fuchs.sitzT += dt) > SITZ_PAUSE){ fuchs.sitzt = false; fuchs.modus = 'kommen'; fuchsAnim(FA.aufstehen, 0.2); return; }
       // zur Blickrichtung der Figur drehen (Engine-yaw -> Winkel ab +Z: yaw + PI)
       fuchs.yaw += klemme(winkelDiff(fuchs.yaw, eva.yaw + Math.PI), -3 * dt, 3 * dt);
       if(fuchs.cur === FA.setzen && !fuchsClipLaeuft(FA.setzen)) fuchsAnim(FA.sitzen, 0.2);

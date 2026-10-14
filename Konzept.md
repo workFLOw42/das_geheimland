@@ -27,8 +27,8 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Stehen:** Ruhehaltung (`idle`). Steht Joshi länger als 12 s still, holt er die **Gitarre** heraus; dazu läuft leise ein Gitarren-Loop. Jede Bewegung beendet beides sofort.
 - **Fuchs streift:** frei und neugierig um Joshi herum – schnuppert, setzt sich kurz, hüpft vor Freude; entfernt sich Joshi, kommt er hinterher. Ins Wasser geht er nicht (wartet am Ufer).
 - **Zu Beginn** sitzt der Fuchs am Strand und schaut aufs Meer, bis Joshi zu ihm kommt.
-- **Hinknien (B):** Der Fuchs rennt herbei, spielt vor Joshi (2 × mit den Pfoten) und setzt sich dann **links neben ihn**. Die Kamera schwenkt dabei zur Seite und tiefer, damit Joshi den Fuchs nicht verdeckt.
-- **Gitarre:** Der Fuchs rennt herbei und **tanzt 10 s** quer vor Joshi in etwa 5 m Abstand (hin und her, Hopser mit halber Drehung, Schwanzschlag, Salto), dann setzt er sich **genau vor ihn** und schaut ihn an. Die Kamera geht dabei weiter zurück und **kreist langsam um beide** (eine Runde in etwa 40 s); der rechte Stick übernimmt.
+- **Hinknien (B):** Der Fuchs rennt herbei, spielt vor Joshi (3 × mit den Pfoten) und setzt sich dann **links neben ihn**; nach 10 s Sitzen spielt er wieder, solange Joshi kniet. Die Kamera schwenkt dabei zur Seite und tiefer, damit Joshi den Fuchs nicht verdeckt.
+- **Gitarre:** Der Fuchs rennt herbei und **tanzt 10 s** quer vor Joshi in etwa 5 m Abstand (hin und her, Hopser mit halber Drehung, Schwanzschlag, zwei Saltos), dann setzt er sich **genau vor ihn** und schaut ihn an; nach 10 s Sitzen beginnt der Tanz von vorn, solange Joshi spielt. Die Kamera geht dabei weiter zurück und **kreist langsam um beide** (eine Runde in etwa 40 s); der rechte Stick übernimmt.
 - **Körper:** Joshi und der Fuchs haben je einen Kollisionskreis – sie laufen nicht durcheinander hindurch; der Fuchs läuft um Joshi herum.
 - **Schatten:** beide haben einen weichen Bodenschatten.
 - **Für Detektiv-Momente vorgesehen:** Joshis *Look Around* sowie die Fuchs-Animationen *Sit_Yes* (nicken) und *Sit_No* (Kopf schütteln).

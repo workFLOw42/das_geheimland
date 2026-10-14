@@ -177,6 +177,7 @@ function hookWelt(){
       const k = ovalShadow.scale.x / 0.9;                     // Engine: 0,9 m, mit Sprunghoehe groesser
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
       if(story.innen && story.innen.drin) ovalShadow.position.y = 150.05;   // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich
+      if(story.imBoot && story.imBoot()) ovalShadow.visible = false;         // im Boot: der Schatten laege auf dem Wasser
     }
     return r;
   };
@@ -775,6 +776,7 @@ story.fuchsZu = function(ziel){
 // Fuchs ins Boot (steg.js): sitzt vorn im Bug und schaut aufs Meer; beim Aussteigen zurueck auf den Steg neben Joshi
 story.fuchsInsBoot = function(rein){
   if(!fuchs.obj || !fuchs.aktiv) return;
+  if(fuchs.schatten) fuchs.schatten.visible = !rein;
   if(rein){ fuchs.modus = 'boot'; fuchs.sitzt = true; fuchs.tanz = null; fuchs.such = null; fuchs.cur = null; fuchsAnim(FA.sitzen, 0.01); }
   else if(eva){ fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.warte = 1.5; fuchsAnim(FA.aufstehen, 0.2);
     const n = nebenFigur(-1.0, 0.5); fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z); fuchs.yaw = eva.yaw + Math.PI; }
@@ -940,9 +942,10 @@ function updateFuchs(dt){
       fuchsAnim(FA.aufstehen, 0.2);
     }
   } else if(fuchs.modus === 'boot'){
-    // vorn im Bug (1,9 m vor der Mitte, etwas hoeher), Blick aufs Meer, schaukelt mit
-    const b = story.bootPunkt && story.bootPunkt(1.9, 0, 0.05);
+    // vorn im Bug vor dem Mast (Platz aus steg.js, Live-Skizze), Blick aufs Meer, schaukelt mit
+    const b = story.bootPunkt && story.bootPunkt(story.stegZustand.platzFuchs || 1.8, 0, 0.12);
     if(b){ fp.copy(b); fuchs.yaw = story.bootYaw(); fuchs.obj.rotation.y = fuchs.yaw - fuchs.kopf; }
+    if(fuchs.schatten) fuchs.schatten.visible = false;               // im Boot kein Bodenschatten
     if(fuchs.cur === FA.sitzen && Math.random() < dt / 10) fuchsAnim(FA.sitzPause, 0.2);
     else if(fuchs.cur === FA.sitzPause && !fuchsClipLaeuft(FA.sitzPause)) fuchsAnim(FA.sitzen, 0.2);
     return;

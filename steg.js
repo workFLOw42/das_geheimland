@@ -111,7 +111,10 @@ function ladeBoot(w){
     const bb = new THREE.Box3().setFromObject(rumpf || m), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
     const k = BOOT.laenge / sz.z;
     m.scale.multiplyScalar(k);
-    m.position.set(-c.x * k, -bb.min.y * k - 0.4, -c.z * k);    // Kiel 0,4 m unter Wasser, Rumpfmitte im Ursprung
+    // Wasserlinie: das blaue Unterwasserschiff (im Modell bis y ~0,8) soll unter Wasser sein (Live-Hinweis: Blau am Ruder =
+    // Wasserlinie), der hoelzerne Bootsboden (y 0,96) aber darueber bleiben – sonst stuende das Meer im Boot
+    const WASSERLINIE = 0.8;
+    m.position.set(-c.x * k, -WASSERLINIE * k, -c.z * k);
     // Farben nachts: Segel und Rumpf etwas aufhellen (fast schwarz), matt
     m.traverse(o => { if(o.isMesh && o.material){ for(const mt of (Array.isArray(o.material) ? o.material : [o.material])){ mt.metalness = 0;
       if(mt.color){ const h = {}; mt.color.getHSL(h); if(h.l < 0.2) mt.color.setHSL(h.h, h.s, 0.26); } } } });
@@ -121,8 +124,10 @@ function ladeBoot(w){
     innen.rotation.y = 0;
     const g = new THREE.Group(); g.add(innen); g.position.set(BOOT.x, 0, BOOT.z);
     w.add(g); s.boot = g; s.bootInnen = innen;
-    s.bugZ = BOOT.laenge / 2;                                    // Bug in Bootskoordinaten (+z nach der Drehung)
-    s.deckY = (bb.max.y - bb.min.y) * k * 0.5 - 0.4;              // ungefaehr Bodenbretter im Boot
+    // Plaetze im Boot (Live-Skizze): Fuchs vorn im Bug vor dem Mast (Modell z ~ 3,0), Joshi im Heck (Modell z ~ -2,6).
+    // Bootskoordinate = (Modell-z - Rumpfmitte) * k
+    s.platzFuchs = (3.0 - c.z) * k; s.platzJoshi = (-2.6 - c.z) * k;
+    s.deckY = (0.96 - WASSERLINIE) * k + 0.05;                     // Holzboden im Boot (Modell y 0,96) ueber der Wasserlinie
     story.koerper(null, { x: BOOT.x, z: BOOT.z, hx: 1.25, hz: BOOT.laenge / 2, h: 8 });   // man laeuft nicht ins Boot (nur mit Y)
   });
 }
@@ -201,11 +206,12 @@ story.updateSteg = function(dt){
   baue();
   s.t += dt;
   // Boot schaukelt mit der Duenung
-  if(s.boot){ const b = s.boot; b.position.y = seaYAt(BOOT.x, BOOT.z) * 0.9; b.rotation.z = Math.sin(s.t * 0.9) * 0.035; b.rotation.x = Math.sin(s.t * 0.6 + 1) * 0.02; b.updateMatrixWorld(true); }
+  // Boot schwimmt auf der Duenung, schaukelt nur leicht (es lag sichtbar schief)
+  if(s.boot){ const b = s.boot; b.position.y = seaYAt(BOOT.x, BOOT.z) * 0.9; b.rotation.z = Math.sin(s.t * 0.9) * 0.015; b.rotation.x = Math.sin(s.t * 0.6 + 1) * 0.01; b.updateMatrixWorld(true); }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit
   if(s.imBoot && eva && s.boot){
-    // auf der Bank mittschiffs (kniend – die Knie-Haltung senkt die Huefte, deshalb die Bank als Auflage)
-    const p = new THREE.Vector3(0, s.deckY + 0.35, -0.6).applyMatrix4(s.boot.matrixWorld);
+    // Joshi kniet hinten im Heck, zwischen hinterer Bank und Ruder (Live-Skizze; Modell z ~ -2,6), auf dem Bootsboden
+    const p = new THREE.Vector3(0, s.deckY + 0.05, s.platzJoshi).applyMatrix4(s.boot.matrixWorld);
     eva.group.position.copy(p); eva.vy = 0; eva.onGround = true;
     eva.yaw = story.bootYaw() + Math.PI;                       // Blick zum Bug (Engine: Nase -Z)
     eva.group.rotation.set(s.boot.rotation.x, eva.yaw, s.boot.rotation.z);

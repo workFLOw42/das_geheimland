@@ -104,16 +104,28 @@ function baueRaum(){
   const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xffd27a })); lat.position.set(0.35, 0.95, 0); tisch.add(lat);
   baueTischSachen(tisch);
   g.add(tisch);
+  // zwei Stuehle an den Tisch, je an eine Laengsseite, leicht schraeg herausgezogen
+  const stuehle = [];
+  for(const [sx, sz, rot] of [[-0.3, 0.75, Math.PI + 0.12], [0.35, -0.72, -0.1]]){
+    const s = baueStuhl(holz, dunkel); s.position.set(tisch.position.x + sx, 0, tisch.position.z + sz); s.rotation.y = rot; g.add(s); stuehle.push(s);
+  }
+  innen.stuehle = stuehle;
+  // Regal mit EIGENEN Materialien: beim Leuchten (Interaktionsobjekt) leuchteten sonst Bett, Leisten und alles andere
+  // aus demselben Holz mit
+  const regalHolz = holz.clone(), regalDunkel = dunkel.clone();
   const regal = new THREE.Group(); regal.position.set(0.3, 0, -T / 2 + 0.25);
-  for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.32), holz); br.position.y = 0.5 + i * 0.55; regal.add(br); }
-  for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.32), dunkel); s.position.set(sx * 1.0, 0.85, 0); regal.add(s); }
+  for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.32), regalHolz); br.position.y = 0.5 + i * 0.55; regal.add(br); }
+  for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.32), regalDunkel); s.position.set(sx * 1.0, 0.85, 0); regal.add(s); }
   baueBuecher(regal);
   g.add(regal);
   innen.regal = regal;                                  // spaeter: Trophaeen
   // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
   const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.03, 0.9); g.add(teppich);
-  // gelber Spielzeug-Bagger auf dem Teppich (an der Kreuzung), leicht schraeg
-  const bagger = baueBagger(); bagger.position.set(0.05, 0.03, 0.75); bagger.rotation.y = 0.6; g.add(bagger);
+  // gelber Spielzeug-Bagger auf einem kleinen Wandbord (rechte Wand, 1,1 m hoch) – auf dem Teppich stand er im Weg
+  const bord = new THREE.Group(); bord.position.set(B / 2 - 0.2, 1.1, 1.6); g.add(bord);
+  const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.7), holz.clone()); bord.add(brett);
+  for(const sz of [-0.28, 0.28]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(0.13, -0.09, sz); k.rotation.z = 0.5; bord.add(k); }
+  const bagger = baueBagger(); bagger.position.set(-0.02, 0.018, 0); bagger.rotation.y = Math.PI / 2 + 0.25; bord.add(bagger);   // Arm zum Raum
   innen.bagger = bagger;
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
   const ll = new THREE.PointLight(0xffc070, 1.0, 12, 1.6);   // Laterne (die Tischplatte gluehte sonst orange) ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
@@ -122,8 +134,8 @@ function baueRaum(){
   innen.moebel = [
     { x: bett.position.x, z: bett.position.z, hx: 0.65, hz: 1.15 },
     { x: tisch.position.x, z: tisch.position.z, hx: 0.75, hz: 0.5 },
+    ...stuehle.map(s => ({ x: s.position.x, z: s.position.z, hx: 0.24, hz: 0.24 })),   // Stuehle (0,44 x 0,44 m)
     { x: regal.position.x, z: regal.position.z, hx: 1.05, hz: 0.2 },
-    { x: bagger.position.x, z: bagger.position.z, hx: 0.26, hz: 0.26 },             // Bagger (Box ~0,45 x 0,22 m, gedreht)
   ];
   g.position.set(RAUM.x, BODEN_Y, RAUM.z);
   story.welt(1).add(g);
@@ -198,6 +210,16 @@ function baueTischSachen(tisch){
   innen.tischSachen = { messer, kompass, lupe };
   const sachen = new THREE.Group(); for(const o of [messer, kompass, lupe]){ tisch.remove(o); sachen.add(o); } tisch.add(sachen);
   innen.tischGruppe = sachen;
+}
+// Stuhl (0,44 x 0,44 m, Sitz 0,46 m hoch, Lehne nach -z) aus Holz
+function baueStuhl(holz, dunkel){
+  const s = new THREE.Group();
+  const sitz = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.05, 0.44), holz); sitz.position.y = 0.46; s.add(sitz);
+  for(const x of [-0.19, 0.19]) for(const z of [-0.19, 0.19]){ const b = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.46, 0.045), dunkel); b.position.set(x, 0.23, z); s.add(b); }
+  for(const x of [-0.19, 0.19]){ const p = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.48, 0.045), dunkel); p.position.set(x, 0.72, -0.19); s.add(p); }
+  for(const y of [0.66, 0.86]){ const q = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.03), holz); q.position.set(0, y, -0.19); s.add(q); }
+  s.traverse(o => { if(o.isMesh) o.castShadow = true; });
+  return s;
 }
 // Gelber Spielzeug-Bagger (~0,45 m lang): Kettenlaufwerk, Drehkranz, Oberwagen mit Kabine, Ausleger, Stiel, Loeffel
 function baueBagger(){

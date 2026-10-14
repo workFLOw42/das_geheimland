@@ -97,10 +97,10 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 | Reihenfolge | Wann | Text |
 |---|---|---|
-| 1 | noch nie umgeschaut (die ersten zwei Male) | Mit X schaust Du dich um. |
+| 1 | noch nie umgeschaut (die ersten zwei Male) | Mit X kannst Du dich ganz genau umschauen und alles Wichtige entdecken. Probier es gleich mal am Lagerfeuer aus. |
 | 2 | Satz 1 kam schon zweimal, trotzdem nicht umgeschaut | Stelle dich vor das Lagerfeuer und drücke X zum Umschauen. |
 | 3 | draußen schon umgeschaut, in der Hütte noch nicht | Schau dir doch mal deine Hütte von innen ganz genau an. |
-| 4 | überall umgeschaut, aber noch nicht alles entdeckt | Mit X schaust Du dich um. |
+| 4 | überall umgeschaut, aber noch nicht alles entdeckt | (wie 1) |
 | – | alles entdeckt | Hier hast Du schon alles entdeckt. *(vorläufig – weitere Hinweise folgen, z. B. zum Buch und zum Funkspruch)* |
 
 ---

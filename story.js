@@ -1190,12 +1190,12 @@ function fuchsSchnueffeln(dt, fp){
 
 // ---- Hinweise auf D-Pad links (Tastatur T) – wie die kleinen Infos in Trip to Japan, nur gesprochen ------------
 // Die Erzaehlerin sagt, was als Naechstes gut waere. Reihenfolge (Live-Wunsch 14.10.2026):
-//   1. noch nie umgeschaut:                       "Mit X schaust Du dich um."
+//   1. noch nie umgeschaut:                       "Mit X kannst Du dich ganz genau umschauen ..."
 //   2. kam Satz 1 schon zweimal (trotzdem nicht):  "Stelle dich vor das Lagerfeuer und drücke X zum Umschauen."
 //   3. draussen schon umgeschaut, in der Huette noch nicht: "Schau dir doch mal deine Huette von innen ganz genau an."
 //   4. sonst (alles entdeckt): noch offen – dann der Satz zum Umschauen ohne Neues
 const HINWEIS = {
-  x:      ['Mit X schaust Du dich um.'],
+  x:      ['Mit X kannst Du dich ganz genau umschauen und alles Wichtige entdecken. Probier es gleich mal am Lagerfeuer aus.'],
   feuer:  ['Stelle dich vor das Lagerfeuer und drücke X zum Umschauen.'],
   huette: ['Schau dir doch mal deine Hütte von innen ganz genau an.'],
 };

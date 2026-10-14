@@ -62,7 +62,9 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 
 - **Der Auftakt:** Der Detektiv erwacht nachts in seinem 3D-Kinderzimmer. Neben seinem Bett sitzt sein treuer Begleiter, der Fuchs. *(noch nicht gebaut)*
 - **Die Zaubertür:** Durch die Zimmertür gelangt er an einen nächtlichen Tropenstrand vor eine gemütliche Hütte mit Lagerfeuer. *(Strand, Hütte, Feuer: gebaut)*
-- **Das Mysterium:** Im Geheimland herrscht großes Chaos. Das Kurbel-Funkgerät am Lagerfeuer knackt, und über Funk kommt eine Durchsage (Hörspiel-Stimme):
+- **Die Ausrüstung (Auftakt in der Hütte):** Bevor das Abenteuer losgeht, holt Joshi seine Ausrüstung: **ein bestimmtes Buch aus dem Bücherregal** *(welches Buch und was darin steht: kommt noch)* und **die drei Sachen vom Tisch** – Taschenmesser, Kompass und Lupe (dafür werden sie einzeln gebraucht). Erst wenn er alles hat, geht es weiter.
+- **Der Funkspruch:** Sobald Joshi das Buch und die drei Sachen genommen hat, **kommt ein Funkspruch herein** – das Funkgerät am Lagerfeuer meldet sich. Joshi geht hin und **nimmt ihn mit Y an**; damit **beginnt das Abenteuer**.
+- **Das Mysterium:** Im Geheimland herrscht großes Chaos. Über Funk kommt die Durchsage (Hörspiel-Stimme):
   > „Achtung, Detektiv Joshi! Im Geheimland wurde Chaos angerichtet! Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!“
 
 ## 📸 2. Das Spuren- & Gameplay-Prinzip (Der 3-Klang)
@@ -110,7 +112,7 @@ Damit das Spiel auch beim 2. oder 3. Durchlauf spannend bleibt, rotiert das Syst
 ## 🗺️ Nächste Schritte
 
 1. **Kinderzimmer** als Einstieg (eigene Innenwelt) mit Bett und Zaubertür → Blende → Strand.
-2. **Funk-Durchsage** mit endgültigem Text wieder einschalten.
+2. **Ausrüstung und Funkspruch:** Buch aus dem Regal (Buch und Text kommen noch) und Taschenmesser, Kompass, Lupe vom Tisch nehmen → Funkspruch kommt herein → am Funkgerät mit Y annehmen → Durchsage, das Abenteuer beginnt.
 3. **Polaroid-Kamera** mit Fadenkreuz, Fotos ins Ermittlungsbuch.
 4. **Erster Einsatzort:** Müllwagen-Minispiel (Modell vorhanden: `garbage_truck_by_Lung_ong.glb`), Mülltonnen, Sortieren.
 5. **Täter neu festlegen** (der Fuchs ist Begleiter, siehe Abschnitt 3 und 4).

@@ -44,6 +44,8 @@ Das ist das Geheimland.
 
 ## Funk-Durchsage am Lagerfeuer *(im Code, ausgeschaltet)*
 
+**Wann:** sobald Joshi das Buch aus dem Regal und Taschenmesser, Kompass und Lupe vom Tisch genommen hat, kommt der Funkspruch herein; Joshi nimmt ihn am Funkgerät mit **Y** an – dann folgt diese Durchsage, und das Abenteuer beginnt.
+
 **Stimme:** `radio` – das Funkgerät wackelt und blinkt, solange es spricht.
 
 *knack* … *rausch* …
@@ -129,6 +131,9 @@ Dein Fuchs wartet schon am Strand auf dich.
 ## Offene Texte
 
 - ~~**Name der Figur**~~ – entschieden: **Joshi** (14.10.2026).
+- **Buch aus dem Bücherregal** – welches Buch und was die Erzählerin dazu sagt, kommt noch.
+- **Taschenmesser, Kompass, Lupe** – Texte beim Nehmen (am Tisch).
+- **Funkspruch kommt herein** – Hinweis, dass sich das Funkgerät meldet (z. B. „Hörst du das? Das Funkgerät!“).
 - **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.
 - **Finale am Fotobrett** und **Auflösung** – folgen, wenn der Täter feststeht (siehe Konzept.md).
 - **Erwachen im Kinderzimmer** und **Trophäen** – folgen.

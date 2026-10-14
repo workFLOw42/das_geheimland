@@ -102,27 +102,140 @@ function baueRaum(){
   const platte = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.07, 0.9), holz); platte.position.y = 0.78; tisch.add(platte);
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){ const bn = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.75, 0.07), dunkel); bn.position.set(sx * 0.6, 0.375, sz * 0.36); tisch.add(bn); }
   const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xffd27a })); lat.position.set(0.35, 0.95, 0); tisch.add(lat);
+  baueTischSachen(tisch);
   g.add(tisch);
   const regal = new THREE.Group(); regal.position.set(0.3, 0, -T / 2 + 0.25);
   for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.32), holz); br.position.y = 0.5 + i * 0.55; regal.add(br); }
   for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.32), dunkel); s.position.set(sx * 1.0, 0.85, 0); regal.add(s); }
+  baueBuecher(regal);
   g.add(regal);
   innen.regal = regal;                                  // spaeter: Trophaeen
   // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
-  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.02, 0.9); g.add(teppich);
+  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.03, 0.9); g.add(teppich);
+  // gelber Spielzeug-Bagger auf dem Teppich (an der Kreuzung), leicht schraeg
+  const bagger = baueBagger(); bagger.position.set(0.05, 0.03, 0.75); bagger.rotation.y = 0.6; g.add(bagger);
+  innen.bagger = bagger;
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
-  const ll = new THREE.PointLight(0xffc070, 1.6, 14, 1.4); ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
+  const ll = new THREE.PointLight(0xffc070, 1.0, 12, 1.6);   // Laterne (die Tischplatte gluehte sonst orange) ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
   const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund);
   // Hindernisse (Rechtecke in Raumkoordinaten) fuer Moebel
   innen.moebel = [
     { x: bett.position.x, z: bett.position.z, hx: 0.65, hz: 1.15 },
     { x: tisch.position.x, z: tisch.position.z, hx: 0.75, hz: 0.5 },
     { x: regal.position.x, z: regal.position.z, hx: 1.05, hz: 0.2 },
+    { x: bagger.position.x, z: bagger.position.z, hx: 0.26, hz: 0.26 },             // Bagger (Box ~0,45 x 0,22 m, gedreht)
   ];
   g.position.set(RAUM.x, BODEN_Y, RAUM.z);
   story.welt(1).add(g);
   innen.gruppe = g;
+  // Interaktionsobjekte im Raum (innen: true): Buecherregal und die Sachen auf dem Tisch. Messer, Kompass und Lupe sind
+  // drei eigene Teile (innen.tischSachen) – fuer die Situation am Tisch hier EIN Objekt, spaeter auch einzeln nutzbar.
+  // Der Bagger ist ein einfaches Objekt (nur Grenze).
+  innen.interRegal = story.interaktion(regal, { name: 'Bücherregal', x: RAUM.x + regal.position.x, z: RAUM.z + regal.position.z, r: 1.0, yHoehe: 2.0, welt: 1, innen: true });
+  innen.interTisch = story.interaktion(innen.tischGruppe, { name: 'Tisch', x: RAUM.x + tisch.position.x, z: RAUM.z + tisch.position.z, r: 0.7, yHoehe: 1.35, welt: 1, innen: true });
 }
+
+// ---- Einrichtung: Buecher, Tisch-Sachen, Bagger (aus Grundformen) -------------------------------------------
+const BUCH_FARBEN = [0xb8433a, 0x3f6fb5, 0x4f9a4a, 0xe0b23c, 0x7a4fa0, 0xd8743a, 0x2f7a8a, 0x9a3a5a, 0xe8e0c8, 0x5a4a3a];
+// Viele Buecher in jedem Fach: unterschiedlich breit und hoch, ab und zu eins schraeg angelehnt, mit hellem Ruecken-Streifen
+function baueBuecher(regal){
+  let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const papier = new THREE.MeshLambertMaterial({ color: 0xf2ead2 });
+  for(let fach = 0; fach < 3; fach++){
+    const yBoden = 0.5 + fach * 0.55 + 0.025;
+    let x = -0.95;
+    while(x < 0.9){
+      const b = 0.03 + rnd() * 0.035, h = 0.24 + rnd() * 0.18, tief = 0.2 + rnd() * 0.06;
+      if(rnd() < 0.08){ x += 0.06; continue; }                    // kleine Luecke
+      const farbe = BUCH_FARBEN[Math.floor(rnd() * BUCH_FARBEN.length)];
+      const buch = new THREE.Group();
+      buch.add(new THREE.Mesh(new THREE.BoxGeometry(b, h, tief), new THREE.MeshLambertMaterial({ color: farbe })));
+      const seiten = new THREE.Mesh(new THREE.BoxGeometry(b * 0.8, h * 0.94, 0.005), papier); seiten.position.z = -tief / 2 - 0.001; buch.add(seiten);
+      const streifen = new THREE.Mesh(new THREE.BoxGeometry(b * 1.02, 0.018, 0.004), new THREE.MeshLambertMaterial({ color: 0xf0d27a }));
+      streifen.position.set(0, h * 0.28, tief / 2 + 0.001); buch.add(streifen);
+      const schraeg = rnd() < 0.12 && x > -0.85;
+      buch.position.set(x + b / 2, yBoden + h / 2, 0.02);
+      if(schraeg){ buch.rotation.z = -0.32; buch.position.x += 0.04; buch.position.y -= 0.02; }
+      regal.add(buch);
+      x += b + 0.004 + (schraeg ? 0.06 : 0);
+    }
+  }
+}
+// Auf dem Tisch (Platte bei y 0,78, 1,4 x 0,9 m; Laterne bei x +0,35): Taschenmesser, Kompass, Lupe
+function baueTischSachen(tisch){
+  const oben = 0.815;
+  const rot = new THREE.MeshLambertMaterial({ color: 0xc62828 }), stahl = new THREE.MeshLambertMaterial({ color: 0xc8ccd2 });
+  const messing = new THREE.MeshLambertMaterial({ color: 0xc9a227 }), weiss = new THREE.MeshLambertMaterial({ color: 0xf4f1e6 });
+  const schwarz = new THREE.MeshLambertMaterial({ color: 0x222222 });
+  // Taschenmesser: rotes Griffstueck mit weissem Kreuz-Schild, Klinge halb ausgeklappt
+  const messer = new THREE.Group(); messer.position.set(-0.4, oben, 0.12); messer.rotation.y = 0.4;
+  const griff = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.018, 0.026), rot); messer.add(griff);
+  for(const ez of [-0.013, 0.013]){ const r = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.018, 12), rot); r.position.x = ez * 3.4; messer.add(r); }
+  const schild = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.002, 0.014), weiss); schild.position.y = 0.0095; messer.add(schild);
+  const klinge = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.004, 0.016), stahl); klinge.geometry.translate(0.035, 0, 0);
+  klinge.position.set(0.045, 0.004, 0); klinge.rotation.y = -0.5; messer.add(klinge);
+  tisch.add(messer);
+  // Kompass: Messing-Dose, weisses Zifferblatt, rot-blaue Nadel
+  const kompass = new THREE.Group(); kompass.position.set(-0.05, oben, -0.15);
+  const dose = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.047, 0.02, 24), messing); dose.position.y = 0.01; kompass.add(dose);
+  const blatt = new THREE.Mesh(new THREE.CylinderGeometry(0.039, 0.039, 0.002, 24), weiss); blatt.position.y = 0.021; kompass.add(blatt);
+  for(let i = 0; i < 4; i++){ const st = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.001, 0.012), schwarz); const a = i * Math.PI / 2;
+    st.position.set(Math.sin(a) * 0.031, 0.0225, Math.cos(a) * 0.031); st.rotation.y = a; kompass.add(st); }
+  const nadel = new THREE.Group(); nadel.position.y = 0.024; nadel.rotation.y = 0.5;
+  const nord = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.032, 4), rot); nord.rotation.x = Math.PI / 2; nord.position.z = 0.016; nadel.add(nord);
+  const sued = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.032, 4), new THREE.MeshLambertMaterial({ color: 0x2a5aa8 })); sued.rotation.x = -Math.PI / 2; sued.position.z = -0.016; nadel.add(sued);
+  kompass.add(nadel);
+  const oese = new THREE.Mesh(new THREE.TorusGeometry(0.008, 0.003, 6, 12), messing); oese.position.set(0, 0.012, 0.053); kompass.add(oese);
+  tisch.add(kompass); innen.kompassNadel = nadel;
+  // Lupe: Messing-Ring mit hellblauem Glas, dunkler Holzgriff
+  const lupe = new THREE.Group(); lupe.position.set(0.0, oben, 0.2); lupe.rotation.y = -0.7;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.007, 8, 28), messing); ring.rotation.x = Math.PI / 2; ring.position.y = 0.007; lupe.add(ring);
+  const glas = new THREE.Mesh(new THREE.CircleGeometry(0.05, 28), new THREE.MeshLambertMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.45 }));
+  glas.rotation.x = -Math.PI / 2; glas.position.y = 0.008; lupe.add(glas);
+  const stiel = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.1, 10), new THREE.MeshLambertMaterial({ color: 0x5b3a1f }));
+  stiel.rotation.z = Math.PI / 2; stiel.position.set(0.105, 0.008, 0); lupe.add(stiel);
+  tisch.add(lupe);
+  innen.tischSachen = { messer, kompass, lupe };
+  const sachen = new THREE.Group(); for(const o of [messer, kompass, lupe]){ tisch.remove(o); sachen.add(o); } tisch.add(sachen);
+  innen.tischGruppe = sachen;
+}
+// Gelber Spielzeug-Bagger (~0,45 m lang): Kettenlaufwerk, Drehkranz, Oberwagen mit Kabine, Ausleger, Stiel, Loeffel
+function baueBagger(){
+  const g = new THREE.Group();
+  const gelb = new THREE.MeshLambertMaterial({ color: 0xf2b705 }), dunkel = new THREE.MeshLambertMaterial({ color: 0x2b2b2b });
+  const grau = new THREE.MeshLambertMaterial({ color: 0x6b6b6b }), glas = new THREE.MeshLambertMaterial({ color: 0x8fc6e8 });
+  // Laufwerk: zwei Ketten
+  for(const sz of [-1, 1]){
+    const kette = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.055, 0.06), dunkel); kette.position.set(0, 0.028, sz * 0.075); g.add(kette);
+    for(const sx of [-1, 1]){ const r = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.062, 14), dunkel); r.rotation.x = Math.PI / 2; r.position.set(sx * 0.15, 0.028, sz * 0.075); g.add(r); }
+    for(let i = -2; i <= 2; i++){ const rad = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.064, 8), grau); rad.rotation.x = Math.PI / 2; rad.position.set(i * 0.055, 0.026, sz * 0.075); g.add(rad); }
+  }
+  const rahmen = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.11), grau); rahmen.position.y = 0.06; g.add(rahmen);
+  // Oberwagen auf Drehkranz
+  const ober = new THREE.Group(); ober.position.y = 0.08; g.add(ober);
+  ober.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.015, 18), dunkel));   // Drehkranz
+  const koerper = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.15), gelb); koerper.position.set(-0.02, 0.045, 0); ober.add(koerper);
+  const heck = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.15), gelb); heck.position.set(-0.12, 0.04, 0); ober.add(heck);
+  const kabine = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.07), gelb); kabine.position.set(0.035, 0.125, -0.035); ober.add(kabine);
+  for(const [w, h, x, y, z, ry] of [[0.07, 0.06, 0.081, 0.13, -0.035, Math.PI / 2], [0.06, 0.06, 0.035, 0.13, -0.071, 0], [0.06, 0.06, 0.035, 0.13, 0.001, 0]]){
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), glas); f.position.set(x, y, z); f.rotation.y = ry; ober.add(f);
+  }
+  const dach = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.01, 0.08), dunkel); dach.position.set(0.035, 0.175, -0.035); ober.add(dach);
+  const auspuff = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 8), dunkel); auspuff.position.set(-0.09, 0.1, 0.05); ober.add(auspuff);
+  // Ausleger (schraeg hoch), Stiel (runter), Loeffel – rechts neben der Kabine
+  const arm = new THREE.Group(); arm.position.set(0.07, 0.07, 0.035); ober.add(arm);
+  const ausleger = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.032, 0.03), gelb); ausleger.geometry.translate(0.1, 0, 0); ausleger.rotation.z = 0.75; arm.add(ausleger);
+  const knick = new THREE.Group(); knick.position.set(Math.cos(0.75) * 0.2, Math.sin(0.75) * 0.2, 0); arm.add(knick);
+  const stiel = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.026, 0.026), gelb); stiel.geometry.translate(0.075, 0, 0); stiel.rotation.z = -1.25; knick.add(stiel);
+  const zylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.14, 8), stahlFarbe()); zylinder.position.set(0.05, 0.03, 0.02); zylinder.rotation.z = -0.75; arm.add(zylinder);
+  const spitze = new THREE.Group(); spitze.position.set(Math.cos(-1.25) * 0.15, Math.sin(-1.25) * 0.15, 0); knick.add(spitze);
+  const loeffel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.06), dunkel); loeffel.position.set(0.02, -0.015, 0); loeffel.rotation.z = -0.4; spitze.add(loeffel);
+  for(let i = -1; i <= 1; i++){ const zahn = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.018, 4), grau); zahn.position.set(0.045, -0.04, i * 0.02); zahn.rotation.z = -Math.PI / 2 - 0.4; spitze.add(zahn); }
+  ober.rotation.y = 0.35;                                       // Oberwagen etwas gedreht – sieht nach Spielen aus
+  g.traverse(o => { if(o.isMesh){ o.castShadow = true; } });
+  return g;
+}
+function stahlFarbe(){ return new THREE.MeshLambertMaterial({ color: 0xc8ccd2 }); }
 
 // ---- Laufen im Raum --------------------------------------------------------------------------
 const KOERPER = 0.3;

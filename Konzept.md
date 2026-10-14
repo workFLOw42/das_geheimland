@@ -48,14 +48,14 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 ## ✅ Umgesetzt: Etappe 1 – die Insel bei Nacht
 
 - **Kleine Insel** (etwa 2/3 kleiner als die Flugspiel-Inseln): Gras, Sandstrand, verteilte Palmen, Meer mit Wellen.
-- **Hütte** kurz vor dem Strand: Holz mit Strohdach, Tür und Fenstern vorne und an den Seiten, innen tapeziert (man sieht die Sternentapete auch von außen durch Tür und Fenster). Man läuft gegen die Wände und durch die Tür hinein. **Innen** (eigene Welt, größer als außen): Sternentapete, Holzverkleidung, Dielen, Balkendecke, Bett, Tisch mit Laterne, Regal (Platz für die späteren Trophäen), **Straßen-Spielteppich** (Straßen, Kreuzung, Zebrastreifen, Kreisel, Häuschen, Teich – deckt nur einen Teil des Bodens), gemalte Fenster mit Mond.
+- **Hütte** kurz vor dem Strand: Holz mit Strohdach, Tür und Fenstern vorne und an den Seiten, innen tapeziert (man sieht die Sternentapete auch von außen durch Tür und Fenster). Man läuft gegen die Wände und durch die Tür hinein. **Innen** (eigene Welt, größer als außen): Sternentapete, Holzverkleidung, Dielen, Balkendecke, Bett, Tisch mit Laterne, Regal voller bunter **Bücher** (Platz für die späteren Trophäen), Tisch mit **Taschenmesser, Kompass und Lupe**, **Straßen-Spielteppich** mit einem gelben Spielzeug-**Bagger** (einfaches Objekt), (Straßen, Kreuzung, Zebrastreifen, Kreisel, Häuschen, Teich – deckt nur einen Teil des Bodens), gemalte Fenster mit Mond.
 - **Vor der Hütte** zwei Palmen, dazwischen das animierte **Lagerfeuer** (Grenze = Steinrand, so hoch wie die Flamme), daneben das rote **Kurbel-Funkgerät** auf einer Kiste (Grenze = die Kiste).
 - **Sternklare Nacht** (keine Wolken – nachts wirkten sie wie schwebende Steine): gedämpfte Hintergrundsterne, die Milchstraße, ein gedämpfter Mond mit Lichthof.
 - **Sternbilder**, hell und mit ganz dezenten Linien, gut sichtbar statt astronomisch exakt platziert: **Großer Bär** (mit dem Großen Wagen, dazu Kopf und Beine) und **Kleiner Bär** (Kleiner Wagen mit dem Polarstern) sowie **Kassiopeia** im Norden über der Hütte, **Orion** im Süden über dem Meer. Grundlage für das spätere Wissens-Thema Sternbilder.
 - **Möwen:** fliegen über der Insel, ein paar sitzen am Strand (fliegen auf, wenn man ihnen zu nahe kommt). Meeresrauschen und Möwengeschrei kommen aus der Engine.
 - **Schwimmen und Waten** wie in *Trip to Japan*: am Strand flach, dann schwimmen; tauchen mit RT / LT.
 - **Startbildschirm** „🌙 Das Geheimland“ mit großem „▶ Los geht's“ (schaltet Ton und Stimme frei).
-- **Interaktionsobjekte:** Lagerfeuer, Hütte und Funkgerät – per Suchblick (X) entdecken, dann Y.
+- **Interaktionsobjekte:** draußen Lagerfeuer, Hütte und Funkgerät; in der Hütte Bücherregal und Tisch (Taschenmesser, Kompass, Lupe – am Tisch ein Objekt, später auch einzeln). Per Suchblick (X) entdecken, dann Y. Hier
 - **Funk-Durchsage** ist gebaut, aber vorerst **ausgeschaltet** (Text kommt später).
 
 ## 💡 1. Rahmenhandlung & Einstieg

@@ -72,7 +72,14 @@ Dein Fuchs wartet schon am Strand auf dich.
 | Hütte | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
 | Funkgerät | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. |
 
-*In der Hütte folgen noch Interaktionsobjekte – welche, steht noch nicht fest.*
+**In der Hütte** *(im Code, noch ohne Text)*: **Bücherregal** und **Tisch** (Taschenmesser, Kompass und Lupe – hier als ein Objekt; später auch einzeln). Texte folgen.
+
+**Suchblick ohne Neues** *(im Code)* – drückt Joshi X und es gibt in der Nähe nichts (mehr) zu finden:
+
+| Situation | Text |
+|---|---|
+| schon alles entdeckt | Hier hast Du schon alles entdeckt. |
+| hier gibt es gar nichts | Hier scheint es nichts Interessantes zu geben. |
 
 ---
 

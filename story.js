@@ -174,7 +174,7 @@ function hookWelt(){
     if(eva && !eva.boat && !eva.rover && ovalShadow.visible){
       const k = ovalShadow.scale.x / 0.9;                     // Engine: 0,9 m, mit Sprunghoehe groesser
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
-      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.02;   // Raumboden (huette_innen.js BODEN_Y)
+      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.05;   // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich
     }
     return r;
   };
@@ -724,7 +724,7 @@ function preloadFuchs(){
     // eigener weicher Bodenschatten (dasselbe Material wie Joshis Ovalschatten), haengt am Fuchs, liegt flach
     fuchs.schatten = new THREE.Mesh(new THREE.CircleGeometry(1, 24), ovalShadowMat.clone());   // eigene Kopie: die Engine aendert die Deckkraft des Originals mit Joshis Sprunghoehe
     fuchs.schatten.material.opacity = 0.35;
-    fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.05;
+    fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.06;
     fuchs.schatten.rotation.z = fuchs.kopf;                      // Laengsachse zum Kopf
     wrap.add(fuchs.schatten);
     if(fuchs.wartetAuf) fuchsAbsetzen(fuchs.wartetAuf);
@@ -1052,7 +1052,9 @@ function fuchsNeuesZiel(zu){
 //   innen: true = steht im Huetten-Raum (Live-Wunsch: dort gibt es auch Interaktionsobjekte). Nicht jedes Objekt ist in
 //   jeder Etappe wichtig – angemeldet wird nur, was die Geschichte dort braucht.
 const INTER_SUCH_R = 15, INTER_Y_R = 1.6, GLOW_T = 1.6;
-const INNEN_BODEN = 150;      // Boden des Huetten-Raums (huette_innen.js BODEN_Y)
+const INNEN_BODEN = 150;
+const TEXT_ALLES_ENTDECKT = ['Hier hast Du schon alles entdeckt.'];
+const TEXT_NICHTS_HIER = ['Hier scheint es nichts Interessantes zu geben.'];      // Boden des Huetten-Raums (huette_innen.js BODEN_Y)
 const GLOW_FARBE = new THREE.Color(0xffd27a);
 const interListe = [];
 function interaktion(obj, opt){
@@ -1116,8 +1118,10 @@ function fuchsSuche(){
   if(!fuchs.aktiv || !eva) return;
   const g = eva.group.position;
   const drin = !!(story.innen && story.innen.drin);
-  const rest = interListe.filter(o => o.welt === story.etappe && !o.entdeckt && o.innen === drin && Math.hypot(o.x - g.x, o.z - g.z) < INTER_SUCH_R);
-  if(!rest.length) return;
+  const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && Math.hypot(o.x - g.x, o.z - g.z) < INTER_SUCH_R);
+  const rest = hier.filter(o => !o.entdeckt);
+  // Nichts mehr zu finden: schon alles entdeckt – oder hier gibt es gar nichts (zwei verschiedene Saetze)
+  if(!rest.length){ if(!story.allesGesagt){ story.allesGesagt = true; sprich(hier.length ? TEXT_ALLES_ENTDECKT : TEXT_NICHTS_HIER, () => { story.allesGesagt = false; }); } return; }
   const liste = []; let px = fuchs.obj.position.x, pz = fuchs.obj.position.z;
   while(rest.length){ rest.sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz)); const o = rest.shift(); liste.push(o); px = o.x; pz = o.z; }
   if(fuchs.sitzt || fuchs.modus === 'warten') fuchsAnim(FA.aufstehen, 0.2);

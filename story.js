@@ -105,8 +105,19 @@ function hookWelt(){
   // Der X-Wing bleibt als unsichtbarer Anker der Engine stehen (state.pos haelt Inselzellen, Meer,
   // Kamera beim Aussteigen) – zu sehen ist er nicht, sein Schatten auch nicht. Fliegen kommt spaeter.
   const schattenOrig = updateShadow, ovalOrig = updateOvalShadow;
-  updateShadow = function(){ if(eva){ planeShadow.visible = false; return; } return schattenOrig.apply(this, arguments); };
-  updateOvalShadow = function(){ if(eva) return; return ovalOrig.apply(this, arguments); };
+  // Zu Fuss blendet die Engine den Flugzeugschatten selbst aus und ruft den Ovalschatten der Figur auf – also laufen lassen
+  updateShadow = function(){ const r = schattenOrig.apply(this, arguments); if(eva) planeShadow.visible = false; return r; };
+  // Weicher Ovalschatten der Engine (echte Schatten gibt es nicht): zu Fuss rund 0,9 m – fuer den 1,9-m-Astronauten.
+  // Fuer Joshi (1,20 m) auf FIGUR_SCHATTEN verkleinert; im Innenraum (150 m hoch) liegt er auf dem Raumboden.
+  updateOvalShadow = function(){
+    const r = ovalOrig.apply(this, arguments);
+    if(eva && !eva.boat && !eva.rover && ovalShadow.visible){
+      const k = ovalShadow.scale.x / 0.9;                     // Engine: 0,9 m, mit Sprunghoehe groesser
+      ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
+      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.02;   // Raumboden (huette_innen.js BODEN_Y)
+    }
+    return r;
+  };
   _islandCache.clear(); _subBerthCache.clear(); _xwpCache.clear(); _parkCache.clear();
 
   // Der X-Wing parkt am Oststrand (Nase zum Wasser) – fuer spaeter, wenn geflogen wird.
@@ -339,6 +350,7 @@ function hookFigur(){
   };
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
+const FIGUR_SCHATTEN = 0.5;   // m Radius des Bodenschattens unter Joshi
 const KAM_WEIT = 1.5;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
 let figurSchritt = false;     // true, waehrend die Engine die Figur bewegt (evaSolid: Fuchs als Hindernis)
 // Sprungrolle: konstanter Schwung (rollV, aus dem Lauftempo), ab ROLL_BREMS_AB der Clipdauer bremst
@@ -625,6 +637,12 @@ function preloadFuchs(){
     obj.position.set(-c.x * k, -bb.min.y * k, -c.z * k);    // mittig, Pfoten auf y = 0
     const wrap = new THREE.Group(); wrap.add(obj);
     fuchs.obj = wrap; fuchs.mixer = mixer; fuchs.cur = FA.stehen;
+    // eigener weicher Bodenschatten (dasselbe Material wie Joshis Ovalschatten), haengt am Fuchs, liegt flach
+    fuchs.schatten = new THREE.Mesh(new THREE.CircleGeometry(1, 24), ovalShadowMat.clone());   // eigene Kopie: die Engine aendert die Deckkraft des Originals mit Joshis Sprunghoehe
+    fuchs.schatten.material.opacity = 0.35;
+    fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.05;
+    fuchs.schatten.rotation.z = fuchs.kopf;                      // Laengsachse zum Kopf
+    wrap.add(fuchs.schatten);
     if(fuchs.wartetAuf) fuchsAbsetzen(fuchs.wartetAuf);
   });
 }

@@ -387,6 +387,17 @@ function hookFigur(){
   const _kw = new THREE.Vector3();
   updateCamera = function(){
     const soll = eva && figur.cur === 'guitar' && !sw.aktiv && !(story.innen && story.innen.drin) ? 1 : 0;
+    // Knien: eigene Seitenkamera, damit man den Fuchs vor Joshi spielen sieht (von hinten verdeckte Joshi ihn)
+    const knie = eva && figur.kniet && !sw.aktiv && !(story.innen && story.innen.drin) ? 1 : 0;
+    figur.kamKnie = (figur.kamKnie || 0) + (knie - (figur.kamKnie || 0)) * Math.min(1, 2 * dtCam);
+    if(eva && figur.kamKnie > 0.01 && !(figur.kamWeit > 0.01)){
+      const p = eva.group.position, w = figur.kamKnie, yaw = eva.yaw + KNIE_WINKEL * w + evaOrbit;
+      const m = nebenFigur(0.55 * w, 0.15 * w);                            // Blickpunkt zwischen Joshi und Fuchs
+      _kw.set(p.x + Math.sin(yaw) * (7 - 3.2 * w), p.y + 3.4 - 2.0 * w, p.z + Math.cos(yaw) * (7 - 3.2 * w));
+      camera.position.lerp(_kw, Math.min(1, 4 * dtCam));
+      camera.up.set(0, 1, 0); camera.lookAt(m.x, p.y + 0.5, m.z);
+      return;
+    }
     figur.kamWeit = (figur.kamWeit || 0) + (soll - (figur.kamWeit || 0)) * Math.min(1, 1.2 * dtCam);
     if(!(eva && figur.kamWeit > 0.01)) return camOrigF.apply(this, arguments);
     // Kreisfahrt: langsam um Joshi und den Fuchs herum (eine Runde in KAM_RUNDE s); der rechte Stick dreht selbst
@@ -416,6 +427,7 @@ function hookFigur(){
 }
 const GEH_MAX = 0.3;          // Anteil von EVA_SPEED bei 50 % Stick (~1,8 m/s)
 const FIGUR_SCHATTEN = 0.5;   // m Radius des Bodenschattens unter Joshi
+const KNIE_WINKEL = -1.05;     // rad: so weit schwenkt die Kamera beim Knien zur Seite (rechts von Joshi)
 const KAM_RUNDE = 40;         // s fuer eine Kreisfahrt der Kamera beim Gitarrespielen
 const KAM_WEIT = 1.6;         // Kamera-Abstand beim Gitarrespielen (x Engine-Abstand)
 let figurSchritt = false;     // true, waehrend die Engine die Figur bewegt (evaSolid: Fuchs als Hindernis)
@@ -668,13 +680,15 @@ function hookSchwimmen(){
 //   spielen   – ... und macht direkt vor ihr Fox_Attack_Paws/Tail (sieht nach Spielen aus),
 //   hinsetzen – danach setzt er sich links neben sie und bleibt, bis sie aufsteht.
 const FUCHS_LANG = 0.9;                    // m Kopf bis Schwanzspitze
+const _fb = new THREE.Vector3();
 const FA = {
   stehen: 'Fox_Idle', gehen: 'Fox_Walk_InPlace', rennen: 'Fox_Run_InPlace',
   setzen: 'Fox_Sit1', sitzen: 'Fox_Sit2_Idle', sitzPause: 'Fox_Sit_Idle_Break', aufstehen: 'Fox_Sit3_StandUp',
-  // Spielen vor der knienden Figur: zweimal Pfoten + Schwanz (Live-Wunsch 14.10.2026), dann hinsetzen
-  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Tail', 'Fox_Attack_Paws', 'Fox_Attack_Tail'], huepfen: 'Fox_Jump_Pivot_InPlace',
+  // Spielen vor der knienden Figur: zweimal mit den Pfoten (Live-Wunsch 14.10.2026), dann hinsetzen.
+  // Der Schwanzschlag (Attack_Tail) gehoert jetzt zum Tanz (TANZ_DREH).
+  spielen: ['Fox_Attack_Paws', 'Fox_Attack_Paws'], huepfen: 'Fox_Jump_Pivot_InPlace',
 };
-const EINMAL = [FA.setzen, FA.aufstehen, FA.sitzPause, FA.huepfen, ...new Set(FA.spielen), 'Fox_Somersault_InPlace'];
+const EINMAL = [FA.setzen, FA.aufstehen, FA.sitzPause, FA.huepfen, ...new Set(FA.spielen), 'Fox_Somersault_InPlace', 'Fox_Attack_Tail'];
 const fuchs = story.fuchs = { obj: null, mixer: null, acts: {}, cur: null, kopf: 0, yaw: 0, aktiv: false,
   modus: 'warten', ziel: null, warte: 0, t: 0, spielI: 0, sitzt: false, tun: null };
 function preloadFuchs(){
@@ -696,11 +710,14 @@ function preloadFuchs(){
     const sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
     // Blickrichtung: vom Koerpermittelpunkt zum Kopfknochen
     let kopf = null; obj.traverse(o => { if(!kopf && o.isBone && /head/i.test(o.name)) kopf = o; });
+    obj.traverse(o => { if(!fuchs.becken && o.isBone && /Pelvis/i.test(o.name)) fuchs.becken = o; });   // fuer das Anheben bei Salto/Schwanzschlag
     const kp = kopf ? kopf.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(0, 0, 1);
     fuchs.kopf = Math.atan2(kp.x - c.x, kp.z - c.z);
     const k = FUCHS_LANG / Math.max(sz.x, sz.z);
     obj.scale.multiplyScalar(k);
     obj.position.set(-c.x * k, -bb.min.y * k, -c.z * k);    // mittig, Pfoten auf y = 0
+    // Ruhehoehe des Beckens in der Idle-Haltung, relativ zum Fuss des Fuchses (wrap steht bei y = 0)
+    if(fuchs.becken){ obj.updateMatrixWorld(true); fuchs.beckenRuhe = fuchs.becken.getWorldPosition(new THREE.Vector3()).y; fuchs.inner = obj; fuchs.innerY = obj.position.y; }
     const wrap = new THREE.Group(); wrap.add(obj);
     fuchs.obj = wrap; fuchs.mixer = mixer; fuchs.cur = FA.stehen;
     // eigener weicher Bodenschatten (dasselbe Material wie Joshis Ovalschatten), haengt am Fuchs, liegt flach
@@ -712,17 +729,32 @@ function preloadFuchs(){
     if(fuchs.wartetAuf) fuchsAbsetzen(fuchs.wartetAuf);
   });
 }
+// Spiel- und Trick-Clips sind kurz und schnell (Schwanzschlag: 150 Grad in 0,8 s) – langsamer abspielen und nur kurz
+// ueberblenden, sonst ging die Mitte der Drehung in der Blende unter (Live-Befund: Anfang und Ende sichtbar, Mitte fehlt)
+const FUCHS_LANGSAM = { Fox_Attack_Paws: 0.75, Fox_Attack_Tail: 0.7, Fox_Somersault_InPlace: 0.75, Fox_Jump_Pivot_InPlace: 0.85 };
 function fuchsAnim(name, blend){
   if(fuchs.cur === name || !fuchs.acts[name]) return;
   const a = fuchs.acts[name];
+  a.timeScale = FUCHS_LANGSAM[name] || 1;
+  if(FUCHS_LANGSAM[name]) blend = Math.min(blend || 0.3, 0.08);
   a.reset().play();
   if(fuchs.cur && fuchs.acts[fuchs.cur]) fuchs.acts[fuchs.cur].crossFadeTo(a, blend || 0.3, false);
+  fuchs.cur = name;
+}
+// Clip von vorn starten, auch wenn er gerade schon laeuft (zweimal Pfoten, Tanzdrehungen); alle anderen Clips werden
+// sauber ausgeblendet (vorher lief bei cur = null der alte Clip mit vollem Gewicht weiter).
+function fuchsNeu(name){
+  const a = fuchs.acts[name]; if(!a) return;
+  if(EINMAL.includes(name)){ a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; }
+  a.timeScale = FUCHS_LANGSAM[name] || 1;
+  for(const n in fuchs.acts){ const b = fuchs.acts[n]; if(b !== a && b.isRunning()) b.fadeOut(0.08); }
+  a.reset(); a.setEffectiveWeight(1); a.fadeIn(0.08); a.play();
   fuchs.cur = name;
 }
 // Laeuft ein Einmal-Clip noch?
 function fuchsClipLaeuft(name){
   const a = fuchs.acts[name];
-  return fuchs.cur === name && a && a.time < a.getClip().duration - 0.05;
+  return fuchs.cur === name && a && a.time < a.getClip().duration - 0.03;
 }
 // Wo darf er laufen? Gras, Sand und der Huetten-Innenraum – nicht ins Wasser (auch nicht ins Flache), nicht in Waende
 function fuchsFrei(x, z){ return evaSolid(x, z) && watGrund(x, z) === null && !hitsBuilding(x, ISLAND_Y + 0.5, z, false); }
@@ -752,7 +784,7 @@ function fuchsAbsetzen(p){
 // her (TANZ_BREIT m), dreht sich immer wieder (Hopser mit Drehung, Salto). Nach TANZ_DAUER s setzt er sich genau vor
 // sie und schaut sie an. Hoert sie auf, streift er wieder.
 const TANZ_ABST = 5, TANZ_BREIT = 1.5, TANZ_DAUER = 10;
-const TANZ_DREH = ['Fox_Jump_Pivot_InPlace', 'Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace'];
+const TANZ_DREH = ['Fox_Jump_Pivot_InPlace', 'Fox_Attack_Tail', 'Fox_Somersault_InPlace', 'Fox_Jump_Pivot_InPlace', 'Fox_Attack_Tail'];
 function fuchsTanzStart(){
   // auch aus dem Warten am Strand heraus: die Gitarre lockt ihn (sonst sass er beim Spielstart hinter der Figur und fehlte im Bild)
   if(!fuchs.aktiv || fuchs.modus === 'tanzen') return;
@@ -781,7 +813,7 @@ function fuchsTanz(dt, fp){
     if(T.drehClip){ if(fuchsClipLaeuft(T.drehClip)) return; T.drehClip = null; }
     if((T.naechste -= dt) <= 0){
       const c = TANZ_DREH[T.dreh++ % TANZ_DREH.length];
-      if(fuchs.acts[c]){ fuchs.acts[c].setLoop(THREE.LoopOnce); fuchs.acts[c].clampWhenFinished = true; fuchs.cur = null; fuchsAnim(c, 0.15); T.drehClip = c; }
+      if(fuchs.acts[c]){ fuchsNeu(c); T.drehClip = c; }
       T.naechste = 1.4 + Math.random() * 1.2;
       return;
     }
@@ -873,8 +905,8 @@ function updateFuchs(dt){
   } else if(fuchs.modus === 'tanzen' && eva){
     fuchsTanz(dt, fp);
   } else if(fuchs.modus === 'kommen' && eva){
-    // direkt vor die Figur (0,9 m), Blick zu ihr
-    const v = nebenFigur(0.9, 0);
+    // vor die Figur, leicht zur Seite versetzt (1,1 m vor, 0,35 m links) – sonst verdeckte Joshi ihn fuer die Kamera
+    const v = nebenFigur(1.1, 0.35);
     const d = fuchsLaufe(dt, v.x, v.z, Math.hypot(v.x - fp.x, v.z - fp.z) > 3 ? 6.5 : 2.5);
     // Ziel im Wasser (Figur watet): am Ufer bleiben und von dort aus spielen
     if(d < 0.2 || fuchs.blockiert){
@@ -884,7 +916,7 @@ function updateFuchs(dt){
   } else if(fuchs.modus === 'spielen' && eva){
     fuchsSchaue(dt, zu.x, zu.z, 6);
     if(!fuchsClipLaeuft(fuchs.cur)){
-      if(++fuchs.spielI < FA.spielen.length){ fuchs.cur = null; fuchsAnim(FA.spielen[fuchs.spielI], 0.15); }   // auch gleicher Clip: von vorn
+      if(++fuchs.spielI < FA.spielen.length) fuchsNeu(FA.spielen[fuchs.spielI]);   // auch gleicher Clip: von vorn
       else fuchs.modus = 'hinsetzen';
     }
   } else if(fuchs.modus === 'hinsetzen' && eva){
@@ -917,7 +949,25 @@ function updateFuchs(dt){
     }
   }
   fp.y = evaFootY(fp.x, fp.z);
-  fuchs.obj.rotation.y = fuchs.yaw - fuchs.kopf;
+  // Pivot-Hopser: der Clip dreht den Fuchs nicht (nur 14 Grad) – die halbe Drehung macht der Code, weich mit dem Hopser
+  let dreh = 0;
+  if(fuchs.cur === 'Fox_Jump_Pivot_InPlace' && fuchs.acts[fuchs.cur]){
+    const a = fuchs.acts[fuchs.cur], k = Math.min(1, a.time / a.getClip().duration);
+    const e = k * k * (3 - 2 * k);
+    dreh = Math.PI * e;
+    fp.y += Math.sin(Math.PI * k) * 0.22;                        // kleiner Bogen in der Luft
+    if(k >= 0.999 && !fuchs.drehFertig){ fuchs.yaw += Math.PI; fuchs.drehFertig = true; dreh = 0; }
+  } else fuchs.drehFertig = false;
+  fuchs.obj.rotation.y = fuchs.yaw - fuchs.kopf + dreh;
+  // Salto und Schwanzschlag senken das Becken im Clip weit unter die Ruhehoehe – dann den Fuchs so weit anheben,
+  // dass er nicht in den Boden taucht (die Mitte der Drehung war sonst unter der Grasflaeche)
+  if(fuchs.inner && fuchs.becken && fuchs.beckenRuhe !== undefined){
+    fuchs.inner.position.y = fuchs.innerY;
+    fuchs.obj.updateMatrixWorld(true);
+    // Becken in Fuchs-Koordinaten (ohne die Welt-Hoehe fp.y), mit der Ruhehoehe vergleichen
+    const tief = fuchs.beckenRuhe - (fuchs.becken.getWorldPosition(_fb).y - fp.y);
+    if(tief > 0.01 && FUCHS_LANGSAM[fuchs.cur]) fuchs.inner.position.y = fuchs.innerY + tief * 0.85;
+  }
 }
 // Was er am Ziel macht: schnuppern (stehen, Kopf herum), kurz sitzen oder vor Freude huepfen
 function fuchsLaune(){

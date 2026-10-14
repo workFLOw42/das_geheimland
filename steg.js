@@ -116,8 +116,9 @@ function ladeBoot(w){
     m.traverse(o => { if(o.isMesh && o.material){ for(const mt of (Array.isArray(o.material) ? o.material : [o.material])){ mt.metalness = 0;
       if(mt.color){ const h = {}; mt.color.getHSL(h); if(h.l < 0.2) mt.color.setHSL(h.h, h.s, 0.26); } } } });
     const innen = new THREE.Group(); innen.add(m);
-    // Bug (-z im Modell) aufs Meer (+z in der Welt): um 180 Grad drehen
-    innen.rotation.y = Math.PI;
+    // Live-Befund: der Bug des Modells liegt bei +z (nicht -z) – ungedreht zeigt er schon aufs Meer (+z in der Welt).
+    // (Mit der 180-Grad-Drehung schaute das Boot zum Strand.)
+    innen.rotation.y = 0;
     const g = new THREE.Group(); g.add(innen); g.position.set(BOOT.x, 0, BOOT.z);
     w.add(g); s.boot = g; s.bootInnen = innen;
     s.bugZ = BOOT.laenge / 2;                                    // Bug in Bootskoordinaten (+z nach der Drehung)

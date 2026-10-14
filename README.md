@@ -1,0 +1,47 @@
+# 🌙 Das Geheimland
+
+Ein 3D-Detektiv-Abenteuer für Kinder (ab ca. 5 Jahren) – zu Fuß, schwimmend und später auch fliegend,
+mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Konzept: [Konzept.md](Konzept.md).
+
+**Spielen:** `index.html` im Browser öffnen (Chrome/Edge, Controller empfohlen).
+
+## Steuerung zu Fuß
+
+| Controller | Tastatur | Aktion |
+|---|---|---|
+| linker Stick | Pfeiltasten | gehen (bis halber Ausschlag) bis rennen, drehen |
+| B | B | springen – im Stand normaler Sprung, im Lauf Sprungrolle |
+| A | Enter | hinknien / aufstehen (der Fuchs kommt zum Spielen) |
+| RT / LT | E / Q | im Wasser abtauchen / auftauchen |
+| rechter Stick | I J K L | umschauen |
+| D-Pad ↓ | N | Ton an/aus |
+
+Steht die Figur eine Weile still, holt sie die Gitarre heraus.
+
+## Aufbau
+
+Technische Basis ist die Engine des **[Flugspiel](https://github.com/workFLOw42/flightsimulator)** – sie bleibt
+unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan*).
+
+| Datei | Inhalt |
+|---|---|
+| `index.html` | wird von `tools/build_engine.ps1` erzeugt |
+| `engine/` | Flugspiel-Engine + Modelle, **unverändert** kopiert von `tools/build_engine.ps1` |
+| `story.js` | Spiellogik: Welt, Nacht, Spielfigur, Schwimmen, Fuchs, Sprache, Startbildschirm |
+| `insel.js` | Etappe 1: kleine Insel, Hütte, Palmen, Lagerfeuer, Möwen |
+| `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
+| `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
+
+Neu bauen (nach Änderungen an Engine, Modellen oder Tönen): `powershell -File tools/build_engine.ps1`
+
+**Spielfigur:** Mixamo-Rig, Clips (60 fps) `idle walk run jump roll kneel swim fly hang skate guitar drums look`.
+Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixamo/merge_clips.py` → `models/figur.glb`.
+
+## Quellen und Lizenzen
+
+- Rigging und Animationen der Spielfigur: **[Mixamo](https://www.mixamo.com)** (Adobe)
+- „Fox“ von [pxltiger](https://sketchfab.com/3d-models/fox-39f97fe58f0b47ce80b6e02814001dd7) – CC-BY-4.0
+- „Stage Campfire“ von [daedaljs](https://sketchfab.com/3d-models/stage-campfire-82f37f8bf0f645768e32ab7185df13ca) – CC-BY-4.0
+- „Ring-Billed Gull“ (sitzend und fliegend) von Oregon State University Ecampus – CC-BY-4.0
+- Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
+- Modelle und Töne der Flugspiel-Engine: siehe Flugspiel-Repo

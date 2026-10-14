@@ -1,0 +1,14 @@
+# Rohdaten bleiben lokal (Quellmodelle, Mixamo-Zwischenstaende, interne Notizen)
+_quellen/
+_mixamo/
+_intern/
+
+# Roh- und Zwischendateien im Projekt-Root (fertige Modelle liegen in models/)
+/*.glb
+/*.stl
+/*.3mf
+/*.png
+/*.zip
+
+# Lokale Claude-Code-Einstellungen
+.claude/

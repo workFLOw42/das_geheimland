@@ -21,7 +21,7 @@ const SACHEN = {
   notizbuch: { glb: 'NOTIZBUCH_GLB', L: 0.24, beidseitig: true, zeigen: 0 },
   stift:     { glb: 'STIFT_GLB', L: 0.17, dreh: [0, 0, -Math.PI / 4], zeigen: 1.0 },
   kompass:   { glb: 'KOMPASS_GLB', L: 0.09, zeigen: 1.0, tisch: ['needleAction'], zeigenAnim: ['needleAction', 'rotating cylinderAction'] },
-  messer:    { glb: 'MESSER_GLB', L: 0.11, dreh: [-Math.PI / 2, 0, 0], zeigen: 1.1, zeigenAnim: ['Blade Flip'] },
+  messer:    { glb: 'MESSER_GLB', L: 0.11, dreh: [-Math.PI / 2, 0, 0], zeigen: 1.1, zeigenAnim: ['Blade Flip'], klappt: 'Blade Flip' },
   lupe:      { glb: 'LUPE_GLB', L: 0.21, zeigen: 1.0 },
   kamera:    { glb: 'KAMERA_GLB', L: 0.14, zeigen: 0.15, deckend: true },   // Modell steht auf alphaMode BLEND + doppelseitig: wirkte durchsichtig
   rucksack:  { glb: 'RUCKSACK_GLB', L: 0.45, dreh: [0, -Math.PI / 2, 0], zeigen: 0 },
@@ -95,6 +95,25 @@ function spiele(obj, namen, tempo){
   for(const c of clips) mx.clipAction(c).play();
   mx.timeScale = tempo || 1; mixer.push(mx); return mx;
 }
+// Messer auf- und zuklappen (Live-Wunsch 16.10.): der Clip "Blade Flip" laeuft zu -> auf -> zu; hier nur die erste
+// Haelfte (KLAPP_AUF = Anteil, bei dem die Klinge ganz offen ist), gesteuert ueber einen Sollwert: k folgt soll (0 = zu,
+// 1 = offen) mit KLAPP_T s und setzt die Clipzeit. EINE Steuerung fuer Einsammeln, Werkzeug (Schnitzen) und Inventar.
+const KLAPP_AUF = 0.45, KLAPP_T = 0.7;
+const klappen = [];
+function klappe(obj, clipName){
+  const c = (obj.userData.clips || []).find(q => q.name === clipName); if(!c) return null;
+  const mx = new THREE.AnimationMixer(obj); mx.clipAction(c).play(); mx.setTime(0);
+  const k = { mx, dauer: c.duration, soll: 0, k: 0 }; klappen.push(k); return k;
+}
+function klappeLos(k){ if(!k) return; k.mx.stopAllAction(); const i = klappen.indexOf(k); if(i >= 0) klappen.splice(i, 1); }
+function updateKlappen(dt){ for(const k of klappen){ k.k += klemme(k.soll - k.k, -dt / KLAPP_T, dt / KLAPP_T); k.mx.setTime(weich(k.k) * KLAPP_AUF * k.dauer); } }
+// Animation beim Zeigen: das Messer klappt (gesteuert), alles andere laeuft frei
+function zeigeAnim(n, o){ const A = SACHEN[n].zeigenAnim; if(!A) return null;
+  if(SACHEN[n].klappt) return { klapp: klappe(o, SACHEN[n].klappt) };
+  return { mx: spiele(o, A, 1) }; }
+// Erst zuklappen, dann einpacken (Live-Wunsch 16.10.): true, solange das Messer noch nicht ganz zu ist (soll = 0 gesetzt)
+function nochOffen(a){ if(!a || !a.klapp) return false; a.klapp.soll = 0; return a.klapp.k > 0.01; }
+function zeigeAnimLos(a){ if(!a) return; if(a.klapp) klappeLos(a.klapp); if(a.mx) stoppe(a.mx); }
 function stoppe(mx){ if(!mx) return; mx.stopAllAction(); const i = mixer.indexOf(mx); if(i >= 0) mixer.splice(i, 1); }
 
 // ---- Einbauen, sobald der Raum steht (huette_innen.js ruft story.raumGebaut) --------------------------------------
@@ -157,6 +176,10 @@ function zeige(dinge){
   rucksack.ziel = 1;
   if(!flug.akt) naechstes();
 }
+// Rucksack ausblenden, sobald nichts mehr hinein- oder herausfliegt – EINE Stelle fuer Einsammeln und alle Werkzeuge
+// (Live-Wunsch 16.10.: schnell weg, nach RUCKSACK_WEG s)
+const RUCKSACK_WEG = 0.4;
+function rucksackWeg(){ story.spaeter(RUCKSACK_WEG, () => { if(!raus.akt && !flug.akt) rucksack.ziel = 0; }); }
 function naechstes(){
   const d = flug.liste.shift();
   if(!d){
@@ -165,11 +188,11 @@ function naechstes(){
     if(!zustand.komplett && Object.keys(TEXT).every(n => zustand[n])){
       zustand.komplett = true;
       // Funkspruch erst, wenn auch draussen alles abgesucht und angesehen ist (story.fall1Pruefen)
-      story.spaeter(0.4, () => { if(!flug.akt) rucksack.ziel = 0; });   // nicht erst nach dem Lob ausblenden
+      rucksackWeg();                                               // nicht erst nach dem Lob ausblenden
       story.sprich(TEXT_KOMPLETT, () => { if(story.fall1Pruefen) story.fall1Pruefen(); });
       return;
     }
-    story.spaeter(0.4, () => { if(!flug.akt) rucksack.ziel = 0; }); return;   // schneller weg (Live-Wunsch 16.10., vorher 1,6 s)
+    rucksackWeg(); return;
   }
   const n = d.obj.userData.sache;
   const f = flug.akt = { d, n, t: 0, phase: 'auf', gesagt: false, fertigAnim: false, fertigText: false };
@@ -205,7 +228,7 @@ function inDieEbene(f){
   f.zeigQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(SACHEN[f.n].zeigen || 0, 0, 0));
   f.mitte = new THREE.Vector3(0, 0.12, 0);
   f.sGross = GROSS / f.L;
-  const A = SACHEN[f.n].zeigenAnim; if(A) f.mx = spiele(o, A, 1);
+  f.anim = zeigeAnim(f.n, o); if(f.anim && f.anim.klapp) f.anim.klapp.soll = 1;   // Messer: klappt beim Zeigen auf
   f.phase = 'gross'; f.t = 0;
   void sz;
 }
@@ -233,8 +256,9 @@ function updateFlug(dt){
     _qy.setFromAxisAngle(_y, k * Math.PI * 2);
     p.quaternion.copy(_qy).multiply(f.zeigQ);
     p.position.copy(f.mitte); p.position.y += Math.sin(k * Math.PI) * 0.08;
-    if(f.t >= T_DREH){ f.phase = 'weg'; f.t = 0; }
+    if(f.t >= T_DREH){ f.phase = 'weg'; f.t = 0; if(f.anim && f.anim.klapp) f.anim.klapp.soll = 0; }   // zuklappen, dann in den Rucksack (s. weg)
   } else if(f.phase === 'weg'){
+    if(nochOffen(f.anim)) f.t = 0;                                // bleibt gross in der Mitte, bis das Messer zu ist
     const k = weich(f.t / T_WEG);
     const ziel = _q.set(0, 0, 0, 1);
     p.position.lerpVectors(f.mitte, _r.clone().add(new THREE.Vector3(0, 0.32, 0.2)), k);
@@ -247,7 +271,7 @@ function updateFlug(dt){
     p.position.lerpVectors(_r.clone().add(new THREE.Vector3(0, 0.32, 0.2)), _r.clone().add(new THREE.Vector3(0, 0.05, 0.2)), k);
     p.scale.setScalar((0.16 / f.L) * (1 - k));
     if(f.t >= T_REIN){
-      stoppe(f.mx); szene.remove(p);                             // nicht entsorgen: Geometrie gehoert der Vorlage
+      zeigeAnimLos(f.anim); szene.remove(p);                     // nicht entsorgen: Geometrie gehoert der Vorlage
       rucksack.hops = 1;                                          // der Rucksack huepft, wenn etwas hineinfaellt
       f.phase = 'fertig'; f.fertigAnim = true; pruefeWeiter();
     }
@@ -285,12 +309,13 @@ story.ausRucksack = function(n, fertig){
       m.material = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const k = x.clone(); k.transparent = true; k.opacity = 1; return k; });
       if(m.material.length === 1) m.material = m.material[0]; } });
     const p = new THREE.Group(); p.add(o); szene.add(p);
-    const A = SACHEN[n].zeigenAnim;
-    raus.akt = { n, p, L, t: 0, phase: 'raus', fertig, mx: A ? spiele(o, A, 1) : null,
+    const anim = zeigeAnim(n, o); if(anim && anim.klapp) anim.klapp.soll = 1;   // Messer: auf beim Herausholen, zu bei B
+    raus.akt = { n, p, L, t: 0, phase: 'raus', fertig, anim,
       q: new THREE.Quaternion().setFromEuler(new THREE.Euler(SACHEN[n].zeigen || 0, 0, 0)) };
   });
 };
-story.rucksackZurueck = function(){ if(raus.akt){ raus.akt.phase = 'rein'; raus.akt.t = 0; raus.akt.von = raus.akt.p.position.clone(); raus.akt.vonS = raus.akt.p.scale.x; } };
+// Der Rucksack ist beim Einstecken immer zu sehen (Live-Befund 16.10.: beim Messer fiel er nicht auf)
+story.rucksackZurueck = function(){ if(raus.akt){ rucksack.ziel = 1; if(raus.akt.anim && raus.akt.anim.klapp) raus.akt.anim.klapp.soll = 0; raus.akt.phase = 'rein'; raus.akt.t = 0; raus.akt.von = raus.akt.p.position.clone(); raus.akt.vonS = raus.akt.p.scale.x; } };
 // notizbuch.js (Schnitzen, Lupe): ein Klon eines Modells, Mitte auf 0, laengste Kante = 1 (Rueckgabe: { g, L }) – und die
 // Bildebene selbst (Szene, Hoehe der sichtbaren Ebene), um ihn dort zu zeigen
 // Groesse eines Modells – bei animierten (SkinnedMesh) mit den Knochen gemessen: Box3.setFromObject sieht nur die rohe
@@ -311,6 +336,9 @@ story.stoppe = (mx) => stoppe(mx);
 story.stiftAn = function(u, v, bw, bh){ const r = raus.akt; if(!r) return; r.stift = { u, v, bw, bh }; };
 // Schnitzen: das Messer rechts am Holzklotz, es schabt (dx, dy = kleine Bewegung) – Lupe: gross in der Mitte vor dem Bild
 story.messerAn = function(dx, dy){ const r = raus.akt; if(!r) return; r.halt = { x: 0.55 + dx * 0.4, y: 0.05 + dy, s: 0.6, kipp: -0.6 + dx }; };
+// Werkzeug wartet auf B (fuer alle gleich): klein und ruhig rechts neben dem Bild, nicht davor (r.stift aus, sonst
+// zeichnete der Stift weiter)
+story.werkzeugRuht = function(){ const r = raus.akt; if(!r) return; r.stift = null; r.halt = { x: 0.95, y: -0.3, s: 0.35, kipp: -0.4 }; };
 story.lupeAn = function(){ const r = raus.akt; if(!r) return;
   if(!r.glas){ r.glas = true;
     // Das Glas (das flachste Teil des Modells) durchsichtig, damit man den Schmetterling darunter sieht
@@ -366,10 +394,11 @@ function updateRaus(dt){
       _qy.setFromAxisAngle(_y, Math.sin(r.t) * 0.3); r.p.quaternion.copy(_qy).multiply(r.q);
     }
   } else if(r.phase === 'rein'){                                   // zurueck in den Rucksack
+    if(nochOffen(r.anim)) r.t = 0;                                // erst zuklappen (bleibt so lange, wo es ist)
     const k = weich(r.t / 0.9), von = r.von || new THREE.Vector3(-GROSS * 1.2, 0.12, 0.6), vonS = r.vonS || gross * 0.7;
     r.p.position.lerpVectors(von, unten, k); r.p.position.y += Math.sin(k * Math.PI) * 0.25;
     r.p.scale.setScalar(vonS + (klein - vonS) * k);
-    if(r.t >= 0.9){ stoppe(r.mx); szene.remove(r.p); raus.akt = null; rucksack.hops = 1; story.spaeter(0.4, () => { if(!raus.akt && !flug.akt) rucksack.ziel = 0; }); }
+    if(r.t >= 0.9){ zeigeAnimLos(r.anim); szene.remove(r.p); raus.akt = null; rucksack.hops = 1; rucksackWeg(); }
   }
 }
 
@@ -432,7 +461,7 @@ function inventarAn(an){
   if(an && flug.akt) return false;                               // erst fertig einstecken
   inv.an = an;
   if(an){
-    for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); stoppe(d.mx); }
+    for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); zeigeAnimLos(d.anim); }
     inv.dinge = [];
     const da = INV_REIHE.filter(n => zustand[n]);
     inv.anzahl = da.length;
@@ -446,10 +475,9 @@ function inventarAn(an){
       o.traverse(m => { if(m.isMesh) m.renderOrder = 1; });
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: inv.glowTex, transparent: true, depthWrite: false, depthTest: false }));
       glow.renderOrder = 0; szene.add(glow);
-      const A = SACHEN[n].zeigenAnim;
       // Haltung wie beim Zeigen; das Notizbuch (hochkant) etwas gekippt, damit man den Deckel sieht
       const neig = n === 'notizbuch' ? 0.35 : (SACHEN[n].zeigen || 0);
-      inv.dinge.push({ n, p, glow, L, i, mx: A ? spiele(o, A, 1) : null, q: new THREE.Quaternion().setFromEuler(new THREE.Euler(neig, 0, 0)) });
+      inv.dinge.push({ n, p, glow, L, i, anim: zeigeAnim(n, o), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(neig, 0, 0)) });
     }));
   }
   // Rucksack unten rechts dazu (Live-Wunsch 16.10.: "der Rucksack erscheint nicht unten rechts"); zu = wieder weg
@@ -696,7 +724,7 @@ const _iq = new THREE.Quaternion();
 function updateInventar(dt){
   inv.k += klemme((inv.an ? 1 : 0) - inv.k, -dt * 4, dt * 4);
   if(inv.flaeche) inv.flaeche.visible = inv.k > 0.001;
-  if(inv.k <= 0 && !inv.an){ for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); stoppe(d.mx); } inv.dinge = []; return; }
+  if(inv.k <= 0 && !inv.an){ for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); zeigeAnimLos(d.anim); } inv.dinge = []; return; }
   inv.t += dt;
   const s = weich(inv.k), H = hoeheEbene(), B = H * innerWidth / innerHeight;
   // Flaeche: 2/3 der Bildbreite und -hoehe, mittig
@@ -712,6 +740,7 @@ function updateInventar(dt){
     // Auswahl: weich etwas groesser (25 %) und mit leichtem Schein; alle anderen nur ein ganz dezenter Schein
     const gewaehlt = d.i === inv.wahl && !buch.offen;
     d.w = (d.w || 0) + ((gewaehlt ? 1 : 0) - (d.w || 0)) * Math.min(1, dt * 8);
+    if(d.anim && d.anim.klapp) d.anim.klapp.soll = gewaehlt ? 1 : 0;   // Messer: ausgewaehlt auf, sonst zu
     d.p.position.set(x, y, 0.3);
     // Live-Wunsch: die Auswahl etwas groesser (40 %); ohne Auswahl nur ein Hauch von Schein, mit Auswahl deutlich – vorher
     // war der normale Schein so stark, dass man keinen Unterschied sah
@@ -733,7 +762,8 @@ function hookAusruestung(){
     const r = loopOrig.apply(this, arguments);
     const p = story.pause && story.pause();                       // Pause: alles steht, gezeichnet wird weiter
     if(!p) for(const mx of mixer) mx.update(dt);
-    else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.mx) d.mx.update(dt);   // Messer klappt, Nadel dreht
+    else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.anim && d.anim.mx) d.anim.mx.update(dt);   // Nadel dreht
+    updateKlappen(p && !(story.pauseArt && story.pauseArt() === 'inventar') ? 0 : dt);   // Messer klappt (auch im Inventar)
     // Funkspruch oder offene Foto-/Skizzenstelle, bevor je etwas eingesteckt wurde: die Bildebene gleich anlegen
     // (notizbuch.js braucht sie ab dem Start: Detektivmuetze, Markierungen, Schwarm)
     if(!szene && story.gestartet) ebene();

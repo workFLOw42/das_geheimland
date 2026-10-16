@@ -469,11 +469,10 @@ story.bildEbene = function(dt, szene, pause){
       if(sp) ab.spitze = sp;
     }
     if(ab.spitze && story.stiftAn) story.stiftAn(ab.spitze.x, ab.spitze.y, fw, h);   // der Stift zeichnet sichtbar mit
-    if(ab.t >= tZeich + T_SIGNATUR){ ab.phase = 'halten'; ab.t = 0; story.rucksackZurueck(); }   // der Stift geht schon zurueck
+    if(ab.t >= tZeich + T_SIGNATUR){ ab.phase = 'halten'; ab.t = 0; if(story.werkzeugRuht) story.werkzeugRuht(); }   // Stift ruht neben dem Bild bis B
   } else if(ab.phase === 'halten'){                                // steht gross, bis B gedrueckt wird
     bZeigen(ab.t > 0.4);
-    // Kamera (Foto) und Lupe stehen noch daneben und gehen erst jetzt zurueck; Stift und Messer sind schon im Rucksack
-    if(ab.t > 0.4 && bGedrueckt()){ bZeigen(false); ab.phase = 'weg'; ab.t = 0; if(story.rausAktiv && story.rausAktiv()) story.rucksackZurueck(); if(ab.s.nachB) ab.s.nachB(); }
+    if(ab.t > 0.4 && bGedrueckt()){ bZeigen(false); ab.phase = 'weg'; ab.t = 0; werkzeugBeiB(); if(ab.s.nachB) ab.s.nachB(); }
     else if(ab.t <= 0.4) bGedrueckt();                              // ein B, das schon gedrueckt war, nicht mitzaehlen
   } else if(ab.phase === 'weg'){                                   // klein in den Rucksack (unten rechts)
     const k = weich(ab.t / T_WEG), zx = B / 2 * 0.8, zy = -H / 2 * 0.66;
@@ -597,12 +596,12 @@ function updateSzene(dt, pause){
     const lin = Math.min(1, sz.t / T_SCHNITZ);
     sz.klotz.scale.set(gross * 1.25, gross * 0.8, gross * 0.6);
     klotzMaske(lin);
-    g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6, 0);
+    g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + Math.PI, 0);   // Schnauze nach vorn (Live-Befund 16.10.)
     g.traverse(m => { if(m.isMesh) m.material.opacity = Math.min(1, Math.max(0, (lin - 0.15) / 0.6)); });
     if(story.messerAn) story.messerAn(Math.sin(sz.t * 9) * 0.3, 0.05 + Math.cos(sz.t * 4.5) * 0.08);
     // Spaene: kleine helle Holzstueckchen, die vom Klotz wegfliegen
     if(Math.random() < dt * 22) spahn(grp);
-    if(sz.t >= T_SCHNITZ){ grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; story.rucksackZurueck(); }
+    if(sz.t >= T_SCHNITZ){ grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; }
   } else if(sz.phase === 'lupe'){
     // Die Lupe steht aufrecht gross im Bild (raus.akt, ausruestung.js lupeAn) – genau hinter ihrem Glas der Schmetterling,
     // von oben gesehen und stark vergroessert, mit schlagenden Fluegeln
@@ -614,13 +613,14 @@ function updateSzene(dt, pause){
     if(sz.falterMx) sz.falterMx.setTime(0.03 * (1 - Math.cos(sz.t * 1.6)));
     if(story.lupeAn) story.lupeAn();
     if(sz.t > 0.6) bZeigen(true);
-    if(sz.t > 0.6 && bGedrueckt()){ bZeigen(false); story.rucksackZurueck(); sz.phase = 'weg'; sz.t = 0; }
+    if(sz.t > 0.6 && bGedrueckt()){ bZeigen(false); werkzeugBeiB(); sz.phase = 'weg'; sz.t = 0; }
     else if(sz.t <= 0.6) bGedrueckt();
   }
   if(sz.phase === 'zeigen'){                                       // fertiger Fuchs dreht sich gross, bis B
-    grp.position.set(0, 0, 0.4); g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + sz.t * 0.7, 0);
+    grp.position.set(0, 0, 0.4); g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + Math.PI + sz.t * 0.7, 0);
     if(sz.t > 0.4) bZeigen(true);
-    if(sz.t > 0.4 && bGedrueckt()){ bZeigen(false); sz.phase = 'weg'; sz.t = 0; }
+    if(sz.t < 0.1 && story.werkzeugRuht) story.werkzeugRuht();    // Messer ruht neben dem Fuchs bis B
+    if(sz.t > 0.4 && bGedrueckt()){ bZeigen(false); werkzeugBeiB(); sz.phase = 'weg'; sz.t = 0; }
     else if(sz.t <= 0.4) bGedrueckt();
   }
   if(sz.phase === 'weg'){                                          // klein in den Rucksack (unten rechts)
@@ -640,6 +640,9 @@ function updateSzene(dt, pause){
   for(let i = sz.spaene.length - 1; i >= 0; i--){ const p = sz.spaene[i]; p.t += dt; p.v.y -= 2.2 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.z += dt * 6;
     p.m.material.opacity = Math.max(0, 1 - p.t / 0.9); if(p.t > 0.9){ grp.remove(p.m); sz.spaene.splice(i, 1); } }
 }
+// Fuer ALLE Werkzeuge gleich (Live-Wunsch 16.10.): Kamera, Stift, Messer und Lupe bleiben im Bild, bis B gedrueckt wird;
+// erst dann wandern sie zurueck in den Rucksack (der dafuer erscheint, ausruestung.js rucksackZurueck)
+function werkzeugBeiB(){ if(story.rausAktiv && story.rausAktiv()) story.rucksackZurueck(); }
 let spahnMat = null;
 function spahn(grp){
   if(!spahnMat) spahnMat = new THREE.MeshBasicMaterial({ color: 0xe2c08c, transparent: true, side: THREE.DoubleSide });

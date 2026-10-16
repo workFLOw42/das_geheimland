@@ -421,13 +421,17 @@ const klemmeM = (v, a, b) => Math.max(a, Math.min(b, v));
 function updateMoewen(dt){
   const cp = camera.position;
   const fig = eva ? eva.group.position : null;
+  // auch Fuchsi scheucht sie auf (Live-Wunsch 16.10.) – nur draussen (in der Huette ist er in einer anderen Welt)
+  const fu = story.fuchs && story.fuchs.obj && story.fuchs.obj.visible && !(story.innen && story.innen.drin) ? story.fuchs.obj.position : null;
   for(const o of moewen.sitz){
     if(o.mixer) o.mixer.update(dt);
-    const nah = fig && Math.hypot(fig.x - o.k.position.x, fig.z - o.k.position.z) < 3.5;
+    const dJ = fig ? Math.hypot(fig.x - o.k.position.x, fig.z - o.k.position.z) : 1e9;
+    const dF = fu ? Math.hypot(fu.x - o.k.position.x, fu.z - o.k.position.z) : 1e9;
+    const nah = dJ < 3.5 || dF < 3.0, von = dF < dJ ? fu : fig;  // weg von dem, der naeher ist
     // Live-Wunsch 16.10.: nicht nach einer Weile wieder am Platz auftauchen, sondern zurueckfliegen und landen. Ablauf:
     // 'auf' (weg und hoch) -> 'kreis' (Bogen ueber dem Meer) -> 'anflug' (zum Platz, sinkt) -> landet = wieder sitzend.
     // Kommt Joshi beim Anflug wieder zu nah, fliegt sie erneut auf.
-    if(nah && (!o.weg || o.weg === 'anflug')) moeweAuf(o, fig);
+    if(nah && (!o.weg || o.weg === 'anflug')) moeweAuf(o, von);
     if(o.weg) moeweFliegt(o, dt, fig);
     const fliegt = !!(o.weg && o.flieg);
     o.k.visible = locale === 'earth' && !fliegt;

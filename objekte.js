@@ -461,8 +461,12 @@ function hookAussen(){
       if(von){
         // Joshis eigener Schritt: die Engine fragt 1 m ueber den Fuessen. Wer schon drinsteckt, darf hinaus.
         const luft = story.figurInLuft && story.figurInLuft() ? SPRUNG : 0;
-        const t = tiefe(x, z, y - 1 + luft, FIGUR.h, FIGUR.r, FIGUR.stufe);
-        if(t > 0 && t > tiefe(von.x, von.z, evaFootY(von.x, von.z) + luft, FIGUR.h, FIGUR.r, FIGUR.stufe) + 1e-6) return true;
+        // Fusshoehe: die hoehere von "da, wo er steht" und "Boden dort". An einer Kante (Steg) liegt der Boden dahinter
+        // tief im Wasser – von dort gesehen waere der Traeger unter dem Steg eine Wand, und er bliebe oben haengen
+        // (Live-Regression: vom Steg seitlich ins Wasser ging nicht mehr). Er steht aber oben und tritt ueber die Kante.
+        const fuss = Math.max(y - 1, von.y) + luft;
+        const t = tiefe(x, z, fuss, FIGUR.h, FIGUR.r, FIGUR.stufe);
+        if(t > 0 && t > tiefe(von.x, von.z, Math.max(evaFootY(von.x, von.z), von.y) + luft, FIGUR.h, FIGUR.r, FIGUR.stufe) + 1e-6) return true;
       } else if(tiefe(x, z, y - 1, FIGUR.h, FIGUR.r) > 0) return true;     // alle anderen (Kamera, Engine): Saeule um y
     }
     return hitsOrig.apply(this, arguments);

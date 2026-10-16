@@ -1226,11 +1226,13 @@ function fuchsSchnueffeln(dt, fp){
 //   3. draussen schon umgeschaut, in der Huette noch nicht: "Schau dir doch mal deine Huette von innen ganz genau an."
 //   4. sonst (alles entdeckt): noch offen – dann der Satz zum Umschauen ohne Neues
 //   vor allem anderen: alles eingesammelt und das Funkgeraet ruft -> "Schau doch mal zum Funkgeraet ..."
+//   im Segelboot (mit Ziel): "Steuere das Boot einfach auf den roten Punkt des Radars zu."
 const HINWEIS = {
   x:      ['Mit X kannst Du dich ganz genau umschauen und alles Wichtige entdecken. Probier es gleich mal am Lagerfeuer aus.'],
   feuer:  ['Stelle dich vor das Lagerfeuer und drücke X zum Umschauen.'],
   huette: ['Schau dir doch mal deine Hütte von innen ganz genau an.'],
   funk:   ['Schau doch mal zum Funkgerät. Jemand möchte mit dir sprechen und braucht vielleicht deine Hilfe.'],
+  boot:   ['Steuere das Boot einfach auf den roten Punkt des Radars zu.'],
 };
 const hinweisStand = { xSatz: 0, aussenGeschaut: false, innenGeschaut: false, spricht: false };
 story.hinweisStand = hinweisStand;
@@ -1239,7 +1241,8 @@ function hinweisGeben(){
   const H = hinweisStand;
   let satz;
   // Alles eingesammelt und der Funk ruft (Live-Wunsch 16.10.): zum Funkgeraet schicken – geht allem anderen vor
-  if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
+  if(story.imBoot && story.imBoot()){ if(!story.ziel) return; satz = HINWEIS.boot; }   // im Segelboot: zum roten Punkt (ohne Ziel kein Satz)
+  else if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
   else if(!H.aussenGeschaut && !H.innenGeschaut){
     if(H.xSatz >= 2) satz = HINWEIS.feuer;
     else { satz = HINWEIS.x; H.xSatz++; }

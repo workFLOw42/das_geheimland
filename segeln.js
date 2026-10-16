@@ -14,8 +14,8 @@ const klemme = (v, a, b) => Math.max(a, Math.min(b, v));
 const FALL1_ZIEL = { x: 150, z: 300, r: 30 };
 const RADAR_WEIT = 300;          // m am Radarrand
 const W = 130;                   // Groesse von Radar und Kompass (px), wie die Engine-Scheiben
-const SCHUB_H = 220;            // Hoehe des Schubbalkens (px)
-const SCHUB_ABST = 10;          // px Luft zwischen Radar und Schubbalken
+const SCHUB_H = 293;            // Hoehe des Schubbalkens (px) – Segmente um 1/3 groesser als zuerst (220, Live-Wunsch)
+const SCHUB_ABST = 20;          // px Luft zwischen Radar und Schubbalken (Live-Wunsch: 10 px tiefer)
 
 // ---- Anzeigen (DOM) ---------------------------------------------------------------------------------------------
 const hud = { radar: null, ctx: null, kompass: null, schub: null, seg: [], an: false };
@@ -123,6 +123,65 @@ function malKompass(kurs, dt){
 }
 story.kompassNadel = () => ko.w;
 
+// ---- Fahrt sichtbar machen (Live-Wunsch 16.10.): Gischt an den Seiten, leichter Fahrtwind --------------------------
+// Gischt: kleine helle Spritzer, die vorn an beiden Bordwaenden aufsteigen und schraeg nach hinten-aussen wegfliegen,
+// mehr und weiter, je schneller das Boot faehrt. Wind: duenne Striche um die Kamera, die nach hinten ziehen – Machart
+// wie der Fahrtwind in Trip to Japan (finale.js fahrtwind), aber deutlich weniger: wenige, blasse, erst ab halber Fahrt.
+const GISCHT_MAX = 160, WIND_N = 14, WIND_OPAZ = 0.22;
+const fahrt = { g: null, gischt: [], gMat: null, gT: 0, wind: null, windPos: null, windT: [] };
+function fahrtBauen(){
+  if(fahrt.g) return;
+  const g = fahrt.g = new THREE.Group(); g.userData.deko = true; story.welt(1).add(g);
+  fahrt.gMat = new THREE.MeshBasicMaterial({ color: 0xe8f4ff, transparent: true, opacity: 0.85, depthWrite: false });
+  fahrt.windPos = new Float32Array(WIND_N * 6);
+  const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.BufferAttribute(fahrt.windPos, 3));
+  fahrt.wind = new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+  fahrt.wind.frustumCulled = false; g.add(fahrt.wind);
+  for(let i = 0; i < WIND_N; i++) fahrt.windT.push({ x: 0, y: 0, z: 0, life: 0 });
+}
+const _gV = new THREE.Vector3();
+function updateFahrtOptik(dt, s, an){
+  fahrtBauen();
+  const v = an ? Math.abs(s.v) : 0, k = klemme(v / 3.2, 0, 1);
+  // Gischt: am Bug links und rechts, alle paar Hundertstel ein Spritzer
+  fahrt.gT -= dt;
+  if(an && v > 0.4 && fahrt.gT <= 0 && story.bootPunkt){
+    fahrt.gT = 0.022 / (0.3 + k);                             // bei voller Fahrt ~ 60 Spritzer pro Sekunde und Seite
+    const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw), vor = s.v >= 0 ? 1 : -1;
+    for(const seite of [-1, 1]){
+      let t = fahrt.gischt.find(q => !q.m.visible);
+      if(!t){ if(fahrt.gischt.length >= GISCHT_MAX) break; t = { m: new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), fahrt.gMat), v: new THREE.Vector3() }; fahrt.g.add(t.m); fahrt.gischt.push(t); }
+      // vorn an der Bordwand (etwas hinter der Spitze), auf der Wasserlinie
+      const p = story.bootPunkt((1.0 + Math.random() * 1.0) * vor, 0.8 * seite, -0.3) || _gV.set(s.bx, 0, s.bz);   // Bugwelle: entlang der vorderen Bordwand
+      t.m.position.set(p.x, seaYAt(p.x, p.z) + 0.05, p.z); t.m.visible = true; t.t = 0; t.s = 0.6 + Math.random() * 1.0;
+      // seitlich hinaus, nach hinten und ein Stueck hoch
+      const quer = (0.8 + Math.random() * 0.9) * (0.5 + k), hoch = 0.8 + Math.random() * 1.0 * (0.4 + k), zurueck = 0.4 + k * 0.8;
+      t.v.set(fz * seite * quer - fx * zurueck * vor, hoch, -fx * seite * quer - fz * zurueck * vor);
+    }
+  }
+  for(const t of fahrt.gischt) if(t.m.visible){
+    t.t += dt; t.v.y -= 9.81 * dt; t.m.position.addScaledVector(t.v, dt);
+    t.m.scale.setScalar(t.s * Math.max(0.15, 1 - t.t * 1.4));
+    if(t.t > 0.7 || t.m.position.y < seaYAt(t.m.position.x, t.m.position.z) - 0.2) t.m.visible = false;
+  }
+  // Wind: erst ab halber Fahrt, sanft ein- und ausblenden
+  const st = an ? klemme((v - 1.4) / 1.8, 0, 1) : 0;
+  fahrt.wind.material.opacity += (WIND_OPAZ * st - fahrt.wind.material.opacity) * Math.min(1, dt * 2);
+  if(fahrt.wind.material.opacity < 0.005) return;
+  const fx = Math.sin(s.yaw) * Math.sign(s.v || 1), fz = Math.cos(s.yaw) * Math.sign(s.v || 1), c = camera.position;
+  fahrt.windT.forEach((w, i) => {
+    w.life -= dt;
+    if(w.life <= 0){ w.life = 0.5 + Math.random() * 0.5;
+      const vor = 4 + Math.random() * 8, a = Math.random() * 6.28, r = 2 + Math.random() * 3;   // Ring um die Blickachse (Mitte frei)
+      w.x = c.x + fx * vor + fz * Math.cos(a) * r; w.y = c.y - 0.8 + Math.sin(a) * r * 0.6; w.z = c.z + fz * vor - fx * Math.cos(a) * r; }
+    const zu = (v * 2.5 + 2) * dt;                                // zieht an der Kamera vorbei nach hinten
+    w.x += s.v * Math.sin(s.yaw) * dt - fx * zu; w.z += s.v * Math.cos(s.yaw) * dt - fz * zu;
+    const len = 0.5 + v * 0.15;
+    fahrt.windPos.set([w.x, w.y, w.z, w.x + fx * len, w.y, w.z + fz * len], i * 6);
+  });
+  fahrt.wind.geometry.attributes.position.needsUpdate = true;
+}
+
 // ---- Jedes Bild --------------------------------------------------------------------------------------------------
 let kompassAn = false;
 function update(dt){
@@ -136,6 +195,7 @@ function update(dt){
   if(k !== kompassAn){ kompassAn = k; hud.kompass.style.display = k ? 'block' : 'none'; }
   // Blickrichtung ab +z: im Boot der Bug, sonst Joshi (Engine: Nase -Z -> yaw + PI)
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);
+  if(s && story.etappe === 1) updateFahrtOptik(dt, s, imBoot);
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);

@@ -298,8 +298,8 @@ function hookBoot(){
     }
     return yOrig.apply(this, arguments);
   };
-  // Kamera im Boot: hinten links ueber dem Heck, Blick ueber Joshi und den Fuchs zum Bug aufs Meer (vom Steg aus
-  // verdeckte das grosse Segel alles). Der rechte Stick (evaOrbit) dreht sie um das Boot.
+  // Kamera im Boot: genau hinter dem Heck (Live-Befund 16.10.: vorher hinten LINKS versetzt, das sah schief aus), hoch
+  // genug, um ueber Joshi und das Segel hinweg zum Bug aufs Meer zu sehen. LB/RB schwenken zur Seite.
   const camOrig = updateCamera, _k = new THREE.Vector3(), _z = new THREE.Vector3();
   updateCamera = function(){
     if(!(s.imBoot && eva && s.boot)) return camOrig.apply(this, arguments);
@@ -309,8 +309,8 @@ function hookBoot(){
     evaOrbit += (seite - evaOrbit) * Math.min(1, 4 * dtCam);
     const yaw = story.bootYaw() + evaOrbit;                       // Bug-Richtung der Welt (Winkel ab +z)
     const b = s.boot.position;
-    _z.set(b.x + Math.sin(yaw) * 2.2, b.y + 0.9, b.z + Math.cos(yaw) * 2.2);       // Blickpunkt: vorn im Boot
-    _k.set(b.x - Math.sin(yaw) * 5.2 - Math.cos(yaw) * 2.6, b.y + 3.0, b.z - Math.cos(yaw) * 5.2 + Math.sin(yaw) * 2.6);
+    _z.set(b.x + Math.sin(yaw) * 3.0, b.y + 1.0, b.z + Math.cos(yaw) * 3.0);       // Blickpunkt: vorn im Boot
+    _k.set(b.x - Math.sin(yaw) * 6.5, b.y + 3.4, b.z - Math.cos(yaw) * 6.5);         // mittig hinter dem Heck
     camera.position.lerp(_k, Math.min(1, 3 * dtCam)); camera.up.set(0, 1, 0); camera.lookAt(_z);
   };
   // Im Boot: Joshi sitzt, der linke Stick faehrt das Boot (vor/zurueck, lenken) – siehe updateFahrt
@@ -394,7 +394,19 @@ story.updateSteg = function(dt){
     s.schatten.position.set(s.bx + 0.15, hoch + 0.03, s.bz); s.schatten.rotation.z = s.yaw;
     if(s.gischt){ s.gischt.position.set(s.bx, hoch + 0.05, s.bz); s.gischt.rotation.y = s.yaw;
       s.gischt.material.uniforms.staerke.value = 0.7 + Math.sin(s.t * 2.3) * 0.15 + Math.min(0.3, Math.abs(s.v) * 0.1); } }   // in Fahrt etwas mehr Gischt
-  if(s.boot){ const b = s.boot; b.position.set(s.bx, seaYAt(s.bx, s.bz), s.bz); b.rotation.set(Math.sin(s.t * 0.6 + 1) * 0.01, s.yaw, Math.sin(s.t * 0.9) * 0.015, 'YXZ'); b.updateMatrixWorld(true);
+  if(s.boot){ const b = s.boot;
+    // Live-Befund 16.10.: bei Wellengang lief rechts Wasser ins Boot. Das Boot sass mit der MITTE auf der Welle und
+    // schaukelte nur ein wenig – die Welle selbst ist aber schraeg: lag sie rechts hoeher, stieg sie ueber den Rand. Jetzt
+    // folgt das Boot der Wasserflaeche: Hoehe = Mittel aus Bug/Heck/Seiten (nie tiefer als die Mitte), Neigung laengs aus
+    // Bug - Heck, quer aus rechts - links (gedaempft, damit es nicht zittert).
+    const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw), L = BOOT.laenge * 0.4, Q = 0.8;
+    const yB = seaYAt(s.bx + fx * L, s.bz + fz * L), yH = seaYAt(s.bx - fx * L, s.bz - fz * L);
+    const yR = seaYAt(s.bx - fz * Q, s.bz + fx * Q), yL = seaYAt(s.bx + fz * Q, s.bz - fx * Q), yM = seaYAt(s.bx, s.bz);
+    const nick = Math.atan2(yH - yB, 2 * L), roll = Math.atan2(yR - yL, 2 * Q);
+    const k = Math.min(1, dt * 4);
+    s.nick = (s.nick || 0) + (nick - (s.nick || 0)) * k; s.roll = (s.roll || 0) + (roll - (s.roll || 0)) * k;
+    b.position.set(s.bx, Math.max(yM, (yB + yH + yR + yL) / 4), s.bz);
+    b.rotation.set(s.nick + Math.sin(s.t * 0.6 + 1) * 0.006, s.yaw, s.roll + Math.sin(s.t * 0.9) * 0.008, 'YXZ'); b.updateMatrixWorld(true);
     bootUni.bootInv.value.copy(b.matrixWorld).invert(); bootUni.bootAn.value = 1;
   }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit

@@ -22,6 +22,8 @@
 //   form:       (leer) = jedes Bauteil einzeln; 'kreis' = ein Zylinder um das Ganze; 'quader' = ein Quader um das Ganze
 //   untergrund: 'land' (Standard, fester Boden), 'wasser' oder 'egal'
 //   fest:       genau an diese Stelle (gebaute Kulisse), kein Ausweichen
+//   auf:        Ablage (Mesh, z. B. die Tischplatte): es liegt darauf und rueckt auf ihr zur Seite, nie auf den Boden
+//   in:         Gruppe, in die es gehaengt wird (Standard: die Welt); x, z bleiben trotzdem Weltkoordinaten
 (function(){
 'use strict';
 const story = window.STORY;
@@ -162,7 +164,9 @@ function aktualisiere(d, zwingen){
   d.bb.makeEmpty();
   for(const k of d.koerper){ aktualisiereK(k); d.bb.union(k.wb); }
 }
-story.dingNeu = (d) => aktualisiere(d, true);      // nach dem Verschieben eines festen Dings
+story.dingNeu = (d) => aktualisiere(d, true);
+// Ding aus der Welt nehmen (z. B. in den Rucksack gesteckt): Grenze weg, Objekt bleibt dem Aufrufer
+story.entferne = function(d){ const i = dinge.indexOf(d); if(i >= 0) dinge.splice(i, 1); if(d.obj && d.obj.parent) d.obj.parent.remove(d.obj); };      // nach dem Verschieben eines festen Dings
 function aktiv(d){ return d.obj && d.obj.parent && !d.aus && (d.welt === '*' || d.welt === story.etappe) && locale === (d.ort || 'earth'); }
 
 // ---- Abfrage: wie tief steckt eine Kugel / Saeule in den Grenzen? ---------------------------------------------
@@ -243,9 +247,13 @@ function untergrundOk(def, x, z){
   if(def.untergrund === 'wasser') return isOpenWater(x, z);
   return evaSolid(x, z);
 }
+const _w = new THREE.Vector3();
 function stelleFrei(d, def, opt, x, z){
   const obj = d.obj;
-  obj.position.set(x, bodenY(def, x, z, opt), z);
+  // x, z (und die Hoehe) sind Weltkoordinaten – liegt das Objekt in einer Untergruppe (opt.in, z. B. auf dem Tisch im
+  // Raum), wird in deren Koordinaten umgerechnet
+  _w.set(x, bodenY(def, x, z, opt), z);
+  obj.parent.updateMatrixWorld(true); obj.position.copy(obj.parent.worldToLocal(_w));
   obj.updateMatrixWorld(true);
   d.bb.makeEmpty(); for(const k of d.koerper){ aktualisiereK(k); d.bb.union(k.wb); }
   if(opt.fest) return true;

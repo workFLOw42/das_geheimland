@@ -36,7 +36,9 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `sternbilder.js` | Sternbilder am Nachthimmel (Großer und Kleiner Bär, Kassiopeia, Orion) |
 | `insel.js` | Etappe 1: kleine Insel, Hütte, Palmen, Lagerfeuer, Möwen |
 | `steg.js` | Steg vor der Hütte (Sandplanken + Pfahlsteg, Grenzen) und Segelboot (einsteigen mit Y) |
+| `objekte.js` | Objekt-Katalog: jedes Objekt einmal definieren (`story.typ`), in jede Welt setzen (`story.setze`); Grenzen in exakter Form, freier Platz beim Setzen, nie verhaken, Orcas |
 | `huette_innen.js` | Innenraum der Hütte als eigene Welt (Blende an der Tür, innen größer als außen) |
+| `ausruestung.js` | Notizbuch im Regal, Lupe/Kompass/Messer/Stift/Kamera auf dem Tisch – mit Y groß zeigen und in den Rucksack |
 | `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
 | `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
 
@@ -52,6 +54,7 @@ Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixam
 - „Stage Campfire“ von [daedaljs](https://sketchfab.com/3d-models/stage-campfire-82f37f8bf0f645768e32ab7185df13ca) – CC-BY-4.0
 - „Ring-Billed Gull“ (sitzend und fliegend) von Oregon State University Ecampus – CC-BY-4.0
 - „Sailboat“ von JinnMx (CC-BY-4.0)
+- Ausrüstung (Sketchfab, CC-BY-4.0, fürs Spiel verkleinert): „Book – RealityScan“ von teddygbg, „Pencil“ von farooq.smurf, „Compass“ von EwanLejkowski, „Pocket Knife“ von Riccardo Daniello, „Magnifying Glass“ von Laura.Clarke, „Canon AT-1 Retro Camera“ von AleixoAlonso, „Backpack low-poly“ von dimaponomar2019
 - Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
 - Funkrauschen „Searching the Radio Noise“ von freesound_community (Pixabay) – Pixabay-Lizenz
 - Modelle und Töne der Flugspiel-Engine: siehe Flugspiel-Repo

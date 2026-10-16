@@ -76,7 +76,20 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 **Info – nur einmal:** nach dem ersten Y (Text gehört) erscheint dort kein Y mehr.
 
-**In der Hütte** *(im Code, noch ohne Text)*: **Bücherregal** und **Tisch** (Taschenmesser, Kompass und Lupe – hier als ein Objekt; später auch einzeln). Texte folgen.
+**In der Hütte** *(im Code)*: mit **Y** kommt das Ding aus dem Regal bzw. vom Tisch, wird groß, dreht sich einmal und wandert klein unten rechts in den Rucksack. Am Tisch nacheinander, je mit eigenem Satz.
+
+| Objekt | Text |
+|---|---|
+| Bücherregal – Notizbuch | Ah... ein Notizbuch. Das kann man immer gebrauchen. |
+| Tisch – Lupe | Eine Lupe! Damit siehst du auch die kleinsten Spuren. *(Entwurf)* |
+| Tisch – Kompass | Ein Kompass. Mit ihm findest du immer den Weg. *(Entwurf)* |
+| Tisch – Taschenmesser | Dein Taschenmesser. Das ist praktisch für unterwegs. *(Entwurf)* |
+| Tisch – Stift | Und ein Stift. Damit kannst du alles aufschreiben. *(Entwurf)* |
+| Tisch – Kamera | Und deine Kamera! Damit machst du Fotos von allen Hinweisen. *(Entwurf)* |
+
+**Alles im Rucksack** *(im Code)*: Klasse. Du hast alles dabei, was man als Detektiv braucht.
+
+Danach rauscht das **Funkgerät** am Lagerfeuer (alle 6 s, auch in der Hütte zu hören; es wackelt und blinkt). Erzählerin: *Hörst du das? Das Funkgerät am Lagerfeuer! Geh schnell hin und drücke Y.* – Mit **Y** am Funkgerät kommt der **Funkspruch für den ersten Fall** (Stimme `radio`). **Text und Interaktionen folgen** – im Code steht vorerst ein Platzhalter (`FALL1_FUNK`). Danach ist `abenteuerLos` gesetzt: Joshi kann ins Segelboot steigen.
 
 **Segelboot am Steg, bevor das Abenteuer begonnen hat** *(im Code)* – Y im letzten Drittel des Stegs:
 

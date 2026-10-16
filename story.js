@@ -1394,7 +1394,7 @@ function funkLaden(){
   funkLaedt = true; decodeSound(window.FUNK_SND).then(b => { funkBuf = b; }).catch(e => { funkLaedt = false; console.warn('Funk-Ton', e); });
 }
 function funkRauschen(dauer){
-  radio.an = true; story.spaeter(dauer, () => { radio.an = false; });
+  radio.an = true; story.spaeter(dauer, () => { if(radio.fall1 !== 'ruft') radio.an = false; });
   if(!soundOn || !audioCtx || audioCtx.state !== 'running') return;
   funkLaden();
   const jetzt = audioCtx.currentTime, g = audioCtx.createGain();
@@ -1449,6 +1449,25 @@ function durchsage(){
   radio.an = true;
   sprich(DURCHSAGE, () => { radio.an = false; sprich(NACH_DURCHSAGE); }, 'radio');
 }
+// ---- Funkspruch fuer den ersten Fall (Live-Wunsch 16.10.: kommt, sobald die Ausruestung komplett im Rucksack ist) -----
+// Erst rauscht es (auch in der Huette zu hoeren), das Geraet am Feuer wackelt und blinkt, bis Joshi mit Y annimmt.
+// Text und Interaktionen kommen noch – FALL1_FUNK ist ein Platzhalter.
+const FALL1_FUNK = ['*knack* ... *rausch* ...', 'Hallo ' + NAME + '! Hier spricht ... *rausch* ... Wir brauchen deine Hilfe!'];
+const FALL1_RUF = ['Hörst du das? Das Funkgerät am Lagerfeuer! Geh schnell hin und drücke Y.'];
+story.fall1Funk = function(){
+  if(radio.fall1) return;
+  radio.fall1 = 'ruft';
+  const ruf = () => { if(radio.fall1 !== 'ruft') return; funkRauschen(3); radio.an = true; spaeter(6, ruf); };
+  spaeter(1.5, () => { ruf(); sprich(FALL1_RUF); });
+  const o = interListe.find(i => i.obj === radio.obj);
+  if(o){ o.entdeckt = true; o.erledigt = false; o.danach = null; o.aktion = (oo) => {
+    if(radio.fall1 !== 'ruft') return funkRauschen(3);
+    radio.fall1 = 'angenommen'; radio.an = true; oo.spricht = true;
+    sprich(FALL1_FUNK, () => { radio.an = false; oo.spricht = false; oo.aktion = null; oo.danach = () => funkRauschen(3);
+      story.abenteuerLos = true;                                   // jetzt darf er ins Boot (steg.js)
+      if(story.fall1Angenommen) story.fall1Angenommen(); }, 'radio');
+  }; }
+};
 
 // ---- Hauptschleife ---------------------------------------------------------------------------
 function hilfeOffen(){ const h = document.getElementById('hint'); return !!(h && h.classList.contains('show')); }

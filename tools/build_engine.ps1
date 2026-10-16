@@ -1,4 +1,4 @@
-﻿# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
+# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
 # Aufruf aus dem Projektordner:  powershell -File tools/build_engine.ps1
 # Die Engine bleibt UNVERAENDERT – die Spiellogik haengt sich in story.js per Wrapper ein.
 $ErrorActionPreference = 'Stop'
@@ -56,7 +56,8 @@ foreach($ln in $lines[0..($start-1)]){
 foreach($a in $assets){ Copy-Item -Force (Join-Path $src $a) (Join-Path $dst $a) }
 
 # Eigene Modelle als eingebettete GLBs (wie die Flugspiel-Modelle): models/<name>.glb -> <name>_glb.js
-$modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB'; segelboot = 'SEGELBOOT_GLB' }
+$modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB'; segelboot = 'SEGELBOOT_GLB';
+             notizbuch = 'NOTIZBUCH_GLB'; stift = 'STIFT_GLB'; kompass = 'KOMPASS_GLB'; messer = 'MESSER_GLB'; lupe = 'LUPE_GLB'; kamera = 'KAMERA_GLB'; rucksack = 'RUCKSACK_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
@@ -84,6 +85,7 @@ $skripte += 'texturen.js'
 $skripte += 'insel.js'
 $skripte += 'steg.js'
 $skripte += 'huette_innen.js'
+$skripte += 'ausruestung.js'
 
 $out = ($head -join "`n") + "`n" +
   (($skripte | ForEach-Object { '<script src="' + $_ + '"></script>' }) -join "`n") + "`n" +

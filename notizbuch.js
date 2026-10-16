@@ -597,11 +597,14 @@ function updateSzene(dt, pause){
     sz.klotz.scale.set(gross * 1.25, gross * 0.8, gross * 0.6);
     klotzMaske(lin);
     g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + Math.PI, 0);   // Schnauze nach vorn (Live-Befund 16.10.)
-    g.traverse(m => { if(m.isMesh) m.material.opacity = Math.min(1, Math.max(0, (lin - 0.15) / 0.6)); });
+    // Fuchs erst, wenn die Ecken des Klotzes weg sind (Live-Wunsch 16.10.: vorher schimmerte sein heller Umriss schon
+    // durch) – zu Beginn ist nur der Holzscheit zu sehen; ganz unsichtbar, solange die Deckkraft 0 ist
+    const fa = weich((lin - 0.35) / 0.5);
+    g.visible = fa > 0.01; g.traverse(m => { if(m.isMesh){ m.material.opacity = fa; m.material.depthWrite = fa > 0.95; } });
     if(story.messerAn) story.messerAn(Math.sin(sz.t * 9) * 0.3, 0.05 + Math.cos(sz.t * 4.5) * 0.08);
     // Spaene: kleine helle Holzstueckchen, die vom Klotz wegfliegen
     if(Math.random() < dt * 22) spahn(grp);
-    if(sz.t >= T_SCHNITZ){ grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; }
+    if(sz.t >= T_SCHNITZ){ grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; g.visible = true; g.traverse(m => { if(m.isMesh){ m.material.opacity = 1; m.material.depthWrite = true; } }); }
   } else if(sz.phase === 'lupe'){
     // Die Lupe steht aufrecht gross im Bild (raus.akt, ausruestung.js lupeAn) – genau hinter ihrem Glas der Schmetterling,
     // von oben gesehen und stark vergroessert, mit schlagenden Fluegeln

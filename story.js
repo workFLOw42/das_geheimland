@@ -1300,22 +1300,30 @@ function sprich(saetze, fertig, rolle){
   let i = -1, timer = null, done = false;
   const me = sprichtGerade = {};
   const funk = rolle === 'radio';
+  // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
+  let tFn = null, tBis = 0, tRest = 0;
+  const stelle = (fn, ms) => { clearTimeout(timer); tFn = fn; tBis = performance.now() + ms; timer = setTimeout(fn, ms); };
+  me.pause = (an) => {
+    if(!tFn) return;
+    if(an){ clearTimeout(timer); tRest = Math.max(0, tBis - performance.now()); }
+    else stelle(tFn, tRest);
+  };
   function ende(){
     done = true; untertitel(''); sprichtGerade = null;
     if(fertig) fertig();
     const n = sprichWarte.shift(); if(n) n();
   }
   function weiter(){
-    clearTimeout(timer);
+    clearTimeout(timer); tFn = null;
     if(done) return;
     if(++i >= saetze.length){
-      if(funk && !me.nachRauschen){ me.nachRauschen = true; i = saetze.length; funkRauschen(FUNK_RAHMEN + 0.3); timer = setTimeout(ende, FUNK_RAHMEN * 1000); }
+      if(funk && !me.nachRauschen){ me.nachRauschen = true; i = saetze.length; funkRauschen(FUNK_RAHMEN + 0.3); stelle(ende, FUNK_RAHMEN * 1000); }
       else ende();
       return;
     }
     if(funk && i === 0 && !me.vorRauschen){                         // erst rauschen, dann der erste Satz
       me.vorRauschen = true; i = -1; funkRauschen(FUNK_RAHMEN + 0.3);
-      timer = setTimeout(weiter, FUNK_RAHMEN * 1000); return;
+      stelle(weiter, FUNK_RAHMEN * 1000); return;
     }
     const s = saetze[i];
     // Auch ohne geladene Stimmenliste sprechen (Standardstimme des Browsers): die Liste kommt oft erst spaeter, und dann
@@ -1327,11 +1335,11 @@ function sprich(saetze, fertig, rolle){
       u.lang = 'de-DE'; if(st) u.voice = st;
       u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
       u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
-      if(synth.paused) synth.resume();                // manche Browser stehen nach dem Laden auf Pause
+      if(synth.paused && !hilfeOffen()) synth.resume();   // manche Browser stehen nach dem Laden auf Pause (nicht im Spiel-Pause)
       u.onend = u.onerror = () => { if(sprichtGerade === me) weiter(); };
       synth.speak(u);
-      timer = setTimeout(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
-    } else timer = setTimeout(weiter, satzDauer(s));        // ohne Sprachausgabe: nur die Pause
+      stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
+    } else stelle(weiter, satzDauer(s));                     // ohne Sprachausgabe: nur die Pause
   }
   weiter();
 }
@@ -1512,15 +1520,66 @@ story.fall1Funk = function(){
   }; }
 };
 
-// ---- Hauptschleife ---------------------------------------------------------------------------
+// ---- Pause (D-Pad hoch / H, Live-Wunsch 16.10.) -------------------------------------------------------------------
+// Das ueberladene Hilfe-Fenster der Engine braucht es nicht. Die Engine haelt aber alles an, solange #hint sichtbar ist
+// (loop: "PAUSE ... renderer.render; return") – das bleibt der Schalter, nur unsichtbar. Statt des Fensters steht
+// "PAUSE" im Stil des Y-Zeichens. Dazu: Ton ganz aus (Master-Gain, globus.js), die Stimme haelt an genau der Stelle an
+// (speechSynthesis.pause/resume), die Story-Timer stehen (timerTick laeuft nicht), und alle eigenen Bildschleifen
+// (Einstecken, Kompass, Gischt, Globus) fragen story.pause() ab.
+// Zwei Arten (Live-Wunsch 16.10.): "hilfe" = D-Pad hoch / H -> PAUSE-Zeichen; "inventar" = D-Pad runter / N -> der Rucksack
+// mit allen Dingen (ausruestung.js). Beide halten das Spiel, den Ton und die Stimme an und blenden Kompass, Radar und
+// Schubbalken aus (body.pausiert). Beide schalten ueber dieselbe #hint-Klasse, damit auch die Engine-Physik steht; wer
+// pausiert hat, beendet sie auch (H schliesst kein Inventar und umgekehrt).
+const pause = { art: null };
 function hilfeOffen(){ const h = document.getElementById('hint'); return !!(h && h.classList.contains('show')); }
+story.pause = hilfeOffen;
+story.pauseArt = () => pause.art;
+function pauseSetzen(art){
+  const h = document.getElementById('hint'); if(!h) return;
+  pause.art = art;
+  h.classList.toggle('show', !!art);
+}
+story.pauseSetzen = pauseSetzen;
+let pauseEl = null, pauseWar = false;
+function pauseAnzeige(an){
+  if(!pauseEl){
+    pauseEl = document.createElement('div');
+    pauseEl.textContent = 'PAUSE';
+    pauseEl.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:18px 46px;border-radius:999px;'
+      + 'background:#f5c518;border:6px solid #fff;box-shadow:0 6px 0 rgba(0,0,0,.35);color:#1a1a1a;font:900 64px system-ui,sans-serif;'
+      + 'letter-spacing:4px;pointer-events:none;z-index:60;display:none;';
+    document.body.appendChild(pauseEl);
+    // das Engine-Fenster selbst nie zeigen (es bleibt nur der Pause-Schalter); in der Pause keine Etappen-Anzeigen
+    const st = document.createElement('style');
+    st.textContent = '#hint.show { visibility: hidden !important; } body.pausiert [data-etappe-hud] { visibility: hidden !important; }';
+    document.head.appendChild(st);
+  }
+  pauseEl.style.display = an ? 'block' : 'none';
+}
+function pauseWechsel(an){
+  pauseAnzeige(an && pause.art !== 'inventar');
+  document.body.classList.toggle('pausiert', an);                 // Kompass, Radar, Schubbalken aus (data-etappe-hud)
+  const synth = window.speechSynthesis;
+  if(synth){ if(an) synth.pause(); else synth.resume(); }
+  // Ton: in der Pause ganz aus, danach wieder an (ausser der Globus laeuft – der hat den Ton selbst ausgeblendet)
+  if(story.master && audioCtx){ const g = story.master.gain, t = audioCtx.currentTime;
+    if(an){ story.master.vorPause = g.value; g.cancelScheduledValues(t); g.setValueAtTime(0, t); }
+    else { const ziel = story.globusAktiv && story.globusAktiv() ? 0 : (story.master.vorPause === undefined ? 1 : Math.max(story.master.vorPause, 1));
+      g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(ziel, t + 0.3); } }
+  if(sprichtGerade && sprichtGerade.pause) sprichtGerade.pause(an);
+}
+story.pauseWechsel = pauseWechsel;
+
+// ---- Hauptschleife ---------------------------------------------------------------------------
 function hookLoop(){
   const loopOrig = loop;
   let tPrev = performance.now();
   loop = function(){
     const now = performance.now();
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
-    if(hilfeOffen()) return loopOrig.apply(this, arguments);   // Pause
+    const p = hilfeOffen();
+    if(p !== pauseWar){ pauseWar = p; pauseWechsel(p); }
+    if(p) return loopOrig.apply(this, arguments);   // Pause
     timerTick(dt);
     if(story.updateObjekte) story.updateObjekte(dt);   // objekte.js: Grenzen nachfuehren, Schiffe schieben beiseite
     figurTasten();
@@ -1559,7 +1618,20 @@ function hookHudAus(){
 function hookTon(){
   const tonOrig = toggleSound;
   story.tonAn = function(){ if(soundOn) return; tonOrig(); if(toggleEl) toggleEl.style.opacity = '0'; };
-  toggleSound = function(){ story.tonAn(); };
+  // D-Pad runter / N (vorher Ton an/aus) = Inventar: pausiert und zeigt den Rucksack mit allen Dingen; nochmal = weiter
+  toggleSound = function(){
+    story.tonAn();
+    if(!story.gestartet || !story.inventar || (story.globusAktiv && story.globusAktiv())) return;
+    if(pause.art === 'inventar'){ pauseSetzen(null); story.inventar(false); }
+    else if(!pause.art && story.inventar(true)) pauseSetzen('inventar');
+  };
+  // D-Pad hoch / H (vorher das Hilfe-Fenster) = Pause mit PAUSE-Zeichen
+  toggleHelp = function(){
+    if(!story.gestartet) return;
+    if(pause.art === 'hilfe') pauseSetzen(null);
+    else if(!pause.art) pauseSetzen('hilfe');
+  };
+  pauseAnzeige(false);                                              // Style-Regeln gleich anlegen
   const symOrig = showToggle;
   showToggle = function(sym){ if(sym === '🔊' || sym === '🔇') return; return symOrig.apply(this, arguments); };   // Lautsprecher an / aus
 }

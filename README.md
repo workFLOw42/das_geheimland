@@ -19,6 +19,8 @@ mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Ko
 | linker Stick | Pfeiltasten | im Segelboot: lenken · LB / RB = Blick zur Seite |
 | rechter Stick | I J K L | umschauen |
 | D-Pad ← | T | Hinweis: die Erzählerin sagt, was als Nächstes gut wäre |
+| D-Pad ↑ | H | Pause (alles steht, auch Ton und Stimme) |
+| D-Pad ↓ | N | Inventar: alle eingesammelten Dinge (das Spiel pausiert, nochmal = weiter) |
 
 Steht die Figur eine Weile still, holt sie die Gitarre heraus.
 

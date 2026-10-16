@@ -216,7 +216,7 @@ function hookSegeln(){
   let tVor = performance.now();
   loop = function(){
     const jetzt = performance.now(), dt = Math.min(0.1, (jetzt - tVor) / 1000); tVor = jetzt;
-    update(dt);
+    if(!(story.pause && story.pause())) update(dt);               // Pause: Gischt, Wind, Kompassnadel stehen
     return loopOrig.apply(this, arguments);
   };
 }

@@ -153,7 +153,11 @@ function hookGlobus(){
   loop = function(){
     const jetzt = performance.now(), dt = Math.min(0.1, (jetzt - tVor) / 1000); tVor = jetzt;
     if(gl.aktiv){
-      update(dt);
+      // Pause auch hier: der Globus steht. readInput laeuft, damit D-Pad hoch / H die Pause wieder beenden
+      const p = story.pause && story.pause();
+      if(p !== gl.pause){ gl.pause = p; if(story.pauseWechsel) story.pauseWechsel(p); }
+      readInput();
+      if(!p) update(dt);
       gl.kam.aspect = innerWidth / innerHeight; gl.kam.updateProjectionMatrix();
       renderer.render(gl.szene, gl.kam);
       requestAnimationFrame(loop);

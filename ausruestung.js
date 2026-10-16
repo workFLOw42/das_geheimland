@@ -23,7 +23,7 @@ const SACHEN = {
   kompass:   { glb: 'KOMPASS_GLB', L: 0.09, zeigen: 1.0, tisch: ['needleAction'], zeigenAnim: ['needleAction', 'rotating cylinderAction'] },
   messer:    { glb: 'MESSER_GLB', L: 0.11, dreh: [-Math.PI / 2, 0, 0], zeigen: 1.1, zeigenAnim: ['Blade Flip'] },
   lupe:      { glb: 'LUPE_GLB', L: 0.21, zeigen: 1.0 },
-  kamera:    { glb: 'KAMERA_GLB', L: 0.14, zeigen: 0.15 },
+  kamera:    { glb: 'KAMERA_GLB', L: 0.14, zeigen: 0.15, deckend: true },   // Modell steht auf alphaMode BLEND + doppelseitig: wirkte durchsichtig
   rucksack:  { glb: 'RUCKSACK_GLB', L: 0.45, dreh: [0, -Math.PI / 2, 0], zeigen: 0 },
 };
 const TEXT = {
@@ -52,7 +52,8 @@ function vorlage(n){
     const m = gl.scene;
     if(S.dreh) m.rotation.set(S.dreh[0], S.dreh[1], S.dreh[2]);
     m.traverse(o => { if(o.isMesh){ o.castShadow = true; o.frustumCulled = false;
-      for(const mt of (Array.isArray(o.material) ? o.material : [o.material])){ if(!mt) continue; mt.metalness = Math.min(mt.metalness || 0, 0.3); if(S.beidseitig) mt.side = THREE.DoubleSide; } } });
+      for(const mt of (Array.isArray(o.material) ? o.material : [o.material])){ if(!mt) continue; mt.metalness = Math.min(mt.metalness || 0, 0.3); if(S.beidseitig) mt.side = THREE.DoubleSide;
+      if(S.deckend){ mt.transparent = false; mt.opacity = 1; mt.alphaTest = 0.5; mt.depthWrite = true; mt.side = THREE.FrontSide; mt.needsUpdate = true; } } } });
     m.updateMatrixWorld(true);
     let bb = new THREE.Box3().setFromObject(m), sz = bb.getSize(new THREE.Vector3());
     m.scale.multiplyScalar(S.L / Math.max(sz.x, sz.y, sz.z));
@@ -246,6 +247,84 @@ function updateRucksack(dt){
   p.rotation.set(0.25, -0.35 + Math.sin(performance.now() / 900) * 0.08, 0);
 }
 
+// ---- Inventar (D-Pad runter / N, Live-Wunsch 16.10.) ---------------------------------------------------------------
+// Inventar an = Spiel pausiert (story.js), Inventar aus = weiter. In der Bildmitte eine halbtransparente weisse Flaeche
+// (2/3 des Bildschirms), darauf alle eingesammelten Dinge – hoechstens INV_PRO_ZEILE pro Zeile, mittig, jedes mit einem
+// dezenten warmen Schein dahinter und langsam drehend (wie beim Einstecken). Waehrend des Einsteckens geht es nicht auf.
+const INV_PRO_ZEILE = 3;
+const INV_REIHE = ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera'];
+const inv = { an: false, k: 0, dinge: [], t: 0, flaeche: null, glowTex: null };
+// Die Flaeche ist ein Mesh in der Bildebene selbst (ein DOM-Element laege ueber oder unter allen Dingen, nicht dazwischen).
+// Reihenfolge: Flaeche (renderOrder -1) -> Schein (0, ohne Tiefentest) -> die Dinge (normal, mit Tiefe).
+function flaecheBauen(){
+  if(inv.flaeche) return;
+  // weiche Ecken: Canvas-Textur mit abgerundetem Rechteck
+  const c = document.createElement('canvas'); c.width = 512; c.height = 512; const g = c.getContext('2d');
+  const r = 46; g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(r, 0); g.arcTo(512, 0, 512, 512, r); g.arcTo(512, 512, 0, 512, r); g.arcTo(0, 512, 0, 0, r); g.arcTo(0, 0, 512, 0, r); g.fill();
+  inv.flaeche = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.55, depthWrite: false }));
+  inv.flaeche.renderOrder = -1; inv.flaeche.visible = false; szene.add(inv.flaeche);
+  // Schein: weiches, warmes Leuchten (radialer Verlauf), hinter jedem Ding
+  const h = document.createElement('canvas'); h.width = h.height = 128; const hg = h.getContext('2d'), gr = hg.createRadialGradient(64, 64, 4, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(255,236,170,0.85)'); gr.addColorStop(0.45, 'rgba(255,220,140,0.35)'); gr.addColorStop(1, 'rgba(255,220,140,0)');
+  hg.fillStyle = gr; hg.fillRect(0, 0, 128, 128); inv.glowTex = new THREE.CanvasTexture(h);
+}
+function inventarAn(an){
+  ebene(); flaecheBauen();
+  if(an && flug.akt) return false;                               // erst fertig einstecken
+  inv.an = an;
+  if(an){
+    for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); stoppe(d.mx); }
+    inv.dinge = [];
+    const da = INV_REIHE.filter(n => zustand[n]);
+    inv.anzahl = da.length;
+    da.forEach((n, i) => klon(n).then(o => {
+      if(!inv.an) return;
+      o.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(o), L = Math.max(...bb.getSize(new THREE.Vector3()).toArray());
+      o.position.sub(bb.getCenter(new THREE.Vector3()));
+      o.traverse(m => { if(m.isMesh) m.castShadow = false; });
+      const p = new THREE.Group(); p.add(o); szene.add(p);
+      o.traverse(m => { if(m.isMesh) m.renderOrder = 1; });
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: inv.glowTex, transparent: true, depthWrite: false, depthTest: false }));
+      glow.renderOrder = 0; szene.add(glow);
+      const A = SACHEN[n].zeigenAnim;
+      // Haltung wie beim Zeigen; das Notizbuch (hochkant) etwas gekippt, damit man den Deckel sieht
+      const neig = n === 'notizbuch' ? 0.35 : (SACHEN[n].zeigen || 0);
+      inv.dinge.push({ n, p, glow, L, i, mx: A ? spiele(o, A, 1) : null, q: new THREE.Quaternion().setFromEuler(new THREE.Euler(neig, 0, 0)) });
+    }));
+  }
+  return true;
+}
+// story.js (D-Pad runter / N): an = Spiel pausiert, aus = weiter
+story.inventar = (an) => inventarAn(an === undefined ? !inv.an : an);
+story.inventarOffen = () => inv.an;
+const _iq = new THREE.Quaternion();
+function updateInventar(dt){
+  inv.k += klemme((inv.an ? 1 : 0) - inv.k, -dt * 4, dt * 4);
+  if(inv.flaeche) inv.flaeche.visible = inv.k > 0.001;
+  if(inv.k <= 0 && !inv.an){ for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); stoppe(d.mx); } inv.dinge = []; return; }
+  inv.t += dt;
+  const s = weich(inv.k), H = hoeheEbene(), B = H * innerWidth / innerHeight;
+  // Flaeche: 2/3 der Bildbreite und -hoehe, mittig
+  const fb = B * 2 / 3, fh = H * 2 / 3;
+  inv.flaeche.position.set(0, 0, -0.5); inv.flaeche.scale.set(fb * (0.9 + 0.1 * s), fh * (0.9 + 0.1 * s), 1);
+  inv.flaeche.material.opacity = 0.55 * s;
+  // Raster: so viele Zeilen wie noetig, je Zeile mittig; Platzgroesse so, dass alles in die Flaeche passt
+  const n = inv.anzahl || inv.dinge.length, zeilen = Math.max(1, Math.ceil(n / INV_PRO_ZEILE));
+  const platz = Math.min(fb / INV_PRO_ZEILE, fh / zeilen) * 0.92, gross = platz * 0.62;
+  for(const d of inv.dinge){
+    const zeile = Math.floor(d.i / INV_PRO_ZEILE), spalte = d.i % INV_PRO_ZEILE, inZeile = Math.min(INV_PRO_ZEILE, n - zeile * INV_PRO_ZEILE);
+    const x = (spalte - (inZeile - 1) / 2) * platz, y = ((zeilen - 1) / 2 - zeile) * platz;
+    d.p.position.set(x, y, 0.3);
+    d.p.scale.setScalar(s * gross / d.L);
+    _iq.setFromAxisAngle(_y, inv.t * 0.9 + d.i * 1.1);            // langsam drehen, jedes etwas versetzt
+    d.p.quaternion.copy(_iq).multiply(d.q);
+    d.glow.position.set(x, y, -0.2);                              // hinter dem Ding
+    d.glow.scale.setScalar(platz * 0.95 * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
+    d.glow.material.opacity = 0.75 * s;
+  }
+}
+
 // ---- Einhaengen: jedes Bild nach dem Spielbild die Ebene zeichnen -------------------------------------------------
 function hookAusruestung(){
   const loopOrig = loop;
@@ -253,10 +332,15 @@ function hookAusruestung(){
   loop = function(){
     const jetzt = performance.now(), dt = Math.min(0.1, (jetzt - tVor) / 1000); tVor = jetzt;
     const r = loopOrig.apply(this, arguments);
-    for(const mx of mixer) mx.update(dt);
+    const p = story.pause && story.pause();                       // Pause: alles steht, gezeichnet wird weiter
+    if(!p) for(const mx of mixer) mx.update(dt);
+    else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.mx) d.mx.update(dt);   // Messer klappt, Nadel dreht
     if(szene){
-      updateFlug(dt); updateRucksack(dt);
-      if(flug.akt || rucksack.pivot.visible){
+      // In der Pause steht alles – ausser dem Inventar selbst (das IST die Inventar-Pause): Rucksack und Dinge drehen weiter
+      const inventarPause = p && story.pauseArt && story.pauseArt() === 'inventar';
+      if(!p){ updateFlug(dt); updateRucksack(dt); updateInventar(dt); }
+      else if(inventarPause || inv.k > 0){ updateRucksack(dt); updateInventar(dt); }
+      if(flug.akt || rucksack.pivot.visible || inv.dinge.length || (inv.flaeche && inv.flaeche.visible)){
         kam.aspect = innerWidth / innerHeight; kam.updateProjectionMatrix();
         const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth();
         renderer.render(szene, kam); renderer.autoClear = ac;

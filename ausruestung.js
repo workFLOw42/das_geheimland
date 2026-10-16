@@ -309,7 +309,7 @@ story.ausRucksack = function(n, fertig){
       m.material = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const k = x.clone(); k.transparent = true; k.opacity = 1; return k; });
       if(m.material.length === 1) m.material = m.material[0]; } });
     const p = new THREE.Group(); p.add(o); szene.add(p);
-    const anim = zeigeAnim(n, o); if(anim && anim.klapp) anim.klapp.soll = 1;   // Messer: auf beim Herausholen, zu bei B
+    const anim = zeigeAnim(n, o);                                 // Messer: kommt zu heraus, klappt dann auf (s. 'auf'), zu bei B
     raus.akt = { n, p, L, t: 0, phase: 'raus', fertig, anim,
       q: new THREE.Quaternion().setFromEuler(new THREE.Euler(SACHEN[n].zeigen || 0, 0, 0)) };
   });
@@ -370,7 +370,13 @@ function updateRaus(dt){
     r.p.position.lerpVectors(unten, mitte, k); r.p.position.y += Math.sin(k * Math.PI) * 0.25;
     r.p.scale.setScalar(klein + (gross - klein) * k);
     _qy.setFromAxisAngle(_y, k * Math.PI * 2); r.p.quaternion.copy(_qy).multiply(r.q);
-    if(r.t >= 1.1){ r.phase = 'warte'; r.t = 0; rucksack.hops = 1; const f = r.fertig; r.fertig = null; if(f) f(); }
+    if(r.t >= 1.1){ rucksack.hops = 1; r.t = 0;
+      // Live-Wunsch 16.10.: erst raus, dann gross in der Mitte aufklappen, dann erst schnitzen
+      if(r.anim && r.anim.klapp){ r.phase = 'auf'; r.anim.klapp.soll = 1; }
+      else { r.phase = 'warte'; const f = r.fertig; r.fertig = null; if(f) f(); } }
+  } else if(r.phase === 'auf'){                                    // Messer klappt in der Mitte auf
+    r.p.position.copy(mitte); r.p.scale.setScalar(gross); r.p.quaternion.copy(r.q);
+    if(r.anim.klapp.k >= 0.99 && r.t > 0.3){ r.phase = 'warte'; r.t = 0; const f = r.fertig; r.fertig = null; if(f) f(); }
   } else if(r.phase === 'warte'){                                  // steht gross in der Mitte, waehrend das Bild kommt
     if(r.halt){
       // Messer am Klotz bzw. Lupe vorn in der Mitte (notizbuch.js setzt die Lage jedes Bild)

@@ -479,6 +479,14 @@ function aufstehen(){
 // Bewegung stoppt ihn sofort (kein Ausblenden). Der Puffer wird beim ersten Mal dekodiert.
 const GITARRE_VOL = 0.09;
 const gitarre = { buf: null, laedt: false, quelle: null, gain: null };
+function gitarreLaden(dann){
+  if(gitarre.buf){ if(dann) dann(); return; }
+  if(dann) (gitarre.warten || (gitarre.warten = [])).push(dann);
+  if(gitarre.laedt || !audioCtx || !window.GITARRE_SND) return; gitarre.laedt = true;
+  decodeSound(window.GITARRE_SND).then(b => { gitarre.buf = b; const w = gitarre.warten || []; gitarre.warten = null; for(const f of w) f(); })
+    .catch(e => { gitarre.laedt = false; console.warn('Gitarre:', e); });
+}
+story.gitarreLaden = gitarreLaden;
 function gitarreMusik(an){
   if(!an || !soundOn || !audioCtx || audioCtx.state !== 'running' || !window.GITARRE_SND){
     if(gitarre.quelle){ try { gitarre.quelle.stop(); } catch(e){} gitarre.quelle = null; }
@@ -486,7 +494,9 @@ function gitarreMusik(an){
   }
   if(gitarre.quelle) return;
   if(!gitarre.buf){
-    if(!gitarre.laedt){ gitarre.laedt = true; decodeSound(window.GITARRE_SND).then(b => { gitarre.buf = b; }).catch(e => console.warn('Gitarre:', e)); }
+    // Live-Befund 16.10. ("ich hoere die Rockmusik nicht mehr"): beim ersten Mal wurde nur dekodiert und nie gespielt –
+    // gitarreMusik(true) kommt nur einmal beim Wechsel zur Gitarre. Jetzt: nach dem Dekodieren gleich los, wenn er noch spielt
+    gitarreLaden(() => { if(figur.cur === 'guitar' && !figur.aktion && !figur.kniet) gitarreMusik(true); });
     return;
   }
   const s = audioCtx.createBufferSource(); s.buffer = gitarre.buf; s.loop = true;
@@ -1588,6 +1598,7 @@ function startbildschirm(weiter){
     story.ton = true; story.gestartet = true;
     if(!soundOn) story.tonAn();
     funkLaden();                                      // Funk-Ton gleich dekodieren – sonst fehlte beim ersten Ruf das Rauschen
+    gitarreLaden();                                   // ebenso die Gitarre (sonst blieb das erste Spielen stumm)
     // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
     if(window.speechSynthesis){ window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();

@@ -322,7 +322,7 @@ function feuerDanach(d){
 // ---- Moewen: fliegen ueber der Insel, ein paar sitzen am Strand -------------------------------
 // Ring-Billed Gull (+ in Flight) by Oregon State University Ecampus, CC-BY-4.0 (moewe_glb.js aus Spiel_SFG).
 // Kopf im Modell auf +Z. Messen in der gehaeuteten Haltung wie in SFG (etappe4.js / tiere.js).
-const moewen = { sitz: [], flug: [] };
+const moewen = { sitz: [], flug: [], flugV: null, rnd: null, w: null };
 function moeweVorlage(gltf, mass, achse){
   const obj = gltf.scene;
   obj.traverse(o => { if(o.isMesh){ o.frustumCulled = false; o.castShadow = false; } });
@@ -347,11 +347,13 @@ function moeweKlon(v, w, rnd){
 }
 function ladeMoewen(w){
   let s = 31; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  moewen.rnd = rnd; moewen.w = w;
   story.ladeGlb(window.MOEWE_SITZ_GLB, 'Moewe', (g) => {
     const v = moeweVorlage(g, 0.55, 'z');
-    // drei kleine Gruppen am Sandstreifen, Blick aufs Meer
-    for(const a0 of [Math.PI / 2 + 0.55, Math.PI / 2 - 0.7, -0.4]){
-      const n = 2 + Math.floor(rnd() * 3);
+    // kleine Gruppen rund um den Sandstreifen, Blick aufs Meer (Live-Wunsch 16.10.: mehr – vorher drei Gruppen, man sah
+    // meist nur zwei Moewen); nicht am Steg (Winkel PI/2)
+    for(const a0 of [Math.PI / 2 + 0.55, Math.PI / 2 - 0.7, -0.4, Math.PI / 2 + 1.3, Math.PI / 2 - 1.45, Math.PI, -1.25, 2.6, -2.3]){
+      const n = 3 + Math.floor(rnd() * 3);
       for(let i = 0; i < n; i++){
         const a = a0 + (rnd() - 0.5) * 0.12, r = ISEL_R * (1.03 + rnd() * 0.06);
         const o = moeweKlon(v, w, rnd);
@@ -365,7 +367,8 @@ function ladeMoewen(w){
   });
   story.ladeGlb(window.MOEWE_FLUG_GLB, 'Moewe fliegend', (g) => {
     const v = moeweVorlage(g, 1.3, 'x');
-    for(let i = 0; i < 7; i++){
+    moewen.flugV = v;                                               // auch fuer die auffliegenden Sitzmoewen
+    for(let i = 0; i < 10; i++){
       const o = moeweKlon(v, w, rnd);
       const dreh = rnd() < 0.5 ? 1 : -1, r = 25 + rnd() * 70;
       o.kreis = { r, y: 14 + rnd() * 18, w: dreh * (6 + rnd() * 3) / r, a: rnd() * Math.PI * 2, hub: 1 + rnd() * 2, t: rnd() * 10,
@@ -374,14 +377,18 @@ function ladeMoewen(w){
     }
   });
 }
-// Sitzende fliegen auf, wenn man ihnen zu nahe kommt, und landen spaeter wieder an ihrem Platz
+// Sitzende fliegen auf, wenn man ihnen zu nahe kommt, und landen spaeter wieder an ihrem Platz. Beim Auffliegen wird aus
+// der sitzenden die FLIEGENDE Moewe (Live-Wunsch 16.10.: sie flogen in Sitzhaltung davon) – je eine eigene, beim ersten
+// Auffliegen gebaut; die sitzende ist so lange unsichtbar
 function updateMoewen(dt){
   const cp = camera.position;
   const fig = eva ? eva.group.position : null;
   for(const o of moewen.sitz){
     if(o.mixer) o.mixer.update(dt);
     if(fig && !o.weg && Math.hypot(fig.x - o.k.position.x, fig.z - o.k.position.z) < 3.5){
-      o.weg = 1; o.vy = 3; o.yaw = Math.atan2(o.k.position.x - fig.x, o.k.position.z - fig.z);
+      o.weg = 1; o.vy = 3; o.yaw = Math.atan2(o.k.position.x - fig.x, o.k.position.z - fig.z) + (Math.random() - 0.5) * 0.8;
+      if(!o.flieg && moewen.flugV) o.flieg = moeweKlon(moewen.flugV, moewen.w, moewen.rnd);
+      if(o.flieg) o.flieg.k.position.copy(o.k.position);
     }
     if(o.weg){
       o.weg += dt;
@@ -389,11 +396,15 @@ function updateMoewen(dt){
       o.k.position.x += Math.sin(o.yaw) * 6 * dt; o.k.position.z += Math.cos(o.yaw) * 6 * dt;
       o.k.position.y += o.vy * dt;
       o.k.rotation.y = o.yaw;
+      if(o.flieg){ const f = o.flieg.k; f.position.copy(o.k.position); f.position.y += 0.15; f.rotation.set(-0.25, o.yaw, 0);   // Kopf hoch beim Steigen
+        if(o.flieg.mixer) o.flieg.mixer.update(dt * 1.3); }
       if(o.weg > 25){                                        // wieder da
         o.weg = 0; o.k.position.set(Math.cos(o.a) * o.r, ISLAND_Y, Math.sin(o.a) * o.r);
       }
     }
-    o.k.visible = locale === 'earth' && (!o.weg || o.weg < 14);
+    const fliegt = !!(o.weg && o.flieg);
+    o.k.visible = locale === 'earth' && !fliegt && (!o.weg || o.weg < 14);
+    if(o.flieg) o.flieg.k.visible = locale === 'earth' && fliegt && o.weg < 14;
   }
   for(const o of moewen.flug){
     const kr = o.kreis;

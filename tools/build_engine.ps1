@@ -86,6 +86,7 @@ $skripte += 'insel.js'
 $skripte += 'steg.js'
 $skripte += 'huette_innen.js'
 $skripte += 'ausruestung.js'
+$skripte += 'segeln.js'
 
 $out = ($head -join "`n") + "`n" +
   (($skripte | ForEach-Object { '<script src="' + $_ + '"></script>' }) -join "`n") + "`n" +

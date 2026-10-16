@@ -1242,7 +1242,8 @@ function hookHinweis(){
 
 // ---- Stimme + Untertitel ---------------------------------------------------------------------
 // Browser erlauben Sprachausgabe erst nach einer Nutzergeste – deshalb der Startbildschirm.
-// Ton an: Stimme. Ton aus (N / D-Pad runter): Untertitel. Immer nur eine Ansage gleichzeitig.
+// Immer gesprochen, ohne Untertitel (Live-Wunsch 16.10.: der Spieler kann noch nicht lesen). Der Ton ist immer an – ein
+// Umschalten gibt es nicht (hookTon). Immer nur eine Ansage gleichzeitig.
 let subEl = null;
 function untertitel(text){
   if(!subEl){
@@ -1253,8 +1254,9 @@ function untertitel(text){
       + 'transition:opacity .4s;z-index:20;';
     document.body.appendChild(subEl);
   }
-  subEl.textContent = text || '';
-  subEl.style.opacity = text ? '1' : '0';
+  subEl.textContent = '';                               // keine Untertitel (siehe oben) – Aufrufe bleiben harmlos
+  subEl.style.opacity = '0';
+  void text;
 }
 const STIMME_W = /Katja|Amala|Seraphina|Louisa|Hedda|Elke|Klarissa|Tanja|Google Deutsch|female|weiblich/i;
 const STIMME_M = /Conrad|Killian|Florian|Stefan|Ralf|Kasper|Bernd|Christoph|male|männlich/i;
@@ -1284,9 +1286,10 @@ function sprich(saetze, fertig, rolle){
     const s = saetze[i];
     // Auch ohne geladene Stimmenliste sprechen (Standardstimme des Browsers): die Liste kommt oft erst spaeter, und dann
     // lief der erste Text nur als Untertitel – gesprochen wurde erst beim zweiten Mal (Live-Befund am Lagerfeuer)
-    if(synth && story.ton && soundOn){
+    if(synth){
       untertitel('');
-      const u = new SpeechSynthesisUtterance(s), st = stimmeFuer(rolle);
+      // Gesprochen "Joschi" (Live-Wunsch 16.10.: klingt in der deutschen Sprachausgabe richtiger) – geschrieben bleibt NAME
+      const u = new SpeechSynthesisUtterance(s.replace(/Joshi/g, 'Joschi')), st = stimmeFuer(rolle);
       u.lang = 'de-DE'; if(st) u.voice = st;
       u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
       u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
@@ -1294,10 +1297,7 @@ function sprich(saetze, fertig, rolle){
       u.onend = u.onerror = () => { if(sprichtGerade === me) weiter(); };
       synth.speak(u);
       timer = setTimeout(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
-    } else {
-      untertitel(s);
-      timer = setTimeout(weiter, satzDauer(s));
-    }
+    } else timer = setTimeout(weiter, satzDauer(s));        // ohne Sprachausgabe: nur die Pause
   }
   weiter();
 }
@@ -1324,7 +1324,7 @@ function startbildschirm(weiter){
     el.remove();
     removeEventListener('keydown', taste, true);
     story.ton = true; story.gestartet = true;
-    if(!soundOn) toggleSound();
+    if(!soundOn) story.tonAn();
     // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
     if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
@@ -1450,15 +1450,25 @@ function durchsage(){
   sprich(DURCHSAGE, () => { radio.an = false; sprich(NACH_DURCHSAGE); }, 'radio');
 }
 // ---- Funkspruch fuer den ersten Fall (Live-Wunsch 16.10.: kommt, sobald die Ausruestung komplett im Rucksack ist) -----
-// Erst rauscht es (auch in der Huette zu hoeren), das Geraet am Feuer wackelt und blinkt, bis Joshi mit Y annimmt.
-// Text und Interaktionen kommen noch – FALL1_FUNK ist ein Platzhalter.
-const FALL1_FUNK = ['*knack* ... *rausch* ...', 'Hallo ' + NAME + '! Hier spricht ... *rausch* ... Wir brauchen deine Hilfe!'];
-const FALL1_RUF = ['Hörst du das? Das Funkgerät am Lagerfeuer! Geh schnell hin und drücke Y.'];
+// Die Funkstimme (maennlich, Rolle 'radio') ruft: erst FALL1_RUF, dann alle FALL1_WIEDER s FALL1_NOCHMAL – das Geraet am
+// Feuer rauscht, wackelt und blinkt dabei –, bis Joshi am Funkgeraet Y drueckt. Dann FALL1_FUNK (zum Testen nur ein Satz;
+// die Erklaerung des Problems kommt noch) und das Segelboot ist frei (abenteuerLos; Ziel und Radar: segeln.js).
+const FALL1_RUF = ['Hallo ' + NAME + ', bist du da?'];
+const FALL1_NOCHMAL = [NAME + ', bitte kommen.'];
+const FALL1_FUNK = ['Wir haben ein großes Problem und brauchen bitte deine Hilfe.'];
+const FALL1_WIEDER = 15;
 story.fall1Funk = function(){
   if(radio.fall1) return;
   radio.fall1 = 'ruft';
-  const ruf = () => { if(radio.fall1 !== 'ruft') return; funkRauschen(3); radio.an = true; spaeter(6, ruf); };
-  spaeter(1.5, () => { ruf(); sprich(FALL1_RUF); });
+  let erster = true;
+  const ruf = () => {
+    if(radio.fall1 !== 'ruft') return;
+    radio.an = true; funkRauschen(1.2);
+    spaeter(0.9, () => { if(radio.fall1 !== 'ruft') return;
+      sprich(erster ? FALL1_RUF : FALL1_NOCHMAL, () => { if(radio.fall1 === 'ruft') radio.an = false; }, 'radio'); erster = false; });
+    spaeter(FALL1_WIEDER, ruf);
+  };
+  spaeter(1.5, ruf);
   const o = interListe.find(i => i.obj === radio.obj);
   if(o){ o.entdeckt = true; o.erledigt = false; o.danach = null; o.aktion = (oo) => {
     if(radio.fall1 !== 'ruft') return funkRauschen(3);
@@ -1510,7 +1520,19 @@ function hookHudAus(){
   document.head.appendChild(st);
 }
 
+// ---- Ton: immer an (Live-Wunsch 16.10.) ------------------------------------------------------------------------
+// Die Engine schaltet mit N / D-Pad runter um und zeigt dabei ein grosses Lautsprecher-Symbol. Hier: einmal einschalten
+// (mit der Startgeste, siehe startbildschirm), danach tut das Umschalten nichts mehr, und ein Symbol gibt es nicht.
+function hookTon(){
+  const tonOrig = toggleSound;
+  story.tonAn = function(){ if(soundOn) return; tonOrig(); if(toggleEl) toggleEl.style.opacity = '0'; };
+  toggleSound = function(){ story.tonAn(); };
+  const symOrig = showToggle;
+  showToggle = function(sym){ if(sym === '🔊' || sym === '🔇') return; return symOrig.apply(this, arguments); };   // Lautsprecher an / aus
+}
+
 window.STORY_HOOK = function(){
+  hookTon();
   story.typ('funkgeraet', { bau: baueRadio });
   hookHudAus();
   hookWelt();

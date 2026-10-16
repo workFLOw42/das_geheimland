@@ -18,7 +18,6 @@ mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Ko
 | linker Stick | Pfeiltasten | im Segelboot: fahren und lenken |
 | rechter Stick | I J K L | umschauen |
 | D-Pad ← | T | Hinweis: die Erzählerin sagt, was als Nächstes gut wäre |
-| D-Pad ↓ | N | Ton an/aus |
 
 Steht die Figur eine Weile still, holt sie die Gitarre heraus.
 

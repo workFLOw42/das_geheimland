@@ -23,7 +23,6 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 | rechter Stick | I J K L | Kamera umsehen |
 | rechter Stick vor / zurück | E / Q | im Wasser abtauchen / auftauchen (wie das U-Boot im Flugspiel) |
 | linker Stick | Pfeiltasten | **im Segelboot:** vor = Fahrt voraus, zurück = langsam rückwärts, seitlich = lenken (nur mit Fahrt) |
-| D-Pad ↓ | N | Ton an / aus |
 
 ## 🦊 Joshi & Fuchs – Verhalten
 

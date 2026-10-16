@@ -63,6 +63,7 @@ function vorlage(n){
     fertig(g);
   }));
 }
+story.kompassVorlage = () => vorlage('kompass');   // segeln.js: der Kompass rechts oben
 function klon(n){ return vorlage(n).then(v => { const g = v.clone(true); g.userData.clips = v.userData.clips; g.userData.sache = n; return g; }); }
 for(const n of Object.keys(SACHEN)) story.typ(n, { bau: () => klon(n), untergrund: 'egal' });
 

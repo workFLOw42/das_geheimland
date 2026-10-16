@@ -2,7 +2,7 @@
 
 Stand: 14.10.2026 – im Code stehen die Texte der **Interaktionsobjekte** (aktiv) und die **Funk-Durchsage** (`story.js`, `DURCHSAGE` / `NACH_DURCHSAGE`, vorerst ausgeschaltet); der Rest ist Entwurf.
 
-- Gesprochen wird über die Sprachausgabe des Browsers; mit Ton aus laufen dieselben Sätze als Untertitel.
+- Gesprochen wird über die Sprachausgabe des Browsers. **Keine Untertitel** (der Spieler kann noch nicht lesen), der Ton ist immer an. „Joshi“ wird als „Joschi“ ausgesprochen (geschrieben bleibt Joshi).
 - „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur: **Joshi** – im Code die Konstante `NAME`).
 - **Zielgruppe ein fast 6-jähriges Kind:** kurze Sätze, ein Gedanke pro Satz, keine Fremdwörter. Alles Wichtige muss gesprochen werden – lesen kann der Spieler noch nicht.
 - Status: **im Code** = so eingebaut · **Entwurf** = Vorschlag, noch nicht im Spiel.
@@ -89,7 +89,13 @@ Dein Fuchs wartet schon am Strand auf dich.
 
 **Alles im Rucksack** *(im Code)*: Klasse. Du hast alles dabei, was man als Detektiv braucht.
 
-Danach rauscht das **Funkgerät** am Lagerfeuer (alle 6 s, auch in der Hütte zu hören; es wackelt und blinkt). Erzählerin: *Hörst du das? Das Funkgerät am Lagerfeuer! Geh schnell hin und drücke Y.* – Mit **Y** am Funkgerät kommt der **Funkspruch für den ersten Fall** (Stimme `radio`). **Text und Interaktionen folgen** – im Code steht vorerst ein Platzhalter (`FALL1_FUNK`). Danach ist `abenteuerLos` gesetzt: Joshi kann ins Segelboot steigen.
+Danach ruft das **Funkgerät** am Lagerfeuer (Stimme `radio`, männlich; das Gerät rauscht, wackelt und blinkt):
+
+- *Hallo Joshi, bist du da?*
+- danach alle 15 s: *Joshi, bitte kommen.* – bis Joshi am Funkgerät **Y** drückt.
+- Mit Y (zum Testen; die Erklärung des Problems kommt noch): *Wir haben ein großes Problem und brauchen bitte deine Hilfe.*
+
+Danach ist das Segelboot frei. Im Boot: oben links das Radar mit rotem Punkt zum Ziel, darunter der Schubbalken (blendet nach 5 s aus); oben rechts der Kompass (sobald eingesammelt, auch zu Fuß). Am Ziel vorerst: *Du bist angekommen!* *(Platzhalter)*
 
 **Segelboot am Steg, bevor das Abenteuer begonnen hat** *(im Code)* – Y im letzten Drittel des Stegs:
 

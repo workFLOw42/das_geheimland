@@ -68,7 +68,7 @@ Kommt direkt nach „Klasse. Du hast alles dabei …“. **Stimme:** `radio` (m�
 |---|---|---|
 | erster Ruf | Hallo {Name}, bist du da? | im Code |
 | danach alle 15 s, bis Joshi am Funkgerät Y drückt | {Name}, bitte kommen. | im Code |
-| Y am Funkgerät | Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns. | im Code (vom Nutzer, 16.10.) |
+| Y am Funkgerät | Hallo {Name}... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar. | im Code (vom Nutzer, 16.10.) |
 
 Danach ist das **Segelboot** frei.
 
@@ -211,7 +211,7 @@ Das ist das Geheimland.
 - ~~**Buch aus dem Bücherregal**~~ – Notizbuch, Satz vom Nutzer (16.10.2026).
 - ~~**Taschenmesser, Kompass, Lupe**~~ – Sätze stehen als *Entwurf* im Code (dazu Stift und Kamera) – bitte bestätigen oder ändern.
 - ~~**Funkspruch kommt herein**~~ – „Hallo Joshi, bist du da?“ / „Joshi, bitte kommen.“ (vom Nutzer, 16.10.2026).
-- ~~**Fall 1 – das Problem:**~~ – „Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns.“ (vom Nutzer, 16.10.2026).
+- ~~**Fall 1 – das Problem:**~~ – „Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.“ (vom Nutzer, 16.10.2026).
 - **Fall 1 – am Ziel:** was dort passiert und gesagt wird (jetzt Platzhalter „Du bist angekommen!“).
 - **Orte auf dem Globus:** Name und Symbol des zweiten Orts (jetzt „Fall 1“ mit Standardpunkt).
 - **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.

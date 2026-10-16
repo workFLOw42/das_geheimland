@@ -1735,7 +1735,7 @@ function durchsage(){
 // die Erklaerung des Problems kommt noch) und das Segelboot ist frei (abenteuerLos; Ziel und Radar: segeln.js).
 const FALL1_RUF = ['Hallo ' + NAME + ', bist du da?'];
 const FALL1_NOCHMAL = [NAME + ', bitte kommen.'];
-const FALL1_FUNK = ['Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns.'];   // Live-Wunsch 16.10.
+const FALL1_FUNK = ['Hallo ' + NAME + "... Bitte hilf' uns. Wir haben ein großes Problem.", 'Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.'];   // Live-Wunsch 16.10.
 const FALL1_WIEDER = 15;
 // Wann darf der Funkspruch kommen? (Live-Wunsch 16.10.) Erst wenn draussen UND in der Huette abgesucht (X) und an jedem
 // Objekt der Etappe einmal Y gedrueckt wurde – Lagerfeuer, Huette, Funkgeraet, Regal, Tisch. Geprueft nach dem Einpacken

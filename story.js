@@ -124,6 +124,7 @@ function hookWelt(){
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
       if(story.innen && story.innen.drin) ovalShadow.position.y = 150.05;   // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich
       if(story.imBoot && story.imBoot()) ovalShadow.visible = false;         // im Boot: der Schatten laege auf dem Wasser
+      if(!story.gestartet) ovalShadow.visible = false;                       // Startbildschirm: Joshi ist noch nicht da
       // Auf dem Steg: die Engine kennt ihn nicht und legte den Schatten aufs Wasser darunter (live gemeldet)
       const steg = story.stegBoden && story.stegBoden(ovalShadow.position.x, ovalShadow.position.z);
       if(steg !== null && steg !== undefined) ovalShadow.position.y = steg + 0.03;
@@ -1151,7 +1152,8 @@ function updateInteraktion(dt){
   const nah = interNaechstes();
   for(const o of interListe){
     if(o.glow > 0){ o.glow = Math.max(0, o.glow - dt); setGlow(o, Math.max(0, Math.sin((1 - o.glow / o.glowDauer) * Math.PI))); }
-    const zeigen = o === nah;
+    // Waehrend eine Erklaerung laeuft (Live-Wunsch 16.10.), braucht es kein Y – es kommt danach wieder
+    const zeigen = o === nah && !o.spricht;
     if(zeigen && !o.zeichen){ o.zeichen = yZeichen(); welt(o.welt).add(o.zeichen); }
     if(o.zeichen){ o.zeichen.visible = zeigen; if(zeigen) o.zeichen.position.set(o.x, (o.innen ? INNEN_BODEN : ISLAND_Y) + o.yHoehe + Math.sin(interT * 3) * 0.07, o.z); }
   }
@@ -1166,7 +1168,7 @@ function interAktion(o){
     o.spricht = true;
     // Info-Objekt: das Y verschwindet sofort; nach dem Text erscheint es nicht wieder
     if(o.einmal){ o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; }
-    sprich(o.text, () => { o.spricht = false; });                // Erzaehlerin (weiblich)
+    sprich(o.text, () => { o.spricht = false; }, o.rolle);       // Erzaehlerin (weiblich); rolle z. B. 'funkRahmen'
   }
 }
 function hookInteraktion(){
@@ -1291,15 +1293,16 @@ function stimmeFuer(rolle){
 function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
 let sprichtGerade = null;
 const sprichWarte = [];
-// Saetze nacheinander sprechen; fertig() genau einmal. rolle 'radio' = Radiostimme (tiefer).
-// Funk (rolle 'radio'): vor dem ersten Satz und nach dem letzten je FUNK_RAHMEN s Funkrauschen (Live-Wunsch 16.10.).
+// Saetze nacheinander sprechen; fertig() genau einmal. rolle 'radio' = Radiostimme (tiefer), 'funkRahmen' = Erzaehlerin
+// mit Funkrauschen. Funk: vor dem ersten Satz und nach dem letzten je FUNK_RAHMEN s Funkrauschen (Live-Wunsch 16.10.).
 const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
   if(sprichtGerade){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
-  const me = sprichtGerade = {};
-  const funk = rolle === 'radio';
+  const me = sprichtGerade = { rolle };
+  // Rauschen davor/danach: beim Funk (Maennerstimme) und bei der Erklaerung des Funkgeraets ('funkRahmen', Erzaehlerin)
+  const funk = rolle === 'radio' || rolle === 'funkRahmen';
   // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
   let tFn = null, tBis = 0, tRest = 0;
   const stelle = (fn, ms) => { clearTimeout(timer); tFn = fn; tBis = performance.now() + ms; timer = setTimeout(fn, ms); };
@@ -1348,25 +1351,35 @@ story.sprich = sprich;
 if(window.speechSynthesis){ window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
 // ---- Startbildschirm -------------------------------------------------------------------------
-// Ein grosser Knopf. A / Enter / Leertaste / Klick. Die Geste schaltet Ton und Stimme frei.
+// Live-Wunsch 16.10.: schon beim Laden zu sehen (statt des blauen Engine-HUDs) – Titel und Untertitel stehen fest in
+// index.html (#ladebild, von tools/build_engine.ps1 eingesetzt). Ist das Spiel geladen (hier), wird der Hintergrund
+// durchsichtig (man sieht die Insel) und der Knopf erscheint. Joshi ist erst zu sehen, wenn es wirklich losgeht.
+// A / Enter / Leertaste / Klick. Die Geste schaltet Ton und Stimme frei.
 function startbildschirm(weiter){
-  const el = document.createElement('div');
-  el.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;'
-    + 'justify-content:center;background:radial-gradient(ellipse at center,rgba(20,30,70,.55),rgba(0,0,10,.85));'
-    + 'color:#fff;font-family:system-ui,sans-serif;z-index:30;text-align:center;user-select:none;';
-  el.innerHTML = '<div style="font-size:clamp(34px,7vw,64px);font-weight:800;letter-spacing:1px;text-shadow:0 0 18px #6af">🌙 Das Geheimland</div>'
-    + '<div style="font-size:clamp(16px,2.6vw,22px);margin-top:10px;opacity:.85">🔍 Ein Detektiv-Abenteuer mit deinem Fuchs 🦊</div>'
-    + '<button style="margin-top:38px;min-width:220px;height:64px;border-radius:16px;border:3px solid #ffd23f;'
-    + 'background:#ffd23f;color:#1a1a1a;font:800 26px system-ui;cursor:pointer;transform:scale(1.05)">▶ Los geht\'s</button>'
-    + '<div style="font-size:14px;margin-top:18px;opacity:.7">A / Enter</div>';
-  document.body.appendChild(el);
+  let el = document.getElementById('ladebild');
+  if(!el){                                            // Sicherheitsnetz: index.html ohne Ladebild
+    el = document.createElement('div'); el.id = 'ladebild';
+    el.style.cssText = 'position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:system-ui,sans-serif;text-align:center;user-select:none;';
+    el.innerHTML = '<div style="font-size:clamp(34px,7vw,64px);font-weight:800;letter-spacing:1px;text-shadow:0 0 18px #6af">🌙 Das Geheimland</div>'
+      + '<div style="font-size:clamp(16px,2.6vw,22px);margin-top:10px;opacity:.85">Ein Detektiv-Abenteuer</div><div id="ladeknopf"></div>';
+    document.body.appendChild(el);
+  }
+  el.style.background = 'radial-gradient(ellipse at center,rgba(20,30,70,.55),rgba(0,0,10,.85))';
+  const platz = document.getElementById('ladeknopf') || el;
+  platz.style.height = '';
+  platz.innerHTML = '<button style="margin-top:38px;min-width:220px;height:64px;border-radius:16px;border:3px solid #ffd23f;'
+    + 'background:#ffd23f;color:#1a1a1a;font:800 26px system-ui;cursor:pointer;transform:scale(1.05)">▶ Los geht\'s</button>';
+  // Joshi erst beim Start zeigen
+  if(eva) eva.group.visible = false;
   let los = false;
   function start(){
     if(los) return; los = true;
     el.remove();
+    if(eva) eva.group.visible = true;
     removeEventListener('keydown', taste, true);
     story.ton = true; story.gestartet = true;
     if(!soundOn) story.tonAn();
+    funkLaden();                                      // Funk-Ton gleich dekodieren – sonst fehlte beim ersten Ruf das Rauschen
     // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
     if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
@@ -1440,8 +1453,11 @@ function funkRauschen(dauer){
   if(!soundOn || !audioCtx || audioCtx.state !== 'running') return;
   funkLaden();
   const jetzt = audioCtx.currentTime, g = audioCtx.createGain();
-  g.gain.setValueAtTime(0, jetzt); g.gain.linearRampToValueAtTime(FUNK_VOL, jetzt + 0.08);
-  g.gain.setValueAtTime(FUNK_VOL, jetzt + dauer - FUNK_AUS); g.gain.linearRampToValueAtTime(0, jetzt + dauer);   // sanft aus
+  // Ausblenden hoechstens ein Viertel der Dauer (Live-Befund: beim 1-s-Rauschen vor dem Funkspruch begann es nach 0,3 s
+  // schon wieder leiser zu werden – es klang abgeschnitten)
+  const aus = Math.min(FUNK_AUS, dauer * 0.25);
+  g.gain.setValueAtTime(0, jetzt); g.gain.linearRampToValueAtTime(FUNK_VOL, jetzt + 0.05);
+  g.gain.setValueAtTime(FUNK_VOL, jetzt + dauer - aus); g.gain.linearRampToValueAtTime(0, jetzt + dauer);   // sanft aus
   g.connect(audioCtx.destination);
   const q = audioCtx.createBufferSource();
   if(funkBuf){
@@ -1460,6 +1476,11 @@ function funkRauschen(dauer){
   const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;
   q.connect(bp).connect(g); q.start(jetzt);
 }story.funkRauschen = funkRauschen;
+// ausruestung.js: Ruft/spricht der Funk gerade? (dann erscheint das Funkgeraet unten rechts, wie der Rucksack)
+// Ruft oder spricht ein Funkspruch (rolle 'radio' – nicht die Erklaerung des Geraets und nicht das kurze Rauschen bei Y)
+story.funkAktiv = () => radio.fall1 === 'ruft' || !!(sprichtGerade && sprichtGerade.rolle === 'radio');
+story.funkWackel = () => radio.t;
+story.baueFunkgeraet = () => baueRadio();
 function updateRadio(dt){
   if(!radio.obj) return;
   radio.t += dt;
@@ -1475,7 +1496,7 @@ function startSzene(){
   // Grenze: Kiste und Geraet in ihrer echten Form (objekte.js); steht dort schon etwas, rueckt es daneben
   radio.obj = story.setze('funkgeraet', 1, { x: F.x + 1.7, z: F.z - 0.6, dreh: 0.5 }).obj;
   interaktion(radio.obj, { name: 'Funkgerät', x: radio.obj.position.x, z: radio.obj.position.z, r: 0.45, yHoehe: 1.25,
-    text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'],
+    text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'], rolle: 'funkRahmen',   // 1 s Rauschen davor und danach
     danach: () => funkRauschen(3) });         // 3 s, dann sanft ausgeblendet (Live-Wunsch)
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
@@ -1596,6 +1617,9 @@ function hookLoop(){
     updateInteraktion(dt);
     if(story.gestartet) funkLaden();               // Funk-Ton vorab dekodieren (nach der Startgeste)
     weltenSichtbar();
+    // Startbildschirm: die Insel lebt dahinter, aber Joshi (und sein Schatten) ist erst zu sehen, wenn es losgeht – vor dem
+    // Zeichnen der Engine verstecken (sein Schatten: hookStartSchatten, die Engine setzt ihn im eigenen Loop sichtbar)
+    if(!story.gestartet && eva) eva.group.visible = false;
     return loopOrig.apply(this, arguments);
   };
 }

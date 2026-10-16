@@ -11,7 +11,9 @@ const story = window.STORY;
 const klemme = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // Ziel des ersten Falls: draussen auf dem Meer, gut 200 m vom Steg (Fahrt ~ 1 min). Was dort ist, kommt noch.
-const FALL1_ZIEL = { x: 150, z: 300, r: 30 };
+// r: Zielzone (wie in Trip to Japan: den Punkt nicht genau treffen muessen – Live-Befund: bei 30 m verschwand der Punkt und
+// man segelte noch ein Stueck weiter, bevor die Blende kam)
+const FALL1_ZIEL = { x: 150, z: 300, r: 60 };
 const RADAR_WEIT = 300;          // m am Radarrand
 const W = 130;                   // Groesse von Radar und Kompass (px), wie die Engine-Scheiben
 const SCHUB_H = 293;            // Hoehe des Schubbalkens (px) – Segmente um 1/3 groesser als zuerst (220, Live-Wunsch)
@@ -51,7 +53,8 @@ function malRadar(x, z, kurs){
   const g = hud.ctx, cx = W / 2, cy = W / 2, R = W / 2 - 6;
   g.clearRect(0, 0, W, W);
   g.fillStyle = 'rgba(10,25,40,0.55)'; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+  // Alles auf die Scheibe zuschneiden (Live-Befund: weit von der Insel ragte ihr Fleck ueber den Rand hinaus)
+  g.save(); g.beginPath(); g.arc(cx, cy, R - 1, 0, Math.PI * 2); g.clip();
   // Insel (Startinsel bei 0, 0) als heller Fleck – zum Wiederfinden
   const punkt = (px, pz, r, farbe, rand) => {
     const dx = px - x, dz = pz - z, rel = kurs - Math.atan2(dx, dz), d = Math.hypot(dx, dz);
@@ -62,6 +65,8 @@ function malRadar(x, z, kurs){
   if(story.insel) punkt(0, 0, Math.max(3, story.insel.R * 1.12 / RADAR_WEIT * (R - 8)), 'rgba(220,200,140,0.55)');
   g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 13); g.lineTo(cx + 5, cy + 13); g.closePath(); g.fill();
   if(story.ziel) punkt(story.ziel.x, story.ziel.z, 5, '#ff5a3c', true);
+  g.restore();
+  g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
 }
 // ---- Schubbalken: der eingestellte Schub (0..100 %, rueckwaerts = rotes Segment) – nicht die Fahrt: die naehert sich
 // dem Hoechstwert nur an, damit blieb das letzte blaue Segment unerreichbar (Live-Befund 16.10.) ------------------------
@@ -202,8 +207,9 @@ function update(dt){
   malSchub(story.bootSchub ? story.bootSchub() : 0, dt);
   // Angekommen? Grob in der Naehe reicht (wie in Trip to Japan)
   const z = story.ziel;
-  if(z && Math.hypot(s.bx - z.x, s.bz - z.z) < (z.r || 30)){
+  if(z && Math.hypot(s.bx - z.x, s.bz - z.z) < (z.r || 60)){
     story.ziel = null;
+    state.throttle = 0;                                           // das Boot laeuft aus, die Blende kommt sofort
     if(story.zielErreicht) story.zielErreicht(z);
   }
 }

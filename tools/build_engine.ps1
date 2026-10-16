@@ -86,9 +86,13 @@ $skripte += 'insel.js'
 $skripte += 'steg.js'
 $skripte += 'huette_innen.js'
 $skripte += 'ausruestung.js'
+$skripte += 'joshi_kopf.js'
 $skripte += 'segeln.js'
 $skripte += 'globus.js'
 
+# Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
+$ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()
+$head = $head | ForEach-Object { if($_ -eq '<body>'){ $_; $ladebild } else { $_ } }
 $out = ($head -join "`n") + "`n" +
   (($skripte | ForEach-Object { '<script src="' + $_ + '"></script>' }) -join "`n") + "`n" +
   '<script src="engine/engine.js"></script>' + "`n" +

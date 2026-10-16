@@ -10,11 +10,15 @@
 'use strict';
 const story = window.STORY;
 
-// Orte (Platzhalter, bis die Geschichte die echten Einsatzorte hat): die Insel ist der Start
+// Joshi ist im Geheimland – darum keine Erde, sondern eine eigene kleine Welt (Live-Wunsch 16.10.): viel Meer, ein paar
+// Inseln, gemalt (weltTextur). Start = Joshis Insel mit einem Haus als Symbol; andere Orte vorerst ein Standardpunkt, bis
+// feststeht, was sie werden. An der Spitze des wachsenden Fadens: ein kleines Gesicht von Joshi (aus der Spielfigur).
 const ORTE = [
-  { name: 'Die Insel', lat: 54.5, lon: 8.3 },
-  { name: 'Fall 1', lat: 57.0, lon: 2.0 },
+  { name: 'Joshis Insel', lat: 18, lon: -12, symbol: 'haus' },
+  { name: 'Fall 1', lat: 34, lon: 22 },
 ];
+// Inseln der Geheimland-Welt (lat, lon, Groesse in Grad) – Joshis Insel ist die erste
+const INSELN = [[18, -12, 7], [34, 22, 5], [-8, 30, 9], [52, -40, 6], [-30, -20, 11], [5, 70, 8], [-45, 60, 7], [40, 110, 10], [-15, 140, 6], [62, 160, 5], [10, -90, 9], [-55, -120, 8]];
 const GLOBUS_R = 1, GLOBUS_FAHRT = 4.5, GLOBUS_HALT = 2.5;
 const gl = { szene: null, kam: null, erde: null, faden: null, punkte: null, aktiv: false, t: 0, von: 0, nach: 0, fertig: null, ende: false, textEl: null };
 story.reise = [0];
@@ -43,16 +47,92 @@ function bauen(){
   for(let i = 0; i < 1500; i++){ const v = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(30 + Math.random() * 20); sp.set([v.x, v.y, v.z], i * 3); }
   sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
   gl.szene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.08 })));
-  // Erde: eigene Kugel, Textur aus dem Erd-GLB der Engine (die Karte liegt dort auf dem Kopf – wie in Trip to Japan)
-  gl.erde = new THREE.Mesh(new THREE.SphereGeometry(GLOBUS_R, 64, 48), new THREE.MeshLambertMaterial({ color: 0x3a6ea5 }));
+  // Die Welt des Geheimlands: eigene Kugel mit gemalter Karte (Meer, Inseln mit Sandrand)
+  gl.erde = new THREE.Mesh(new THREE.SphereGeometry(GLOBUS_R, 64, 48), new THREE.MeshLambertMaterial({ map: weltTextur() }));
   gl.szene.add(gl.erde);
-  if(window.EARTH_GLB) story.ladeGlb(window.EARTH_GLB, 'Globus', (g) => {
-    g.scene.traverse(o => { if(o.isMesh && o.material && o.material.map && !gl.erde.material.map){
-      const tex = o.material.map; tex.flipY = !tex.flipY; tex.needsUpdate = true;
-      gl.erde.material.map = tex; gl.erde.material.color.set(0xffffff); gl.erde.material.needsUpdate = true; } });
-  });
+  // leichter Schimmer am Rand (Atmosphaere)
+  const hof = new THREE.Mesh(new THREE.SphereGeometry(GLOBUS_R * 1.06, 48, 32), new THREE.MeshBasicMaterial({ color: 0x8fd0ff, transparent: true, opacity: 0.12, side: THREE.BackSide }));
+  gl.szene.add(hof);
   gl.punkte = new THREE.Group(); gl.erde.add(gl.punkte);
   gl.faden = new THREE.Group(); gl.erde.add(gl.faden);
+  // feste Symbole (einmal gebaut, nicht jedes Bild): Haus auf Joshis Insel, Joshis Gesicht an der Fadenspitze
+  gl.haus = symbolSprite(hausBild(), 0.16); gl.erde.add(gl.haus);
+  gl.gesicht = symbolSprite(gesichtBild(), 0.15); gl.gesicht.visible = false; gl.erde.add(gl.gesicht);
+}
+// Karte als Canvas (equirektangular: x = Laenge, y = Breite) – passt zu latLon und SphereGeometry
+function weltTextur(){
+  const W = 1024, H = 512, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const meer = g.createLinearGradient(0, 0, 0, H); meer.addColorStop(0, '#1f5a8f'); meer.addColorStop(0.5, '#2c7cb8'); meer.addColorStop(1, '#1f5a8f');
+  g.fillStyle = meer; g.fillRect(0, 0, W, H);
+  let s = 5; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const xy = (lat, lon) => [((lon + 180) / 360) * W, ((90 - lat) / 180) * H];
+  for(const [lat, lon, r] of INSELN){
+    const [x, y] = xy(lat, lon), rx = r / 360 * W, ry = r / 180 * H;
+    // unregelmaessiger Umriss: Flachwasser, Sand, Gras
+    for(const [k, farbe] of [[1.55, 'rgba(120,200,220,0.55)'], [1.15, '#e8d49a'], [0.85, '#4f9a4a']]){
+      g.fillStyle = farbe; g.beginPath();
+      for(let i = 0; i <= 24; i++){ const a = i / 24 * Math.PI * 2, w = 1 + (rnd() - 0.5) * 0.35;
+        const px = x + Math.cos(a) * rx * k * w, py = y + Math.sin(a) * ry * k * w; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+      g.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+}
+// Symbole: Sprite auf der Oberflaeche, immer zur Kamera gedreht, ohne Tiefentest am Rand
+function symbolSprite(canvas, gross){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false }));
+  sp.scale.setScalar(gross); sp.renderOrder = 5; return sp;
+}
+function hausBild(){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(64, 112, 40, 9, 0, 0, 7); g.fill();
+  g.fillStyle = '#9a6a3c'; g.fillRect(30, 58, 68, 50);                                       // Wand
+  g.fillStyle = '#d6b76a'; g.beginPath(); g.moveTo(18, 62); g.lineTo(64, 20); g.lineTo(110, 62); g.closePath(); g.fill();   // Strohdach
+  g.strokeStyle = '#8a6b2e'; g.lineWidth = 4; g.stroke();
+  g.fillStyle = '#5b3a1f'; g.fillRect(56, 76, 18, 32);                                       // Tuer
+  g.fillStyle = '#ffd27a'; g.fillRect(36, 70, 14, 12); g.fillRect(80, 70, 14, 12);            // Fenster (Licht)
+  g.lineWidth = 5; g.strokeStyle = '#ffffff'; g.strokeRect(30, 58, 68, 50);
+  return c;
+}
+// Joshis Gesicht: der Kopf aus der Zeichnung der Figur (joshi_kopf.js, vom Nutzer), rund in einem Abzeichen. Fehlt das
+// Bild, wird ersatzweise die Spielfigur einmal von vorn auf den Kopf gerendert.
+function gesichtBild(){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  // runder Rahmen wie ein Abzeichen
+  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill();
+  g.fillStyle = '#3b82ff'; g.beginPath(); g.arc(64, 64, 56, 0, 7); g.fill();
+  if(window.JOSHI_KOPF_PNG){
+    const im = new Image();
+    im.onload = () => { g.save(); g.beginPath(); g.arc(64, 64, 56, 0, 7); g.clip(); g.fillStyle = '#fbfaf7'; g.fill(); g.drawImage(im, 8, 8, 112, 112); g.restore();
+      if(gl.gesicht) gl.gesicht.material.map.needsUpdate = true; };
+    im.src = window.JOSHI_KOPF_PNG;
+    return c;
+  }
+  const f = story.figur && story.figur.obj;
+  // three.js nimmt beim Laden den Doppelpunkt aus Knotennamen (mixamorig:Head -> mixamorigHead)
+  let kopf = null; if(f) f.traverse(o => { if(!kopf && /^mixamorig:?Head$/.test(o.name)) kopf = o; });
+  if(!f || !kopf || typeof renderer === 'undefined') return c;
+  try {
+    const rt = new THREE.WebGLRenderTarget(256, 256), sz = new THREE.Scene(), eltern = f.parent;
+    sz.add(new THREE.HemisphereLight(0xffffff, 0x666677, 1.2)); const l = new THREE.DirectionalLight(0xffffff, 0.6); l.position.set(0.5, 1, 2); sz.add(l);
+    f.updateMatrixWorld(true);
+    const p = kopf.getWorldPosition(new THREE.Vector3()), q = f.getWorldQuaternion(new THREE.Quaternion());
+    // die Figur schaut entlang ihrer -z-Achse (Engine: Nase -Z) – von dort auf den Kopf blicken
+    const vorn = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+    const kam = new THREE.PerspectiveCamera(28, 1, 0.01, 10);
+    kam.position.copy(p).addScaledVector(vorn, 0.75).add(new THREE.Vector3(0, 0.05, 0)); kam.lookAt(p.x, p.y + 0.04, p.z);
+    const pos = f.position.clone(), rot = f.quaternion.clone(), sc = f.scale.clone();
+    const m = f.matrixWorld.clone(); sz.add(f); m.decompose(f.position, f.quaternion, f.scale); f.updateMatrixWorld(true);
+    const alt = renderer.getRenderTarget(); renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sz, kam); renderer.setRenderTarget(alt);
+    sz.remove(f); f.position.copy(pos); f.quaternion.copy(rot); f.scale.copy(sc); if(eltern) eltern.add(f); f.updateMatrixWorld(true);
+    // Pixel holen, rund ausschneiden
+    const px = new Uint8Array(256 * 256 * 4); renderer.readRenderTargetPixels(rt, 0, 0, 256, 256, px); rt.dispose();
+    const tmp = document.createElement('canvas'); tmp.width = tmp.height = 256; const tg = tmp.getContext('2d'), id = tg.createImageData(256, 256);
+    for(let y = 0; y < 256; y++) id.data.set(px.subarray((255 - y) * 1024, (256 - y) * 1024), y * 1024);   // WebGL: unten nach oben
+    tg.putImageData(id, 0, 0);
+    g.save(); g.beginPath(); g.arc(64, 64, 56, 0, 7); g.clip(); g.drawImage(tmp, 0, 0, 256, 256, 8, 8, 112, 112); g.restore();
+  } catch(e){ console.warn('Gesicht:', e); }
+  return c;
 }
 function punkt(ort, farbe, gross){
   const m = new THREE.Mesh(new THREE.SphereGeometry(gross ? 0.028 : 0.02, 16, 12), new THREE.MeshBasicMaterial({ color: farbe }));
@@ -61,13 +141,21 @@ function punkt(ort, farbe, gross){
 function zeichnen(anteil){
   for(const o of [...gl.punkte.children, ...gl.faden.children]) story.entsorgen(o);   // jedes Bild neu: alte Stuecke freigeben
   const r = story.reise;
+  let spitze = null;
   for(let i = 1; i < r.length; i++){
-    const pts = bogen(ORTE[r[i - 1]], ORTE[r[i]], 48), n = Math.max(2, Math.round(pts.length * (i === r.length - 1 ? anteil : 1)));
+    const letztes = i === r.length - 1;
+    const pts = bogen(ORTE[r[i - 1]], ORTE[r[i]], 48), n = Math.max(2, Math.round(pts.length * (letztes ? anteil : 1)));
     gl.faden.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.slice(0, n)), Math.max(4, n * 2), 0.009, 8, false),
       new THREE.MeshBasicMaterial({ color: 0xe02020 })));
+    if(letztes) spitze = pts[n - 1];
   }
-  punkt(ORTE[0], 0x3b82ff, true);                                     // Start blau
-  for(let i = 1; i < r.length; i++){ if(i === r.length - 1 && anteil < 1) continue; punkt(ORTE[r[i]], 0xffd23f, false); }   // Orte gelb, neuer erst bei Ankunft
+  // Joshis Insel: das Haus (statt eines Punkts), etwas ueber der Oberflaeche
+  gl.haus.position.copy(latLon(ORTE[0].lat, ORTE[0].lon, GLOBUS_R * 1.06));
+  // die anderen Orte: Standardpunkt, der neue erst bei Ankunft (bis feststeht, was sie werden)
+  for(let i = 1; i < r.length; i++){ if(i === r.length - 1 && anteil < 1) continue; if(ORTE[r[i]].symbol !== 'haus') punkt(ORTE[r[i]], 0xffd23f, false); }
+  // Joshis Gesicht wandert an der Spitze des Fadens mit, am Ziel bleibt es dort
+  gl.gesicht.visible = !!spitze;
+  if(spitze) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(GLOBUS_R * 1.09);
 }
 function kamera(k){
   const a = ORTE[gl.von], b = ORTE[gl.nach], e = k * k * (3 - 2 * k);
@@ -131,8 +219,10 @@ function update(dt){
   }
 }
 // Am Ziel des ersten Falls (segeln.js ruft story.zielErreicht): kurzer Satz, dann der Globus
+// Sofort die Blende (Live-Befund: vorher erst der Satz, und waehrenddessen segelte man weiter); der Satz kommt im Globus
 story.zielErreicht = function(){
-  story.sprich(['Du bist angekommen!'], () => globusReise(1));
+  globusReise(1);
+  setTimeout(() => story.sprich(['Du bist angekommen!']), 2200);       // echte Zeit: im Globus laufen die Story-Timer nicht
 };
 
 // ---- Einhaengen: waehrend des Globus zeichnet nur er, das Spiel steht ------------------------------------------

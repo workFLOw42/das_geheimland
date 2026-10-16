@@ -247,6 +247,35 @@ function updateRucksack(dt){
   p.rotation.set(0.25, -0.35 + Math.sin(performance.now() / 900) * 0.08, 0);
 }
 
+// ---- Funkgeraet unten rechts, wenn ein Funkspruch kommt (Live-Wunsch 16.10.) -----------------------------------------
+// An der Stelle des Rucksacks erscheint das Funkgeraet und wackelt und blinkt genau wie das echte am Lagerfeuer (story.js
+// updateRadio) – so erkennt man einen Funkspruch immer sofort. Beide zugleich gibt es nicht: waehrend des Einsteckens
+// kommt kein Funkspruch, das Inventar ist eine Pause, und in der Pause ist das Symbol aus.
+const funk = { pivot: null, geraet: null, an: 0 };
+function updateFunkSymbol(dt){
+  const soll = story.funkAktiv && story.funkAktiv() && !(story.pause && story.pause()) ? 1 : 0;
+  if(!funk.pivot){
+    if(!soll || !story.baueFunkgeraet) return;
+    const g = story.baueFunkgeraet(), r = g.userData.geraet;
+    g.remove(r); r.position.set(0, 0, 0); r.userData.lampe = g.userData.lampe;     // nur das Geraet, ohne Kiste
+    const bb = new THREE.Box3().setFromObject(r), c = bb.getCenter(new THREE.Vector3());
+    const innen = new THREE.Group(); innen.add(r); r.position.sub(c);
+    funk.pivot = new THREE.Group(); funk.pivot.add(innen); funk.geraet = r; funk.L = Math.max(...bb.getSize(new THREE.Vector3()).toArray());
+    funk.pivot.visible = false; szene.add(funk.pivot);
+  }
+  funk.an += klemme(soll - funk.an, -dt * 3, dt * 3);
+  funk.pivot.visible = funk.an > 0.001;
+  if(!funk.pivot.visible) return;
+  ndcZuEbene(RUCKSACK_NDC.x, RUCKSACK_NDC.y, funk.pivot.position);   // genau dort, wo sonst der Rucksack steht (nie beide zugleich)
+  funk.pivot.scale.setScalar(weich(funk.an) * 0.42 / funk.L);
+  funk.pivot.rotation.set(0.2, -0.45, 0);
+  // dieselbe Bewegung wie am Feuer: wackeln, huepfen, Lampe blinkt
+  const t = story.funkWackel ? story.funkWackel() : performance.now() / 1000, r = funk.geraet;
+  r.rotation.z = Math.sin(t * 30) * 0.03;
+  r.parent.position.y = Math.abs(Math.sin(t * 22)) * 0.01;
+  if(r.userData.lampe) r.userData.lampe.visible = Math.sin(t * 10) > 0;
+}
+
 // ---- Inventar (D-Pad runter / N, Live-Wunsch 16.10.) ---------------------------------------------------------------
 // Inventar an = Spiel pausiert (story.js), Inventar aus = weiter. In der Bildmitte eine halbtransparente weisse Flaeche
 // (2/3 des Bildschirms), darauf alle eingesammelten Dinge – hoechstens INV_PRO_ZEILE pro Zeile, mittig, jedes mit einem
@@ -335,12 +364,14 @@ function hookAusruestung(){
     const p = story.pause && story.pause();                       // Pause: alles steht, gezeichnet wird weiter
     if(!p) for(const mx of mixer) mx.update(dt);
     else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.mx) d.mx.update(dt);   // Messer klappt, Nadel dreht
+    if(!szene && story.funkAktiv && story.funkAktiv()) ebene();   // Funkspruch, bevor je etwas eingesteckt wurde
     if(szene){
       // In der Pause steht alles – ausser dem Inventar selbst (das IST die Inventar-Pause): Rucksack und Dinge drehen weiter
       const inventarPause = p && story.pauseArt && story.pauseArt() === 'inventar';
       if(!p){ updateFlug(dt); updateRucksack(dt); updateInventar(dt); }
       else if(inventarPause || inv.k > 0){ updateRucksack(dt); updateInventar(dt); }
-      if(flug.akt || rucksack.pivot.visible || inv.dinge.length || (inv.flaeche && inv.flaeche.visible)){
+      updateFunkSymbol(dt);                                       // in der Pause blendet es aus
+      if(flug.akt || rucksack.pivot.visible || inv.dinge.length || (inv.flaeche && inv.flaeche.visible) || (funk.pivot && funk.pivot.visible)){
         kam.aspect = innerWidth / innerHeight; kam.updateProjectionMatrix();
         const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth();
         renderer.render(szene, kam); renderer.autoClear = ac;

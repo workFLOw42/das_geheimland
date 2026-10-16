@@ -74,6 +74,10 @@ Dein Fuchs wartet schon am Strand auf dich.
 | Hütte | Info – nur einmal | Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um. |
 | Funkgerät | bleibt | Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen. – danach bei jedem Y nur ein kurzes **Funkrauschen** (3 s, sanft ausgeblendet, jedes Mal eine andere Stelle) |
 
+**Hinweis (D-Pad ← / T), solange das Funkgerät ruft** *(im Code)*: Schau doch mal zum Funkgerät. Jemand möchte mit dir sprechen und braucht vielleicht deine Hilfe.
+
+**Funk allgemein:** vor dem ersten und nach dem letzten Satz je 1 s Funkrauschen.
+
 **Info – nur einmal:** nach dem ersten Y (Text gehört) erscheint dort kein Y mehr.
 
 **In der Hütte** *(im Code)*: mit **Y** kommt das Ding aus dem Regal bzw. vom Tisch, wird groß, dreht sich einmal und wandert klein unten rechts in den Rucksack. Am Tisch nacheinander, je mit eigenem Satz.

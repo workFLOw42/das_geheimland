@@ -208,17 +208,32 @@ function ladeBoot(w){
 }
 // Kein Wasser im Boot (Live-Wunsch, zusaetzlich zur Wasserlinie): das Meer wird im Umriss des Rumpfs nicht gezeichnet.
 // Das Meer ist ein Mesh der Engine (ground); sein Shader bekommt die Weltposition und verwirft alles, was in Boots-
-// koordinaten innerhalb der Rumpf-Ellipse liegt (etwas kleiner als die Bordwand, damit aussen keine Luecke entsteht).
-const bootUni = { bootInv: { value: new THREE.Matrix4() }, bootAn: { value: 0 } };
+// koordinaten INNERHALB DES RUMPFS liegt. Live-Befund 16.10.: vorher war das eine Ellipse 1,05 x 2,9 m – breiter als der
+// Rumpf auf Wasserhoehe und laenger als Bug und Heck. Dort sah man durch das Loch auf den Meeresgrund ("der Schatten
+// laesst den Grund sehen"). Jetzt: der Rumpf mit der Wasserflaeche geschnitten (ausgemessen, C:/tmp/jfg/test/rumpf2.js),
+// je Laengsscheibe (16 ueber die 6,2 m, Heck -z .. Bug +z) die Bordwand links/rechts, um RUMPF_EIN eingerueckt – innen
+// bleibt kein Wasser, aussen keine Luecke. Bug- und Heckspitze (0) haben kein Loch.
+const RUMPF_WL = [[0, 0], [0, 0], [-0.19, 0.08], [-0.66, 0.47], [-0.84, 0.64], [-0.91, 0.71], [-0.97, 0.78], [-0.96, 0.77],
+                  [-0.95, 0.76], [-0.92, 0.73], [-0.74, 0.65], [-0.73, 0.63], [-0.42, 0.47], [-0.31, 0.22], [0, 0], [0, 0]];
+const RUMPF_EIN = 0.1;          // m nach innen (Wellen am Rumpf, Kraengung)
+const bootUni = { bootInv: { value: new THREE.Matrix4() }, bootAn: { value: 0 },
+  rumpfL: { value: RUMPF_WL.map(r => Math.min(0, r[0] + RUMPF_EIN)) }, rumpfR: { value: RUMPF_WL.map(r => Math.max(0, r[1] - RUMPF_EIN)) } };
 function meerImBootAus(){
   const mat = ground.material;                                  // global-ok: Meer der Engine
+  const N = RUMPF_WL.length, L = BOOT.laenge.toFixed(3);
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.bootInv = bootUni.bootInv; sh.uniforms.bootAn = bootUni.bootAn;
+    sh.uniforms.rumpfL = bootUni.rumpfL; sh.uniforms.rumpfR = bootUni.rumpfR;
     sh.vertexShader = 'varying vec3 vBootW;\n' + sh.vertexShader.replace('#include <project_vertex>',
       '#include <project_vertex>\n  vBootW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = 'uniform mat4 bootInv; uniform float bootAn; varying vec3 vBootW;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>',
-      '#include <clipping_planes_fragment>\n  if(bootAn > 0.5){ vec3 bl = (bootInv * vec4(vBootW, 1.0)).xyz; float ex = bl.x / 1.05, ez = bl.z / ' + (BOOT.laenge * 0.47).toFixed(2) + ';' +
-      ' if(ex * ex + ez * ez < 1.0) discard; }');
+    // Scheibe i und Anteil t aus der Laengslage (Mitte der Scheiben), dann Bordwand links/rechts linear dazwischen
+    sh.fragmentShader = 'uniform mat4 bootInv; uniform float bootAn; uniform float rumpfL[' + N + ']; uniform float rumpfR[' + N + ']; varying vec3 vBootW;\n'
+      + sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n'
+      + '  if(bootAn > 0.5){ vec3 bl = (bootInv * vec4(vBootW, 1.0)).xyz;\n'
+      + '    float f = (bl.z / ' + L + ' + 0.5) * ' + N + '.0 - 0.5; float i0 = floor(f), t = f - i0;\n'
+      + '    if(i0 >= 0.0 && i0 < ' + (N - 1) + '.0){ float l = 0.0, r = 0.0;\n'
+      + '      for(int k = 0; k < ' + (N - 1) + '; k++){ if(float(k) == i0){ l = mix(rumpfL[k], rumpfL[k + 1], t); r = mix(rumpfR[k], rumpfR[k + 1], t); } }\n'
+      + '      if(bl.x > l && bl.x < r) discard; } }');
   };
   mat.needsUpdate = true;
 }
@@ -246,6 +261,7 @@ function blende(wert){
 function wechsle(ziel){ if(!s.wechsel && s.boot) s.wechsel = { t: 0, ziel, gesetzt: false }; }
 function setzeUm(ziel){
   const g = eva.group, f = story.figur;
+  state.throttle = 0;                                           // Boot steht beim Ein- und Aussteigen still
   if(ziel === 'boot'){
     s.imBoot = true;
     // Joshi kniet mittschiffs, Blick zum Bug (aufs Meer = +z -> Engine-yaw PI)
@@ -287,7 +303,10 @@ function hookBoot(){
   const camOrig = updateCamera, _k = new THREE.Vector3(), _z = new THREE.Vector3();
   updateCamera = function(){
     if(!(s.imBoot && eva && s.boot)) return camOrig.apply(this, arguments);
-    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;
+    // Der rechte Stick gibt im Boot Schub (wie in allen Fahrzeugen) – umsehen geht mit LB/RB: Blick von links/rechts
+    // (sideView der Engine), losgelassen gleitet die Kamera zurueck hinter das Boot
+    const seite = sideView ? -sideView * Math.PI / 2 : 0;
+    evaOrbit += (seite - evaOrbit) * Math.min(1, 4 * dtCam);
     const yaw = story.bootYaw() + evaOrbit;                       // Bug-Richtung der Welt (Winkel ab +z)
     const b = s.boot.position;
     _z.set(b.x + Math.sin(yaw) * 2.2, b.y + 0.9, b.z + Math.cos(yaw) * 2.2);       // Blickpunkt: vorn im Boot
@@ -299,7 +318,7 @@ function hookBoot(){
   updateEva = function(dt, inp){ if(s.imBoot && eva){ s.eingabe = inp; return; } return updEvaOrig.apply(this, arguments); };
 }
 // ---- Fahren (Live-Frage 15.10.: "kann das Boot wirklich losfahren?") ---------------------------------------------
-// Linker Stick vor = Fahrt voraus, zurueck = langsam rueckwaerts, seitlich = lenken (lenkt nur mit Fahrt, wie ein
+// Schub mit dem rechten Stick (bleibt stehen, siehe bootSchub), X Vollgas, A rueckwaerts; linker Stick seitlich = lenken (lenkt nur mit Fahrt, wie ein
 // Segelboot). Nicht an Land, nicht in die flache Watzone am Strand, nicht in den Steg. Steckt es schon fest, darf es
 // immer hinaus (Lehre aus dem Bagger: Grenzen duerfen nie festhalten).
 // Die Engine zaehlt in isOpenWater auch Bauwerke (hitsBuilding) – dazu gehoerte die Grenze des Boots selbst: es
@@ -328,10 +347,20 @@ function bootFreiRoh(x, z, yaw){
   }
   return Math.hypot(x - BOOT.x, z - BOOT.z) < FAHRT_WEIT;
 }
+// Steuerung wie in allen Fahrzeugen der Engine (Live-Wunsch 16.10.): der SCHUB (state.throttle) wird mit dem rechten
+// Stick (W/S) in 10-%-Stufen gestellt und bleibt stehen; X (Shift) = Vollgas, A (C) halten = rueckwaerts/Bremse; der
+// linke Stick lenkt. Die Engine setzt state.throttle in readInput, story.js laesst es im Boot stehen (bootSchub).
+// X = Vollgas setzt das Boot selbst (boostDruck der Engine hat X-Wing-Sonderwege).
+function bootSchub(){
+  if(keys['ShiftLeft'] || keys['ShiftRight']) return 1;
+  if(gamepadIndex !== null){ const gp = navigator.getGamepads()[gamepadIndex]; if(gp && gp.buttons[2] && gp.buttons[2].pressed) return 1; }
+  return Math.max(-0.2, Math.min(1, state.throttle || 0));
+}
+story.bootSchub = bootSchub;
 function updateFahrt(dt){
   const inp = s.eingabe || {}; s.eingabe = null;
-  const gas = -(inp.pitch || 0), lenk = inp.yaw || 0;
-  const soll = gas > 0 ? gas * FAHRT_MAX : gas * FAHRT_RUECK;
+  const lenk = inp.yaw || 0, schub = bootSchub();
+  const soll = schub >= 0 ? schub * FAHRT_MAX : schub / 0.2 * FAHRT_RUECK;
   s.v += (soll - s.v) * Math.min(1, dt * (Math.abs(soll) > Math.abs(s.v) ? 0.7 : 1.2));   // traege anfahren, etwas schneller bremsen
   s.yaw -= lenk * DREH_MAX * Math.min(1, Math.abs(s.v) / 1.5 + 0.15) * Math.sign(s.v || 1) * dt;
   const nx = s.bx + Math.sin(s.yaw) * s.v * dt, nz = s.bz + Math.cos(s.yaw) * s.v * dt;
@@ -388,8 +417,8 @@ story.updateSteg = function(dt){
   if(zeigen && !s.zeichen){ s.zeichen = yZeichen(); story.welt(1).add(s.zeichen); }
   if(s.zeichen){
     s.zeichen.visible = zeigen;
-    // im Boot: das Y zum Aussteigen nur, wenn das Boot am Steg liegt
-    if(s.imBoot && Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) >= ANLEGEN) s.zeichen.visible = false;
+    // im Boot: das Y zum Aussteigen nur, wenn das Boot am Steg liegt UND (fast) steht – beim Fahren kein Y (Live-Wunsch)
+    if(s.imBoot && (Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) >= ANLEGEN || Math.abs(s.v) > 0.3)) s.zeichen.visible = false;
     if(zeigen){ const p = s.imBoot ? eva.group.position : new THREE.Vector3(BOOT.x, STEG.H, BOOT.z);
       s.zeichen.position.set(p.x, (s.imBoot ? p.y + 1.6 : STEG.H + 2.4) + Math.sin(s.t * 3) * 0.07, p.z); }
   }

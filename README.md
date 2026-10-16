@@ -15,7 +15,8 @@ mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Ko
 | X | X | Suchblick – der Fuchs findet wichtige Objekte (Stick bricht ab) |
 | Y | Y | an einem entdeckten Objekt: Erzählerin erklärt es |
 | rechter Stick vor / zurück | E / Q | im Wasser abtauchen / auftauchen |
-| linker Stick | Pfeiltasten | im Segelboot: fahren und lenken |
+| rechter Stick ↕ | W / S | im Segelboot: Schub stellen (bleibt stehen) · X / Shift = Vollgas · A / C = rückwärts |
+| linker Stick | Pfeiltasten | im Segelboot: lenken · LB / RB = Blick zur Seite |
 | rechter Stick | I J K L | umschauen |
 | D-Pad ← | T | Hinweis: die Erzählerin sagt, was als Nächstes gut wäre |
 

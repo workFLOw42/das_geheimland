@@ -131,6 +131,7 @@ const GROSS = 1.25;               // so gross (Ebene, Bildhoehe 2,68) wird ein D
 // ---- Ein Ding zeigen: auftauchen (in der Welt) -> gross -> drehen -> klein in den Rucksack -------------------------
 const T_AUF = 0.55, T_GROSS = 0.7, T_DREH = 1.5, T_WEG = 0.8, T_REIN = 0.22;
 const flug = { liste: [], akt: null, fertig: null };
+story.szeneLaeuft = () => !!flug.akt;                  // story.js: waehrenddessen keine Gitarre
 function zeige(dinge){
   ebene();
   flug.liste.push(...dinge.filter(d => d && d.obj));

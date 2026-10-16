@@ -326,7 +326,16 @@ function hookFigur(){
   // umstellen: den Schub nach readInput auf den Wert davor zuruecksetzen
   const readOrig = readInput;
   // Beim Schwimmen gehoert der rechte Stick dem Tauchen (tauchEingabe) – die Kamera soll dabei nicht kippen
-  readInput = function(){ const thr = state.throttle; const r = readOrig.apply(this, arguments); if(eva) state.throttle = thr; if(sw.aktiv) lookY = 0; return r; };
+  // Im Segelboot (steg.js) gilt die Fahrzeug-Belegung der Engine: rechter Stick / W,S = Schub (bleibt stehen), A / C =
+  // rueckwaerts, Leertaste = Vollgas. Dafuer liest readInput, waehrend es laeuft, Joshi als "im Boot" (eva.boat) – sonst
+  // waere der rechte Stick Umsehen. Der Schub bleibt dann stehen, zu Fuss wird er wie bisher zurueckgesetzt.
+  readInput = function(){
+    const thr = state.throttle, segeln = !!(eva && story.imBoot && story.imBoot());
+    const boot = eva && eva.boat; if(segeln) eva.boat = eva.boat || {};
+    let r; try { r = readOrig.apply(this, arguments); } finally { if(segeln) eva.boat = boot; }
+    if(eva && !segeln) state.throttle = thr;
+    if(sw.aktiv || segeln) lookY = 0;
+    return r; };
   cycleModel = function(){};       // Fahrzeuge waehlt die Geschichte
   // Grosses Astronauten-Symbol beim Aussteigen passt nicht zur Figur
   const showBigOrig = showBig;
@@ -491,6 +500,13 @@ function updateFigur(dt){
   if(figur.ausschlag > 0.5){ figurAnim('run', 0.2, klemme(v / 5.2, 0.8, 1.3)); figur.steht = 0; }
   else if(figur.ausschlag > 0.05){ figurAnim('walk', 0.25, klemme(v / 1.5, 0.6, 1.4)); figur.steht = 0; }
   else {
+    // Waehrend die Stimme spricht (oder eine Szene laeuft) gilt Stillstand nicht als "idle": keine Gitarre (Live-Befund
+    // 16.10.: sie fing mitten in der Erklaerung an). Die Zeit beginnt danach von vorn.
+    if(sprichtGerade || sprichWarte.length || (story.szeneLaeuft && story.szeneLaeuft())){
+      figur.steht = 0;
+      if(figur.cur === 'guitar'){ gitarreMusik(false); fuchsTanzEnde(); }
+      figurAnim('idle', 0.3, 1); return;
+    }
     if(steuerbar()) figur.steht += dt;          // erst nach dem Startbildschirm zaehlen
     if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); fuchsTanzStart(); return; }
     else figurAnim('idle', 0.3, 1);
@@ -1209,10 +1225,12 @@ function fuchsSchnueffeln(dt, fp){
 //   2. kam Satz 1 schon zweimal (trotzdem nicht):  "Stelle dich vor das Lagerfeuer und drücke X zum Umschauen."
 //   3. draussen schon umgeschaut, in der Huette noch nicht: "Schau dir doch mal deine Huette von innen ganz genau an."
 //   4. sonst (alles entdeckt): noch offen – dann der Satz zum Umschauen ohne Neues
+//   vor allem anderen: alles eingesammelt und das Funkgeraet ruft -> "Schau doch mal zum Funkgeraet ..."
 const HINWEIS = {
   x:      ['Mit X kannst Du dich ganz genau umschauen und alles Wichtige entdecken. Probier es gleich mal am Lagerfeuer aus.'],
   feuer:  ['Stelle dich vor das Lagerfeuer und drücke X zum Umschauen.'],
   huette: ['Schau dir doch mal deine Hütte von innen ganz genau an.'],
+  funk:   ['Schau doch mal zum Funkgerät. Jemand möchte mit dir sprechen und braucht vielleicht deine Hilfe.'],
 };
 const hinweisStand = { xSatz: 0, aussenGeschaut: false, innenGeschaut: false, spricht: false };
 story.hinweisStand = hinweisStand;
@@ -1220,7 +1238,9 @@ function hinweisGeben(){
   if(hinweisStand.spricht || !story.gestartet) return;
   const H = hinweisStand;
   let satz;
-  if(!H.aussenGeschaut && !H.innenGeschaut){
+  // Alles eingesammelt und der Funk ruft (Live-Wunsch 16.10.): zum Funkgeraet schicken – geht allem anderen vor
+  if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
+  else if(!H.aussenGeschaut && !H.innenGeschaut){
     if(H.xSatz >= 2) satz = HINWEIS.feuer;
     else { satz = HINWEIS.x; H.xSatz++; }
   } else if(!H.innenGeschaut) satz = HINWEIS.huette;
@@ -1269,19 +1289,30 @@ function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
 let sprichtGerade = null;
 const sprichWarte = [];
 // Saetze nacheinander sprechen; fertig() genau einmal. rolle 'radio' = Radiostimme (tiefer).
+// Funk (rolle 'radio'): vor dem ersten Satz und nach dem letzten je FUNK_RAHMEN s Funkrauschen (Live-Wunsch 16.10.).
+const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
   if(sprichtGerade){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
   const me = sprichtGerade = {};
+  const funk = rolle === 'radio';
+  function ende(){
+    done = true; untertitel(''); sprichtGerade = null;
+    if(fertig) fertig();
+    const n = sprichWarte.shift(); if(n) n();
+  }
   function weiter(){
     clearTimeout(timer);
     if(done) return;
     if(++i >= saetze.length){
-      done = true; untertitel(''); sprichtGerade = null;
-      if(fertig) fertig();
-      const n = sprichWarte.shift(); if(n) n();
+      if(funk && !me.nachRauschen){ me.nachRauschen = true; i = saetze.length; funkRauschen(FUNK_RAHMEN + 0.3); timer = setTimeout(ende, FUNK_RAHMEN * 1000); }
+      else ende();
       return;
+    }
+    if(funk && i === 0 && !me.vorRauschen){                         // erst rauschen, dann der erste Satz
+      me.vorRauschen = true; i = -1; funkRauschen(FUNK_RAHMEN + 0.3);
+      timer = setTimeout(weiter, FUNK_RAHMEN * 1000); return;
     }
     const s = saetze[i];
     // Auch ohne geladene Stimmenliste sprechen (Standardstimme des Browsers): die Liste kommt oft erst spaeter, und dann
@@ -1463,9 +1494,8 @@ story.fall1Funk = function(){
   let erster = true;
   const ruf = () => {
     if(radio.fall1 !== 'ruft') return;
-    radio.an = true; funkRauschen(1.2);
-    spaeter(0.9, () => { if(radio.fall1 !== 'ruft') return;
-      sprich(erster ? FALL1_RUF : FALL1_NOCHMAL, () => { if(radio.fall1 === 'ruft') radio.an = false; }, 'radio'); erster = false; });
+    radio.an = true;                                             // Rauschen davor und danach macht sprich (rolle 'radio')
+    sprich(erster ? FALL1_RUF : FALL1_NOCHMAL, () => { if(radio.fall1 === 'ruft') radio.an = false; }, 'radio'); erster = false;
     spaeter(FALL1_WIEDER, ruf);
   };
   spaeter(1.5, ruf);

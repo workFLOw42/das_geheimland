@@ -1,8 +1,8 @@
 // Das Geheimland – Anzeigen beim Segeln (Live-Wunsch 16.10.2026). Laedt nach ausruestung.js.
 // Rechts oben Joshis Kompass (das eingesammelte Modell; sobald er im Rucksack ist, immer – auch zu Fuss; die Nadel zeigt
 // nach Norden und pendelt nach). Im Segelboot (steg.js) oben links das Radar (gleich gross wie der Kompass) mit dem roten
-// Punkt zum Ziel (wie in Trip to Japan: die SPITZE des Dreiecks ist das Boot), darunter waagerecht der Schubbalken
-// (Farben wie in der Engine; blendet nach 5 s aus, bei jeder Aenderung wieder da). Kein linkes HUD, kein Gyroskop.
+// Punkt zum Ziel (wie in Trip to Japan: die SPITZE des Dreiecks ist das Boot), darunter der Schubbalken
+// (senkrecht, so breit wie das Radar; Farben wie in der Engine; blendet nach 5 s aus, bei jeder Aenderung wieder da). Kein linkes HUD, kein Gyroskop.
 // Ziel: story.ziel = { x, z, r } – gesetzt, sobald der Funkspruch angenommen ist (FALL1_ZIEL). Ankommen wie in Trip to
 // Japan: grob in der Naehe (Abstand < r), dann story.zielErreicht().
 (function(){
@@ -14,19 +14,21 @@ const klemme = (v, a, b) => Math.max(a, Math.min(b, v));
 const FALL1_ZIEL = { x: 150, z: 300, r: 30 };
 const RADAR_WEIT = 300;          // m am Radarrand
 const W = 130;                   // Groesse von Radar und Kompass (px), wie die Engine-Scheiben
+const SCHUB_H = 220;            // Hoehe des Schubbalkens (px)
+const SCHUB_ABST = 10;          // px Luft zwischen Radar und Schubbalken
 
 // ---- Anzeigen (DOM) ---------------------------------------------------------------------------------------------
 const hud = { radar: null, ctx: null, kompass: null, schub: null, seg: [], an: false };
 function bauen(){
   if(hud.radar) return;
   const c = document.createElement('canvas'); c.width = c.height = W;
-  c.style.cssText = 'position:absolute;left:12px;top:12px;pointer-events:none;z-index:15;display:none;';   // oben links (das linke HUD ist aus)
+  c.style.cssText = 'position:absolute;left:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:16;display:none;';   // oben links (das linke HUD ist aus)
   document.body.appendChild(c); hud.radar = c; hud.ctx = c.getContext('2d');
-  // Schubbalken waagerecht unter dem Radar, so breit wie das Radar (links = rot/rueckwaerts, nach rechts mehr Fahrt).
+  // Schubbalken senkrecht unter dem Radar, so breit wie das Radar (unten = rot/rueckwaerts, nach oben mehr Fahrt).
   // Nach SCHUB_SICHT s ohne Aenderung blendet er ueber SCHUB_AUS s aus; aendert sich der Schub, ist er sofort wieder da.
   const s = document.createElement('div');
-  s.style.cssText = 'position:absolute;left:12px;top:' + (12 + W + 8) + 'px;width:' + (W - 6) + 'px;height:22px;padding:3px;border-radius:7px;'
-    + 'background:rgba(0,0,0,.45);display:none;flex-direction:row;gap:2px;pointer-events:none;z-index:15;';
+  s.style.cssText = 'position:absolute;left:12px;top:' + (12 + W + SCHUB_ABST) + 'px;width:' + (W - 6) + 'px;height:' + SCHUB_H + 'px;padding:3px;border-radius:9px;'
+    + 'background:rgba(0,0,0,.45);display:none;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:15;';
   for(let i = 0; i < SCHUB_N; i++){ const q = document.createElement('div'); q.style.cssText = 'flex:1;border-radius:3px;background:' + schubFarbe(i) + ';opacity:.15;'; s.appendChild(q); hud.seg.push(q); }
   document.body.appendChild(s); hud.schub = s;
   // Kompass: eigenes kleines WebGL-Bild (das Modell aus dem Rucksack)
@@ -39,7 +41,9 @@ function zeigen(an){
   hud.an = an;
   hud.radar.style.display = an ? 'block' : 'none';
   hud.schub.style.display = an ? 'flex' : 'none';
-  if(an){ schubT = 0; schubAlt = ''; }                          // beim Einsteigen erst einmal zeigen
+  if(an){ schubT = 0; schubAlt = '';                            // beim Einsteigen erst einmal zeigen
+    // Der Balken setzt UNTER dem Radar an (Live-Wunsch: das Radar nie ueberdecken) – an der gemessenen Unterkante
+    const r = hud.radar.getBoundingClientRect(); hud.schub.style.top = Math.round(r.bottom + SCHUB_ABST) + 'px'; }
 }
 
 // ---- Radar: Spitze des Dreiecks = das Boot, roter Punkt = Ziel (wie Trip to Japan, story.js hookRadarAnzeige) -----
@@ -59,11 +63,12 @@ function malRadar(x, z, kurs){
   g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 13); g.lineTo(cx + 5, cy + 13); g.closePath(); g.fill();
   if(story.ziel) punkt(story.ziel.x, story.ziel.z, 5, '#ff5a3c', true);
 }
-// ---- Schubbalken: Fahrt des Boots (vorwaerts 0..100 %, rueckwaerts = rotes Segment) --------------------------------
+// ---- Schubbalken: der eingestellte Schub (0..100 %, rueckwaerts = rotes Segment) – nicht die Fahrt: die naehert sich
+// dem Hoechstwert nur an, damit blieb das letzte blaue Segment unerreichbar (Live-Befund 16.10.) ------------------------
 const SCHUB_SICHT = 5, SCHUB_AUS = 1.5;      // s sichtbar nach der letzten Aenderung, dann s ausblenden
 let schubAlt = '', schubT = 0, schubOp = '';
-function malSchub(v, dt){
-  const an = v < -0.05 ? -1 : Math.round(klemme(v / 3.2, 0, 1) * 10);
+function malSchub(g, dt){
+  const an = g < -0.01 ? -1 : Math.round(klemme(g, 0, 1) * 10);
   if(String(an) !== schubAlt){
     schubAlt = String(an); schubT = 0;                           // geaendert: sofort wieder ganz sichtbar
     hud.seg.forEach((q, i) => { q.style.opacity = (i === 0 ? an < 0 : i <= an) ? '1' : '.15'; });
@@ -134,7 +139,7 @@ function update(dt){
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);
-  malSchub(s.v, dt);
+  malSchub(story.bootSchub ? story.bootSchub() : 0, dt);
   // Angekommen? Grob in der Naehe reicht (wie in Trip to Japan)
   const z = story.ziel;
   if(z && Math.hypot(s.bx - z.x, s.bz - z.z) < (z.r || 30)){

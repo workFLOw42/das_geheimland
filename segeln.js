@@ -23,18 +23,18 @@ function bauen(){
   if(hud.radar) return;
   const c = document.createElement('canvas'); c.width = c.height = W;
   c.style.cssText = 'position:absolute;left:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:16;display:none;';   // oben links (das linke HUD ist aus)
-  document.body.appendChild(c); hud.radar = c; hud.ctx = c.getContext('2d');
+  c.dataset.etappeHud = '1'; document.body.appendChild(c); hud.radar = c; hud.ctx = c.getContext('2d');
   // Schubbalken senkrecht unter dem Radar, so breit wie das Radar (unten = rot/rueckwaerts, nach oben mehr Fahrt).
   // Nach SCHUB_SICHT s ohne Aenderung blendet er ueber SCHUB_AUS s aus; aendert sich der Schub, ist er sofort wieder da.
   const s = document.createElement('div');
   s.style.cssText = 'position:absolute;left:12px;top:' + (12 + W + SCHUB_ABST) + 'px;width:' + (W - 6) + 'px;height:' + SCHUB_H + 'px;padding:3px;border-radius:9px;'
     + 'background:rgba(0,0,0,.45);display:none;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:15;';
   for(let i = 0; i < SCHUB_N; i++){ const q = document.createElement('div'); q.style.cssText = 'flex:1;border-radius:3px;background:' + schubFarbe(i) + ';opacity:.15;'; s.appendChild(q); hud.seg.push(q); }
-  document.body.appendChild(s); hud.schub = s;
+  s.dataset.etappeHud = '1'; document.body.appendChild(s); hud.schub = s;
   // Kompass: eigenes kleines WebGL-Bild (das Modell aus dem Rucksack)
   const k = document.createElement('canvas'); k.width = k.height = W * 2;
   k.style.cssText = 'position:absolute;right:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:15;display:none;';
-  document.body.appendChild(k); hud.kompass = k;
+  k.dataset.etappeHud = '1'; document.body.appendChild(k); hud.kompass = k;
 }
 function zeigen(an){
   if(an === hud.an) return;
@@ -209,7 +209,7 @@ function update(dt){
 }
 story.fall1Angenommen = function(){ story.ziel = Object.assign({}, FALL1_ZIEL); };
 // Was am Ziel passiert, kommt noch – vorerst nur ein Satz der Erzaehlerin
-story.zielErreicht = story.zielErreicht || function(){ story.sprich(['Du bist angekommen!']); };
+story.zielErreicht = story.zielErreicht || function(){ story.sprich(['Du bist angekommen!']); };   // globus.js ersetzt das
 
 function hookSegeln(){
   const loopOrig = loop;

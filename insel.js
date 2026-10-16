@@ -54,54 +54,36 @@ function hookInsel(){
     const orig = window[n]; if(typeof orig !== 'function') continue;
     window[n] = function(){ return null; };
   }
-  // Huette: Wand = Hindernis, durch die Tuer kann man hinein (siehe trifftHuette)
-  const hitsOrig = hitsBuilding;
-  hitsBuilding = function(x, y, z){
-    if(locale === 'earth' && trifftHuette(x, y, z)) return true;
-    // Palmen, Feuer, Funkgeraet: Grenzen ueber story.koerper (story.js, gilt global)
-    return hitsOrig.apply(this, arguments);
-  };
+  // Huette, Palmen, Feuer, Funkgeraet: Grenzen in ihrer exakten Form ueber den Objekt-Katalog (objekte.js)
   _islandCache.clear(); _subBerthCache.clear(); _xwpCache.clear(); _parkCache.clear();
 }
 
-// Liegt (x, z) in einer Wand der Huette? Lokale Koordinaten (u quer, v laengs zur Tuer, Tuer bei v = +T/2).
-function trifftHuette(x, y, z){
-  if(y > ISLAND_Y + HUETTE.H + 2) return false;
-  const c = Math.cos(HUETTE.yaw), s = Math.sin(HUETTE.yaw);
-  const dx = x - HUETTE.x, dz = z - HUETTE.z;
-  const u = dx * c - dz * s, v = dx * s + dz * c;
-  const hb = HUETTE.B / 2, ht = HUETTE.T / 2, d = WAND_D / 2 + 0.25;   // 0,25 m: Koerper der Figur
-  if(Math.abs(u) > hb + d || Math.abs(v) > ht + d) return false;      // ganz draussen
-  if(Math.abs(u) < hb - d && Math.abs(v) < ht - d) return false;      // innen
-  // im Wandband: frei nur in der Tueroeffnung (Vorderwand)
-  if(v > ht - d && Math.abs(u) < TUER_B / 2 - 0.2) return false;
-  return true;
-}
 // ---- Bauen -----------------------------------------------------------------------------------
 const insel = { gebaut: false, feuerMixer: null, licht: null, t: 0 };
 function baueInsel(){
   if(insel.gebaut) return; insel.gebaut = true;
   const w = story.welt(1);
-  const h = baueHuette();
-  h.position.set(HUETTE.x, ISLAND_Y, HUETTE.z); h.rotation.y = HUETTE.yaw;
-  w.add(h);
+  // Feste Kulisse zuerst (fest: genau an ihren Platz), danach Palmen und Funkgeraet (die weichen aus, wenn dort schon
+  // etwas steht)
+  const h = story.setze('huette', 1, { x: HUETTE.x, z: HUETTE.z, y: ISLAND_Y, dreh: HUETTE.yaw, fest: true }).obj;
+  story.setze('lagerfeuer', 1, { x: FEUER.x, z: FEUER.z, fest: true });
   story.interaktion(h, { name: 'Hütte', x: HUETTE.x, z: HUETTE.z, r: 2.3, yHoehe: 4.6, einmal: true,     // Info
     text: ['Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um.'] });
-  for(const p of PALMEN_VORN) setzePalme(w, p);
+  for(const p of PALMEN_VORN) setzePalme(p);
   // weitere Palmen verteilt (nicht vor der Huette)
   let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   for(let i = 0; i < 16; i++){
     const a = rnd() * Math.PI * 2, r = ISEL_R * (0.35 + rnd() * 0.6);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if(Math.hypot(x - FEUER.x, z - FEUER.z) < 18 || Math.hypot(x - HUETTE.x, z - HUETTE.z) < 10) continue;
-    setzePalme(w, { x, z, h: 5.5 + rnd() * 3, neig: (rnd() - 0.5) * 0.4, dreh: rnd() * 6.3 });
+    setzePalme({ x, z, h: 5.5 + rnd() * 3, neig: (rnd() - 0.5) * 0.4, dreh: rnd() * 6.3 });
   }
-  ladeFeuer(w);
   story.lagerAm = { x: FEUER.x, z: FEUER.z };
-  // Grenze genau so gross wie der Steinrand (r 0,70 m, ausgemessen) und so hoch wie die Flamme (0,72 m) – plus der
-  // Koerper von Joshi bzw. Fuchs (KOERPER_R, sonst stuenden sie halb im Feuer). Darueber springen geht also.
-  story.koerper(null, { x: FEUER.x, z: FEUER.z, r: 0.70, h: 0.72 });   // Steinrand r 0,70 m, Flamme 0,72 m (ausgemessen)
 }
+// ---- Katalog: Huette, Palme, Lagerfeuer (objekte.js) ----------------------------------------------------------
+story.typ('huette', { bau: () => baueHuette() });
+story.typ('palme', { bau: (p) => baePalme(p) });
+story.typ('lagerfeuer', { bau: () => ladeFeuer(), danach: feuerDanach });
 // Huette 4,2 x 3,6 m aus Holz: Waende mit Tueroeffnung vorn, Fenster vorn links/rechts und an
 // beiden Seiten (offen – man sieht hinein), Strohdach, innen Bett, Tisch und Laterne.
 function baueHuette(){
@@ -138,7 +120,7 @@ function baueHuette(){
         if(b - a < 0.001 || (o && y > o[2] && y < o[3])) continue;
         for(const sgn of [1, -1]){
           const f = new THREE.Mesh(new THREE.BoxGeometry(b - a, 0.025, 0.01), dunkel);
-          f.position.set((a + b) / 2, y, sgn * (D / 2 + 0.004)); wg.add(f);
+          f.position.set((a + b) / 2, y, sgn * (D / 2 + 0.004)); f.userData.keinKoerper = true; wg.add(f);   // Fuge: liegt auf der Wand
         }
       }
     }
@@ -160,7 +142,7 @@ function baueHuette(){
   const verkM = new THREE.MeshLambertMaterial({ map: story.tex.verkleidung() });
   const SOCKEL = 0.8;
   function innenTapete(laenge, oeffnungen){
-    const tg = new THREE.Group();
+    const tg = new THREE.Group(); tg.userData.keinKoerper = true;     // Tapete liegt auf der Wand
     const xs = [-laenge / 2 + 0.08];
     for(const o of oeffnungen){ xs.push(o[0], o[1]); }
     xs.push(laenge / 2 - 0.08);
@@ -203,8 +185,8 @@ function baueHuette(){
   }
   // Holzboden (leicht erhoeht) und Eckpfosten
   const bodenTex = story.tex.dielen(); bodenTex.repeat.set(B / 2.5, T / 2.5);
-  const bo = new THREE.Mesh(new THREE.BoxGeometry(B, 0.06, T), new THREE.MeshLambertMaterial({ map: bodenTex })); bo.position.y = 0.03; g.add(bo);
-  const tep = story.tex.teppichMesh(1.5, 1.0); tep.position.set(0.5, 0.065, 0.5); g.add(tep);   // kleiner Strassenteppich
+  const bo = new THREE.Mesh(new THREE.BoxGeometry(B, 0.06, T), new THREE.MeshLambertMaterial({ map: bodenTex })); bo.position.y = 0.03; bo.userData.begehbar = true; g.add(bo);
+  const tep = story.tex.teppichMesh(1.5, 1.0); tep.position.set(0.5, 0.065, 0.5); tep.userData.begehbar = true; g.add(tep);   // kleiner Strassenteppich
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.16, H + 0.05, 0.16), dunkel); p.position.set(sx * B / 2, H / 2, sz * T / 2); g.add(p);
   }
@@ -262,7 +244,10 @@ const ringMat = new THREE.MeshLambertMaterial({ color: 0x6e5236 });
 const blattMat = new THREE.MeshLambertMaterial({ color: 0x3f8f3a, side: THREE.DoubleSide });
 const blattMat2 = new THREE.MeshLambertMaterial({ color: 0x2f7a33, side: THREE.DoubleSide });
 const nussMat = new THREE.MeshLambertMaterial({ color: 0x5a3d22 });
-function setzePalme(w, p){
+function setzePalme(p){ return story.setze('palme', 1, p); }
+// Bauplan einer Palme (Fuss bei 0, 0, 0). Grenze: jedes Stammsegment als schraeger Zylinder, die Wedel in Scheiben,
+// die Nuesse als Kugeln – unter der Krone kann man durchgehen.
+function baePalme(p){
   const g = new THREE.Group();
   const n = 9, h = p.h, neig = p.neig || 0;
   let top = new THREE.Vector3();
@@ -287,12 +272,9 @@ function setzePalme(w, p){
     const nu = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), nussMat);
     nu.position.set(Math.cos(i * 1.7) * 0.22, -0.2, Math.sin(i * 1.7) * 0.22); krone.add(nu);
   }
-  g.position.set(p.x, ISLAND_Y, p.z);
-  g.rotation.y = p.dreh !== undefined ? p.dreh : (p.x < 0 ? Math.PI : 0);   // vorn: beide neigen nach aussen
+  if(p.dreh === undefined) p.dreh = p.x < 0 ? Math.PI : 0;              // vorn: beide neigen nach aussen
   g.traverse(o => { if(o.isMesh) o.castShadow = true; });
-  w.add(g);
-  // Grenze nur der Stamm (die Wedel oben machten die Box 5 m breit): Radius am Fuss + etwas, so hoch wie die Palme
-  story.koerper(null, { x: p.x, z: p.z, r: 0.24, h: p.h });
+  return g;
 }
 // Ein Wedel: schmaler, nach aussen haengender Streifen (gebogene Flaeche mit Zacken)
 function palmblatt(L, mat){
@@ -312,21 +294,28 @@ function palmblatt(L, mat){
   return new THREE.Mesh(geo, mat);
 }
 // Lagerfeuer (Stage Campfire by daedaljs, CC-BY-4.0), animiert, mit flackerndem Licht
-function ladeFeuer(w){
-  story.ladeGlb(window.LAGERFEUER_GLB, 'Lagerfeuer', (gl) => {
+// Bauplan: Modell mittig, Unterkante auf 0 (Promise – das GLB wird erst geladen). Grenze: Steine, Holz und Flamme
+// je in Scheiben (die Flamme zaehlt mit: man laeuft nicht durchs Feuer).
+function ladeFeuer(){
+  return new Promise((fertig) => story.ladeGlb(window.LAGERFEUER_GLB, 'Lagerfeuer', (gl) => {
     const m = gl.scene; m.updateMatrixWorld(true);
     const bb = new THREE.Box3().setFromObject(m), sz = bb.getSize(new THREE.Vector3());
     const k = 1.4 / Math.max(sz.x, sz.z); m.scale.multiplyScalar(k);
-    m.position.set(FEUER.x - (bb.min.x + bb.max.x) / 2 * k, ISLAND_Y - bb.min.y * k, FEUER.z - (bb.min.z + bb.max.z) / 2 * k);
+    m.position.set(-(bb.min.x + bb.max.x) / 2 * k, -bb.min.y * k, -(bb.min.z + bb.max.z) / 2 * k);
     m.traverse(o => { if(o.isMesh){ o.frustumCulled = false;
       if(o.material && o.material.name === 'fire.001'){ o.material.emissive = new THREE.Color(0xff7a20); o.material.emissiveIntensity = 1.2; } } });
-    w.add(m);
-    story.interaktion(m, { name: 'Lagerfeuer', x: FEUER.x, z: FEUER.z, r: 0.7, yHoehe: 1.5, einmal: true,   // Info
-      text: ['Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht.'] });
-    if(gl.animations.length){ insel.feuerMixer = new THREE.AnimationMixer(m); for(const a of gl.animations) insel.feuerMixer.clipAction(a).play(); }
-    insel.licht = new THREE.PointLight(0xff8a30, 1.3, 22, 1.8);
-    insel.licht.position.set(FEUER.x, ISLAND_Y + 1.4, FEUER.z); w.add(insel.licht);
-  });
+    const g = new THREE.Group(); g.add(m); g.userData.clips = gl.animations;
+    fertig(g);
+  }));
+}
+function feuerDanach(d){
+  const m = d.obj, p = m.position, w = m.parent;
+  story.interaktion(m, { name: 'Lagerfeuer', x: p.x, z: p.z, r: 0.7, yHoehe: 1.5, einmal: true,   // Info
+    text: ['Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht.'] });
+  const clips = m.userData.clips || [];
+  if(clips.length){ insel.feuerMixer = new THREE.AnimationMixer(m); for(const a of clips) insel.feuerMixer.clipAction(a).play(); }
+  insel.licht = new THREE.PointLight(0xff8a30, 1.3, 22, 1.8);
+  insel.licht.position.set(p.x, p.y + 1.4, p.z); w.add(insel.licht);
 }
 
 // ---- Moewen: fliegen ueber der Insel, ein paar sitzen am Strand -------------------------------
@@ -350,7 +339,7 @@ function moeweVorlage(gltf, mass, achse){
   return { tpl, clip: gltf.animations[0] };
 }
 function moeweKlon(v, w, rnd){
-  const k = cloneSkinned(v.tpl); w.add(k);
+  const k = cloneSkinned(v.tpl); k.userData.deko = true; w.add(k);   // Moewen: Deko, sie fliegen auf
   let mixer = null;
   if(v.clip){ mixer = new THREE.AnimationMixer(k); mixer.clipAction(v.clip).play(); mixer.setTime(rnd() * v.clip.duration); mixer.timeScale = 0.8 + rnd() * 0.4; }
   return { k, mixer };

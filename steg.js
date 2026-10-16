@@ -113,7 +113,7 @@ function baue(){
     p.rotation.y = Math.sin(i * 7.1) * 0.012;
     // Rampe: Planke kippen wie die Steigung
     if(zm > STEG.zUfer && zm < STEG.zUfer + 3) p.rotation.x = -Math.atan2(STEG.H - ISLAND_Y, 3);
-    g.add(p);
+    p.userData.begehbar = true; g.add(p);
   }
   // Laengstraeger unter dem Pfahlteil
   const L = STEG.zEnde - STEG.zUfer;
@@ -136,6 +136,8 @@ function baue(){
   for(const z of [BOOT.z - 2.2, BOOT.z + 2.2]){ const po = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.42, 10), dunkel); po.position.set(STEG.x - STEG.B / 2 + 0.2, STEG.H + 0.21, z); g.add(po); }
   g.traverse(o => { if(o.isMesh) o.castShadow = true; });
   w.add(g); s.gruppe = g;
+  // Pfaehle, Traeger, Kanten (0,14 m: man steigt drueber und kann seitlich ins Wasser), Poller: Grenzen in ihrer Form
+  story.ding(g, { welt: 1, typ: 'steg' });
   ladeBoot(w);
 }
 function ladeBoot(w){
@@ -170,7 +172,7 @@ function ladeBoot(w){
     const schatten = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, fog: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     schatten.rotation.x = -Math.PI / 2; schatten.scale.set(3.4, BOOT.laenge * 1.15, 1); schatten.renderOrder = 1;
-    w.add(schatten); s.schatten = schatten;
+    schatten.userData.deko = true; w.add(schatten); s.schatten = schatten;
     // Helle Gischt entlang der Wasserlinie (Live-Wunsch: mehr Kontrast zum dunklen Meer): ein schmaler, weicher Ring in
     // Rumpfform auf der Wasseroberflaeche, innen hell, aussen auslaufend; Tiefentest an (der Rumpf verdeckt ihn vorn)
     // Ring als eigene Geometrie (innen leer, aussen weich): Ellipse in Rumpfgroesse, 48 Segmente, innerer und aeusserer
@@ -192,13 +194,15 @@ function ladeBoot(w){
       vertexShader: 'attribute float alpha; varying float va; varying vec3 vc; attribute vec3 color; void main(){ va = alpha; vc = color; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: 'uniform float staerke; varying float va; varying vec3 vc; void main(){ gl_FragColor = vec4(vc, va * staerke); }' });
     const gischt = new THREE.Mesh(geo, gmat); gischt.renderOrder = 2; gischt.frustumCulled = false;
-    w.add(gischt); s.gischt = gischt;
+    gischt.userData.deko = true; w.add(gischt); s.gischt = gischt;
     w.add(g); s.boot = g; s.bootInnen = innen;
     // Plaetze im Boot (Live-Skizze): Fuchs vorn im Bug vor dem Mast (Modell z ~ 3,0), Joshi im Heck (Modell z ~ -2,6).
     // Bootskoordinate = (Modell-z - Rumpfmitte) * k
     s.platzFuchs = (3.0 - c.z) * k; s.platzJoshi = (-2.6 - c.z) * k;
     s.deckY = (0.62 - WASSERLINIE) * k;                            // Bootsboden innen (zwischen Innenwand 0,46 und Holz 0,96)
-    s.koerper = story.koerper(null, { x: BOOT.x, z: BOOT.z, hx: 1.0, hz: BOOT.laenge / 2, rot: 0, h: 8 });   // man laeuft nicht ins Boot (nur mit Y); faehrt mit
+    // Grenze: Rumpf, Mast, Segel in ihrer Form (frei geformt -> in Scheiben), haengt am Boot und faehrt mit. Hinein nur mit Y.
+    g.position.y = seaYAt(BOOT.x, BOOT.z);
+    s.koerper = story.ding(g, { welt: 1, typ: 'segelboot', beweglich: true });
     meerImBootAus();
   });
 }
@@ -254,7 +258,7 @@ function setzeUm(ziel){
     f.kniet = false;
     // angelegt: das Boot liegt wieder an seinem Platz am Steg
     s.bx = BOOT.x; s.bz = BOOT.z; s.yaw = 0; s.v = 0;
-    const x = STEG.x, z = BOOT.z;
+    const { x, z } = story.freierPlatz(STEG.x, BOOT.z, 'joshi');
     g.position.set(x, stegY(z), z);
     eva.yaw = 0; g.rotation.y = eva.yaw;                          // Blick zum Strand
     story.fuchsInsBoot && story.fuchsInsBoot(false);
@@ -302,7 +306,18 @@ function hookBoot(){
 // blockierte sich (gemessen). Waehrend der Pruefung ist sie deshalb aus.
 function bootFrei(x, z, yaw){
   if(s.koerper) s.koerper.aus = true;
-  try { return bootFreiRoh(x, z, yaw); } finally { if(s.koerper) s.koerper.aus = false; }
+  try { return bootFreiRoh(x, z, yaw) && bootTiefe(x, z, yaw) <= 0; } finally { if(s.koerper) s.koerper.aus = false; }
+}
+// Wie tief steckt der Rumpf an dieser Stelle in anderen Dingen (Orcas, Pfaehle)? Geprueft am Rumpfumriss, Tiefgang bis
+// 1,5 m unter Wasser, 2 m darueber (objekte.js). Ein Orca, der ganz abgetaucht ist, liegt darunter.
+function bootTiefe(x, z, yaw){
+  const fx = Math.sin(yaw), fz = Math.cos(yaw), L = BOOT.laenge / 2;
+  let t = -Infinity;
+  for(const [v, q] of [[L * 0.8, 0], [-L * 0.8, 0], [0, 0.7], [0, -0.7], [L * 0.4, 0], [-L * 0.4, 0]]){
+    const px = x + fx * v + fz * q, pz = z + fz * v - fx * q;
+    t = Math.max(t, story.tiefe(px, pz, -1.5, 3.5, 0.35, 0));
+  }
+  return t;
 }
 function bootFreiRoh(x, z, yaw){
   const fx = Math.sin(yaw), fz = Math.cos(yaw), L = BOOT.laenge / 2;
@@ -320,8 +335,17 @@ function updateFahrt(dt){
   s.v += (soll - s.v) * Math.min(1, dt * (Math.abs(soll) > Math.abs(s.v) ? 0.7 : 1.2));   // traege anfahren, etwas schneller bremsen
   s.yaw -= lenk * DREH_MAX * Math.min(1, Math.abs(s.v) / 1.5 + 0.15) * Math.sign(s.v || 1) * dt;
   const nx = s.bx + Math.sin(s.yaw) * s.v * dt, nz = s.bz + Math.cos(s.yaw) * s.v * dt;
-  // steckt es schon fest (z. B. am Liegeplatz knapp an der Watzone), darf es nur WEG von der Insel (Mitte 0,0)
-  const raus = !bootFrei(s.bx, s.bz, s.yaw) && Math.hypot(nx, nz) > Math.hypot(s.bx, s.bz);
+  // steckt es schon fest (z. B. am Liegeplatz knapp an der Watzone), darf es nur WEG von der Insel (Mitte 0,0); steckt es
+  // in einem Ding (ein Orca ist herangeschwommen), darf es jede Fahrt, die nicht tiefer hineinfuehrt – nie verhaken
+  let raus = false;
+  if(!bootFrei(s.bx, s.bz, s.yaw)){
+    if(s.koerper) s.koerper.aus = true;
+    try {
+      const tJetzt = bootTiefe(s.bx, s.bz, s.yaw);
+      if(tJetzt > 0) raus = bootFreiRoh(nx, nz, s.yaw) && bootTiefe(nx, nz, s.yaw) <= tJetzt + 1e-6;
+      else raus = Math.hypot(nx, nz) > Math.hypot(s.bx, s.bz);
+    } finally { if(s.koerper) s.koerper.aus = false; }
+  }
   if(bootFrei(nx, nz, s.yaw) || raus){ s.bx = nx; s.bz = nz; }
   else s.v *= 0.3;                                              // angestossen: fast stehen bleiben
 }
@@ -343,7 +367,7 @@ story.updateSteg = function(dt){
       s.gischt.material.uniforms.staerke.value = 0.7 + Math.sin(s.t * 2.3) * 0.15 + Math.min(0.3, Math.abs(s.v) * 0.1); } }   // in Fahrt etwas mehr Gischt
   if(s.boot){ const b = s.boot; b.position.set(s.bx, seaYAt(s.bx, s.bz), s.bz); b.rotation.set(Math.sin(s.t * 0.6 + 1) * 0.01, s.yaw, Math.sin(s.t * 0.9) * 0.015, 'YXZ'); b.updateMatrixWorld(true);
     bootUni.bootInv.value.copy(b.matrixWorld).invert(); bootUni.bootAn.value = 1;
-    if(s.koerper){ s.koerper.x = s.bx; s.koerper.z = s.bz; s.koerper.rot = s.yaw; } }
+  }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit
   if(s.imBoot && eva && s.boot){
     // Joshi kniet hinten im Heck, zwischen hinterer Bank und Ruder (Live-Skizze; Modell z ~ -2,6), auf dem Bootsboden

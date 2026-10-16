@@ -81,75 +81,11 @@ function weltEntsorgen(n){
 story.welt = welt;
 story.weltEntsorgen = weltEntsorgen;
 
-// ---- Koerper: Grenzen fuer alles, was in einer Welt steht ---------------------------------------------------
-// Grundsatz (Live-Wunsch 14.10.2026): jedes gezeichnete Objekt bekommt eine Grenze in seinen echten Massen.
-//   story.koerper(obj)                     – Rechteck aus der Bounding-Box (Breite, Tiefe, Hoehe), gedreht wie obj
-//   story.koerper(obj, { kreis: true })    – Kreis um die Mitte (runde Dinge: Feuer, Stamm, Tonne)
-//   story.koerper(null, { x, z, r | hx, hz, rot, h }) – von Hand (z. B. nur der Stamm einer Palme)
-// Die Grenze gilt fuer Joshi und den Fuchs (KOERPER_R kommt dazu) und nur in ihrer Welt (Etappe); ueber Dinge, die
-// niedriger sind als die Sprunghoehe, kann man drueberspringen. Ausnahme Huette: Waende von Hand (Tuer!).
-const KOERPER_R = 0.25;
-const koerperListe = [];
-function koerper(obj, opt){
-  opt = opt || {};
-  let k;
-  if(obj){
-    obj.updateMatrixWorld(true);
-    const rot = obj.rotation ? obj.rotation.y : 0;
-    // Box in den eigenen Achsen messen (sonst waere sie bei gedrehten Dingen zu gross)
-    const vor = obj.rotation.y; obj.rotation.y = 0; obj.updateMatrixWorld(true);
-    const bb = new THREE.Box3().setFromObject(obj), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
-    obj.rotation.y = vor; obj.updateMatrixWorld(true);
-    // Mitte zurueckdrehen (die Box wurde ungedreht um obj.position gemessen)
-    const dx = c.x - obj.position.x, dz = c.z - obj.position.z, co = Math.cos(rot), si = Math.sin(rot);
-    const mx = obj.position.x + dx * co + dz * si, mz = obj.position.z - dx * si + dz * co;
-    k = opt.kreis ? { x: mx, z: mz, r: Math.max(s.x, s.z) / 2, h: bb.max.y - ISLAND_Y }
-                  : { x: mx, z: mz, hx: s.x / 2, hz: s.z / 2, rot, h: bb.max.y - ISLAND_Y };
-  } else k = Object.assign({}, opt);
-  k.welt = opt.welt !== undefined ? opt.welt : story.etappe;
-  koerperListe.push(k);
-  return k;
-}
-// Fusshoehe: die Engine fragt Waende immer 1 m ueber den Fuessen ab (hitsBuilding(x, fuss + 1, z)) – verglichen
-// wird deshalb mit den FUESSEN. Der Sprung ist eine Animation (die Figur hebt sich nicht wirklich): in der Luftphase
-// zaehlen die Fuesse als SPRUNG_HOEHE hoch – drueber kommt man also nur bei sehr niedrigen Dingen.
-const SPRUNG_HOEHE = 0.4;
-function fussHoehe(y){
-  if(!figurSchritt) return y - 1;                              // Fuchs & Co.: ihre Abfrage liegt hoeher als der Boden
-  const luft = (figur.aktion === 'jump' && figur.aktT > 0.5 && figur.aktT < 1.05) || (figur.aktion === 'roll' && figur.aktT > 0.3 && figur.aktT < 0.9);
-  return ISLAND_Y + (luft ? SPRUNG_HOEHE : 0);
-}
-// Wie tief steckt (x, z) in der Grenze k? > 0 = drin (m), <= 0 = frei
-function eindringen(k, x, z){
-  if(k.r !== undefined) return k.r + KOERPER_R - Math.hypot(x - k.x, z - k.z);
-  const c = Math.cos(k.rot || 0), s = Math.sin(k.rot || 0), dx = x - k.x, dz = z - k.z;
-  const lx = dx * c - dz * s, lz = dx * s + dz * c;            // in die Achsen des Objekts
-  return Math.min(k.hx + KOERPER_R - Math.abs(lx), k.hz + KOERPER_R - Math.abs(lz));
-}
-// Live-Befund (Bagger in der Huette): steckt Joshi schon IN einer Grenze (nach Blende, Absetzen, Sprungende), kam er
-// nicht mehr los, weil jeder Schritt gesperrt war. Darum: ein Schritt, der ihn nicht TIEFER hineinbringt, ist frei.
+// ---- Grenzen: siehe objekte.js (Objekt-Katalog, Grenzen in exakter Form, freier Platz beim Setzen) ------------
+// Hier nur, was objekte.js von der Figur wissen muss: ob gerade Joshis eigener Schritt geprueft wird (schrittVon,
+// wer schon drinsteckt, darf hinaus) und ob er in der Luftphase eines Sprungs ist (dann zaehlen die Fuesse hoeher).
 story.schrittVon = () => (figurSchritt && eva) ? eva.group.position : null;
-function trifftKoerper(x, y, z){
-  const fuss = fussHoehe(y), von = story.schrittVon();
-  for(const k of koerperListe){
-    if(k.welt !== story.etappe || k.aus) continue;              // aus: z. B. das Boot, waehrend es seinen eigenen Weg prueft
-    if(fuss > ISLAND_Y + (k.h || 1.5)) continue;               // Fuesse hoeher als das Hindernis: darueber hinweg
-    const t = eindringen(k, x, z);
-    if(t <= 0) continue;
-    if(von && t <= eindringen(k, von.x, von.z) + 1e-6) continue;   // steckt schon drin: hinaus (oder entlang) darf er
-    return true;
-  }
-  return false;
-}
-story.koerper = koerper;
-story.koerperListe = koerperListe;
-function hookKoerper(){
-  const hitsOrig = hitsBuilding;
-  hitsBuilding = function(x, y, z){ if(locale === 'earth' && trifftKoerper(x, y, z)) return true; return hitsOrig.apply(this, arguments); };
-  // Welt entsorgt -> ihre Grenzen mit
-  const entsOrig = weltEntsorgen;
-  story.weltEntsorgen = function(n){ for(let i = koerperListe.length - 1; i >= 0; i--) if(koerperListe[i].welt === n) koerperListe.splice(i, 1); return entsOrig(n); };
-}
+story.figurInLuft = () => (figur.aktion === 'jump' && figur.aktT > 0.5 && figur.aktT < 1.05) || (figur.aktion === 'roll' && figur.aktT > 0.3 && figur.aktT < 0.9);
 
 // ---- Nur die Startinsel, keine Traeger/Hangar/Vorfeld (die kleine Insel baut insel.js) -------
 function hookWelt(){
@@ -690,6 +626,7 @@ function schwimmUpdate(dt, inp){
     eva.vy = 0; eva.onGround = true;
     return;
   }
+  if(story.schwimmGesperrt && story.schwimmGesperrt(g.position, nx, nz)){ evaKmh = 0; state.pos.copy(eva.planeAt); return; }
   g.position.x = nx; g.position.z = nz;
   const oben = seaYAt(nx, nz, dt) - SCHWIMM_TIEF;
   const unten = seabedY(nx, nz) + 0.8;
@@ -801,6 +738,7 @@ function preloadFuchs(){
     fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.06;
     fuchs.schatten.rotation.z = fuchs.kopf;                      // Laengsachse zum Kopf
     wrap.add(fuchs.schatten);
+    wrap.userData.agent = true;                                       // Begleiter: eigene Grenzregeln, kein Ding
     if(fuchs.wartetAuf) fuchsAbsetzen(fuchs.wartetAuf);
   });
 }
@@ -832,13 +770,19 @@ function fuchsClipLaeuft(name){
   return fuchs.cur === name && a && a.time < a.getClip().duration - 0.03;
 }
 // Wo darf er laufen? Gras, Sand und der Huetten-Innenraum – nicht ins Wasser (auch nicht ins Flache), nicht in Waende
-function fuchsFrei(x, z){ return evaSolid(x, z) && watGrund(x, z) === null && !hitsBuilding(x, ISLAND_Y + 0.5, z, false); }
+// Grenzen der Dinge (objekte.js) in seiner Groesse; steckt er schon drin (von), darf er jeden Schritt, der nicht tiefer geht
+function fuchsFrei(x, z, von){
+  if(!evaSolid(x, z) || watGrund(x, z) !== null || (story.hitsOhneDinge || hitsBuilding)(x, ISLAND_Y + 0.5, z, false)) return false;
+  const t = story.fuchsTiefe(x, z);
+  return t <= 0 || (!!von && t <= story.fuchsTiefe(von.x, von.z) + 1e-6);
+}
 // Die Figur wechselt durch die Huettentuer (huette_innen.js): der Fuchs kommt mit – ausser er wartet noch am Strand
 story.fuchsZu = function(ziel){
   if(!fuchs.obj || !fuchs.aktiv || fuchs.modus === 'warten' || !eva) return;
   // neben die Figur (nicht hinter sie: beim Hinausgehen laege das in der Huette, dort steckte der Fuchs fest)
   let n = nebenFigur(0.4, 1.1);
   if(!fuchsFrei(n.x, n.z)) n = nebenFigur(0.4, -1.1);
+  n = story.freierPlatz(n.x, n.z, 'fuchs');
   fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z);
   fuchs.yaw = eva.yaw + Math.PI; fuchs.ziel = null; fuchs.warte = 1.5;
   if(fuchs.modus !== 'streifen'){ fuchs.modus = 'streifen'; fuchs.sitzt = false; }
@@ -849,14 +793,15 @@ story.fuchsInsBoot = function(rein){
   if(fuchs.schatten) fuchs.schatten.visible = !rein;
   if(rein){ fuchs.modus = 'boot'; fuchs.sitzt = true; fuchs.tanz = null; fuchs.such = null; fuchs.cur = null; fuchsAnim(FA.sitzen, 0.01); }
   else if(eva){ fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.warte = 1.5; fuchsAnim(FA.aufstehen, 0.2);
-    const n = nebenFigur(-1.0, 0.5); fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z); fuchs.yaw = eva.yaw + Math.PI; }
+    const v = nebenFigur(-1.0, 0.5), n = story.freierPlatz(v.x, v.z, 'fuchs'); fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z); fuchs.yaw = eva.yaw + Math.PI; }
 };
 // Fuchs bei (x, z) in die Welt setzen, Blick p.blick (Winkel ab +Z), p.modus (Standard: streifen)
 function fuchsAbsetzen(p){
   if(!fuchs.obj){ fuchs.wartetAuf = p; return; }
   fuchs.wartetAuf = null;
   welt(story.etappe).add(fuchs.obj);
-  fuchs.obj.position.set(p.x, evaFootY(p.x, p.z), p.z);
+  const n = story.freierPlatz(p.x, p.z, 'fuchs');
+  fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z);
   fuchs.yaw = p.blick;
   fuchs.aktiv = true;
   fuchs.modus = p.modus || 'streifen'; fuchs.ziel = null; fuchs.warte = 2;
@@ -982,7 +927,7 @@ function fuchsLaufe(dt, zx, zz, tempo){
 }
 // Darf der Fuchs von fp nach (x, z)? Fester Grund, kein Hindernis und nicht naeher in die Figur hinein
 function fuchsSchrittFrei(fp, x, z){
-  if(!fuchsFrei(x, z)) return false;
+  if(!fuchsFrei(x, z, fp)) return false;
   if(eva && eva.group){ const g = eva.group.position, neu = Math.hypot(x - g.x, z - g.z);
     if(neu < ABSTAND_MIN && neu < Math.hypot(fp.x - g.x, fp.z - g.z)) return false; }
   return true;
@@ -1424,9 +1369,11 @@ function baueRadio(){
   kurbel.position.set(0.225, 0.1, 0); r.add(kurbel);
   const lampe = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), new THREE.MeshBasicMaterial({ color: 0x40ff60 }));
   lampe.position.set(0.11, 0.07, 0.085); r.add(lampe);
+  ant.userData.keinKoerper = true;                                   // die 6 mm duenne Antenne sperrt nicht
   g.userData.geraet = r; g.userData.lampe = lampe;
   return g;
 }
+// (Typ 'funkgeraet' wird in STORY_HOOK angemeldet – objekte.js laedt erst nach story.js)
 const DURCHSAGE = [
   '*knack* ... *rausch* ...',
   'Achtung, ' + NAME + '! Achtung!',
@@ -1483,23 +1430,15 @@ function startSzene(){
   const I = story.insel, H = I.huette, F = I.feuer;
   story.baueInsel();
   // Funkgeraet auf einer Kiste rechts neben dem Feuer, Lautsprecher zum Startplatz
-  radio.obj = baueRadio();
-  radio.obj.position.set(F.x + 1.7, ISLAND_Y, F.z - 0.6);
-  radio.obj.rotation.y = 0.5;
-  welt(1).add(radio.obj);
-  // Grenze = genau die Kiste (0,60 x 0,45 m) aus ihren echten Massen, gedreht wie sie; Hoehe bis Oberkante Geraet
-  // (die 6 mm duenne Antenne zaehlt nicht mit)
-  const kk = koerper(radio.obj); const geraet = radio.obj.userData.geraet;
-  const kg = radio.obj.children[0].geometry; kg.computeBoundingBox();
-  const kb = kg.boundingBox.getSize(new THREE.Vector3());          // eigene Achsen der Kiste (ungedreht)
-  kk.hx = kb.x / 2; kk.hz = kb.z / 2; kk.h = 0.45 + 0.26;
+  // Grenze: Kiste und Geraet in ihrer echten Form (objekte.js); steht dort schon etwas, rueckt es daneben
+  radio.obj = story.setze('funkgeraet', 1, { x: F.x + 1.7, z: F.z - 0.6, dreh: 0.5 }).obj;
   interaktion(radio.obj, { name: 'Funkgerät', x: radio.obj.position.x, z: radio.obj.position.z, r: 0.45, yHoehe: 1.25,
     text: ['Mit dem Funkgerät können dich Andere erreichen, wenn sie deine Hilfe brauchen.'],
     danach: () => funkRauschen(3) });         // 3 s, dann sanft ausgeblendet (Live-Wunsch)
   // Figur zwischen Feuer und Strand, Blick zur Huette (-z: Engine-yaw = 0). So hat die Kamera hinter
   // ihr Feuer, Palmen und Huette im Bild (aus der Huette heraus hing sie hinter der Rueckwand).
   if(eva){
-    const x = F.x - 0.6, z = F.z + 3.2;
+    const { x, z } = story.freierPlatz(F.x - 0.6, F.z + 3.2, 'joshi');
     eva.group.position.set(x, evaFootY(x, z), z);
     eva.yaw = 0; eva.group.rotation.y = eva.yaw;
   }
@@ -1521,6 +1460,7 @@ function hookLoop(){
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
     if(hilfeOffen()) return loopOrig.apply(this, arguments);   // Pause
     timerTick(dt);
+    if(story.updateObjekte) story.updateObjekte(dt);   // objekte.js: Grenzen nachfuehren, Schiffe schieben beiseite
     figurTasten();
     updateFigur(dt);
     figurWache(dt);
@@ -1552,9 +1492,9 @@ function hookHudAus(){
 }
 
 window.STORY_HOOK = function(){
+  story.typ('funkgeraet', { bau: baueRadio });
   hookHudAus();
   hookWelt();
-  hookKoerper();
   hookInteraktion();
   hookHinweis();
   hookNacht();

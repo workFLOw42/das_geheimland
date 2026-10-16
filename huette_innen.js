@@ -37,7 +37,7 @@ function baueRaum(){
   // Boden
   const bodenTex = bodenM.map; bodenTex.repeat.set(B / 2.5, T / 2.5);
   const boden = new THREE.Mesh(new THREE.PlaneGeometry(B, T), bodenM);
-  boden.rotation.x = -Math.PI / 2; boden.position.y = 0.01; g.add(boden);
+  boden.rotation.x = -Math.PI / 2; boden.position.y = 0.01; boden.userData.begehbar = true; g.add(boden);
   // Waende: Tapete oben, Verkleidung unten, nach innen gewandt. Vorderwand mit Tueroeffnung.
   function wandStueck(breite, mitteX, y0, y1, mat, wdhX){
     const m = mat.clone(); m.map = mat.map.clone(); m.map.needsUpdate = true;
@@ -67,7 +67,7 @@ function baueRaum(){
   const rechts = wand(T, false); rechts.position.x = B / 2; rechts.rotation.y = -Math.PI / 2; g.add(rechts);
   // In der Tueroeffnung: warmes Nachtblau (draussen ist Nacht) statt Leere
   const nacht = new THREE.Mesh(new THREE.PlaneGeometry(TUER_B, TUER_H), new THREE.MeshBasicMaterial({ color: 0x0d1a3a }));
-  nacht.position.set(0, TUER_H / 2, T / 2 + 0.05); nacht.rotation.y = Math.PI; g.add(nacht);
+  nacht.position.set(0, TUER_H / 2, T / 2 + 0.05); nacht.rotation.y = Math.PI; nacht.userData.deko = true; g.add(nacht);   // nur Farbe in der Tuer
   // Fenster (gemalt: Nachthimmel mit Mond) an der Rueckwand und links
   const fensterTex = canvasTex(128, 128, (c, w, h) => {
     c.fillStyle = '#0d1a3a'; c.fillRect(0, 0, w, h);
@@ -86,7 +86,7 @@ function baueRaum(){
   }
   // Decke mit Balken
   const decke = new THREE.Mesh(new THREE.PlaneGeometry(B, T), new THREE.MeshLambertMaterial({ color: 0xc9a27a }));
-  decke.rotation.x = Math.PI / 2; decke.position.y = H; g.add(decke);
+  decke.rotation.x = Math.PI / 2; decke.position.y = H; decke.userData.keinKoerper = true; g.add(decke);
   for(let x = -B / 2 + 1; x < B / 2; x += 1.6){
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, T), dunkel); b.position.set(x, H - 0.11, 0); g.add(b);
   }
@@ -120,7 +120,7 @@ function baueRaum(){
   g.add(regal);
   innen.regal = regal;                                  // spaeter: Trophaeen
   // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
-  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.03, 0.9); g.add(teppich);
+  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.03, 0.9); teppich.userData.begehbar = true; g.add(teppich);
   // gelber Spielzeug-Bagger auf einem kleinen Wandbord (rechte Wand, 1,1 m hoch) – auf dem Teppich stand er im Weg
   const bord = new THREE.Group(); bord.position.set(B / 2 - 0.2, 1.1, 1.6); g.add(bord);
   const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.7), holz.clone()); bord.add(brett);
@@ -130,16 +130,15 @@ function baueRaum(){
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
   const ll = new THREE.PointLight(0xffc070, 1.0, 12, 1.6);   // Laterne (die Tischplatte gluehte sonst orange) ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
   const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund);
-  // Hindernisse (Rechtecke in Raumkoordinaten) fuer Moebel
-  innen.moebel = [
-    { x: bett.position.x, z: bett.position.z, hx: 0.65, hz: 1.15 },
-    { x: tisch.position.x, z: tisch.position.z, hx: 0.75, hz: 0.5 },
-    ...stuehle.map(s => ({ x: s.position.x, z: s.position.z, hx: 0.24, hz: 0.24 })),   // Stuehle (0,44 x 0,44 m)
-    { x: regal.position.x, z: regal.position.z, hx: 1.05, hz: 0.2 },
-  ];
+  // Bucher im Regal liegen auf den Brettern (die Bretter sind die Grenze) – Deko ohne eigene Masse
+  regal.children.forEach(c => { if(c.isGroup) c.userData.keinKoerper = true; });
+  innen.tischPlatte = platte;                           // Ablage: was auf den Tisch soll, setzt story.setze(..., { auf: innen.tischPlatte })
   g.position.set(RAUM.x, BODEN_Y, RAUM.z);
   story.welt(1).add(g);
   innen.gruppe = g;
+  // Moebel, Waende, Tuerrahmen, Bord mit Bagger: jedes Bauteil in seiner Form (objekte.js). Unter der Tischplatte und
+  // dem Bord passt der Fuchs durch, Joshi nicht.
+  innen.ding = story.ding(g, { welt: 1, typ: 'huette_innen' });
   // Interaktionsobjekte im Raum (innen: true): Buecherregal und die Sachen auf dem Tisch. Messer, Kompass und Lupe sind
   // drei eigene Teile (innen.tischSachen) – fuer die Situation am Tisch hier EIN Objekt, spaeter auch einzeln nutzbar.
   // Der Bagger ist ein einfaches Objekt (nur Grenze).
@@ -265,12 +264,11 @@ const KOERPER = 0.3;
 // einer Wand bis 9 m voraus nach Wasser und haette sonst hinter der Rueckwand das Schwimmen gestartet.
 const HUELLE = 15;
 function imRaum(x, z){ return Math.abs(x - RAUM.x) < RAUM.B / 2 + HUELLE && Math.abs(z - RAUM.z) < RAUM.T / 2 + HUELLE; }
-// Wie tief steckt (x, z) in Waenden und Moebeln (m, 0 = frei)?
+// Wie tief steckt (x, z) in den Waenden (m, 0 = frei)? Moebel: Grenzen in ihrer Form ueber objekte.js
 function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z;
   let t = Math.max(0, Math.abs(lx) - (RAUM.B / 2 - KOERPER), -RAUM.T / 2 + KOERPER - lz);
   if(lz > RAUM.T / 2 - KOERPER && !(Math.abs(lx) < TUER_B / 2 - 0.15 && lz < RAUM.T / 2 + 0.6)) t = Math.max(t, lz - (RAUM.T / 2 - KOERPER), 1e-3);   // nur durch die Tuer
-  for(const m of innen.moebel || []) t = Math.max(t, Math.min(m.hx + KOERPER - Math.abs(lx - m.x), m.hz + KOERPER - Math.abs(lz - m.z)));
   return t;
 }
 function raumFrei(x, z){
@@ -359,7 +357,7 @@ function setzeUm(ziel){
   } else {
     // ein Stueck vor der Huette (etwa wie beim Spielstart am Feuer), damit die Kamera hinter Joshi nicht in der Huette
     // haengt; seitlich versetzt, damit er nicht im Lagerfeuer steht (das liegt genau vor der Tuer)
-    const x = H.x - 1.8, z = H.z + H.T / 2 + 4.2;
+    const { x, z } = story.freierPlatz(H.x - 1.8, H.z + H.T / 2 + 4.2, 'joshi');
     g.position.set(x, evaFootY(x, z), z);
     eva.yaw = Math.PI;                                    // Blick zum Strand (+z)
     innen.drin = false;

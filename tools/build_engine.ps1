@@ -78,6 +78,7 @@ foreach($n in @('gitarre', 'funk')){
 # Moewen kommen fertig aus Spiel_SFG (moewe_glb.js, MOEWE_SITZ_GLB + MOEWE_FLUG_GLB)
 if(Test-Path (Join-Path $root 'moewe_glb.js')){ $skripte += 'moewe_glb.js' }
 $skripte += 'story.js'
+$skripte += 'objekte.js'
 $skripte += 'sternbilder.js'
 $skripte += 'texturen.js'
 $skripte += 'insel.js'

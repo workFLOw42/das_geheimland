@@ -323,6 +323,8 @@ function inventarAn(an){
       inv.dinge.push({ n, p, glow, L, i, mx: A ? spiele(o, A, 1) : null, q: new THREE.Quaternion().setFromEuler(new THREE.Euler(neig, 0, 0)) });
     }));
   }
+  // Rucksack unten rechts dazu (Live-Wunsch 16.10.: "der Rucksack erscheint nicht unten rechts"); zu = wieder weg
+  rucksack.ziel = an ? 1 : 0;
   return true;
 }
 // story.js (D-Pad runter / N): an = Spiel pausiert, aus = weiter

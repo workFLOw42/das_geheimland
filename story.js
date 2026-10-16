@@ -948,6 +948,61 @@ function fuchsLaufe(dt, zx, zz, tempo){
   else fuchs.blockiert = false;                                             // dreht noch in die freie Richtung
   return d;
 }
+// ---- Eigene Wegsuche (Live-Befund 16.10.: beim Absuchen blieb er haengen, wenn Joshi dicht an einem Objekt stand) ----
+// Ein kleines Raster (WEG_RASTER m) um Start und Ziel, A* ueber freie Zellen (fester Grund, keine Grenze, nicht in Joshi),
+// daraus Wegpunkte, die fuchsGeheZu nacheinander ablaeuft. Kein Weg -> die erreichbare Zelle, die dem Ziel am naechsten ist
+// (er bleibt nie stehen, wo er nicht weiterkommt).
+const WEG_RASTER = 0.3, WEG_RAND = 4, WEG_MAX = 2600;
+function fuchsWeg(sx, sz, zx, zz){
+  const minX = Math.min(sx, zx) - WEG_RAND, minZ = Math.min(sz, zz) - WEG_RAND;
+  const nx = Math.ceil((Math.max(sx, zx) + WEG_RAND - minX) / WEG_RASTER) + 1, nz = Math.ceil((Math.max(sz, zz) + WEG_RAND - minZ) / WEG_RASTER) + 1;
+  const idx = (i, j) => j * nx + i, px = (i) => minX + i * WEG_RASTER, pz = (j) => minZ + j * WEG_RASTER;
+  const si = Math.round((sx - minX) / WEG_RASTER), sj = Math.round((sz - minZ) / WEG_RASTER);
+  const zi = Math.round((zx - minX) / WEG_RASTER), zj = Math.round((zz - minZ) / WEG_RASTER);
+  const g = eva && eva.group ? eva.group.position : null;
+  const freiCache = new Map();
+  const frei = (i, j) => { const k = idx(i, j); let f = freiCache.get(k);
+    if(f === undefined){ const x = px(i), z = pz(j); f = fuchsFrei(x, z) && !(g && Math.hypot(x - g.x, z - g.z) < ABSTAND_MIN + 0.1); freiCache.set(k, f); } return f; };
+  const h = (i, j) => Math.hypot(i - zi, j - zj);
+  const gK = new Map([[idx(si, sj), 0]]), von = new Map(), offen = [[h(si, sj), si, sj]];
+  let best = [si, sj], bestH = h(si, sj), n = 0;
+  while(offen.length && n++ < WEG_MAX){
+    let m = 0; for(let q = 1; q < offen.length; q++) if(offen[q][0] < offen[m][0]) m = q;
+    const [, i, j] = offen.splice(m, 1)[0], k = idx(i, j), gk = gK.get(k);
+    const hh = h(i, j); if(hh < bestH){ bestH = hh; best = [i, j]; }
+    if(i === zi && j === zj) break;
+    for(const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]){
+      const a = i + di, b = j + dj; if(a < 0 || b < 0 || a >= nx || b >= nz) continue;
+      if(!frei(a, b) && !(a === zi && b === zj)) continue;
+      if(di && dj && (!frei(i + di, j) || !frei(i, j + dj))) continue;      // nicht diagonal durch eine Ecke
+      const kn = idx(a, b), gn = gk + (di && dj ? 1.414 : 1);
+      if(gK.has(kn) && gK.get(kn) <= gn) continue;
+      gK.set(kn, gn); von.set(kn, k); offen.push([gn + h(a, b), a, b]);
+    }
+  }
+  // Weg zurueckverfolgen (bis zum Ziel oder der naechsten erreichbaren Zelle), dann ausduennen
+  const pfad = []; let k = idx(best[0], best[1]);
+  while(k !== undefined){ pfad.unshift({ x: px(k % nx), z: pz(Math.floor(k / nx)) }); k = von.get(k); }
+  if(best[0] === zi && best[1] === zj) pfad[pfad.length - 1] = { x: zx, z: zz };
+  return pfad.filter((p, i) => i === pfad.length - 1 || i % 2 === 1);
+}
+// Zum Punkt (zx, zz) laufen – mit Wegsuche. Rueckgabe: Restabstand zum Ziel. Neu geplant wird, wenn sich das Ziel
+// aendert, er 0,5 s nicht vorankommt oder sein Weg zu Ende ist.
+function fuchsGeheZu(dt, zx, zz, tempo){
+  const fp = fuchs.obj.position, W = fuchs.weg || (fuchs.weg = { pfad: [], zx: NaN, zz: NaN, fest: 0, lx: fp.x, lz: fp.z });
+  const rest = Math.hypot(zx - fp.x, zz - fp.z);
+  if(rest < 0.25){ W.pfad = []; return rest; }
+  if(Math.hypot(W.zx - zx, W.zz - zz) > 0.3 || !W.pfad.length || W.fest > 0.5){
+    W.pfad = fuchsWeg(fp.x, fp.z, zx, zz); W.zx = zx; W.zz = zz; W.fest = 0;
+  }
+  while(W.pfad.length > 1 && Math.hypot(W.pfad[0].x - fp.x, W.pfad[0].z - fp.z) < 0.3) W.pfad.shift();
+  const p = W.pfad[0] || { x: zx, z: zz };
+  fuchsLaufe(dt, p.x, p.z, tempo);
+  // kommt er nicht voran? (weniger als ein Zehntel des Sollwegs)
+  const g = Math.hypot(fp.x - W.lx, fp.z - W.lz); W.lx = fp.x; W.lz = fp.z;
+  W.fest = g < tempo * dt * 0.1 ? W.fest + dt : 0;
+  return rest;
+}
 // Darf der Fuchs von fp nach (x, z)? Fester Grund, kein Hindernis und nicht naeher in die Figur hinein
 function fuchsSchrittFrei(fp, x, z){
   if(!fuchsFrei(x, z, fp)) return false;
@@ -1198,6 +1253,7 @@ function fuchsSuche(){
   fuchs.sitzt = false; fuchs.tanz = null; fuchs.ziel = null;
   fuchs.modus = 'schnueffeln'; fuchs.such = { liste, i: 0, phase: 'hin', t: 0, platz: null };
 }
+const SUCH_MAX = 4;            // s: so lange laeuft er hoechstens zu einem Objekt, dann schnueffelt er, wo er ist
 function fuchsSchnueffeln(dt, fp){
   const S = fuchs.such;
   if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)) return;
@@ -1205,16 +1261,22 @@ function fuchsSchnueffeln(dt, fp){
   if(!o){ fuchs.modus = 'streifen'; fuchs.such = null; fuchs.warte = 1; return; }
   if(S.phase === 'hin'){
     if(!S.platz){
-      // Platz vor dem Objekt auf der Seite zu Joshi (damit man es sieht); ist er belegt, ringsum den naechsten freien
+      // Platz vor dem Objekt, bevorzugt auf der Seite zu Joshi (damit man es sieht) – aber frei UND mit Abstand zu Joshi:
+      // stand Joshi dicht am Objekt, war genau dieser Platz zwischen beiden eingeklemmt, und der Fuchs kam nie an
       const g = eva.group.position; let dx = g.x - o.x, dz = g.z - o.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-      for(const a of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.4, -2.4, 3.1]){ const c = Math.cos(a), s = Math.sin(a);
-        const x = o.x + (dx * c - dz * s) * (o.r + 0.55), z = o.z + (dx * s + dz * c) * (o.r + 0.55);
-        if(fuchsFrei(x, z)){ S.platz = { x, z }; break; } }
+      for(const r of [o.r + 0.55, o.r + 0.9, o.r + 1.3]) {
+        for(const a of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.4, -2.4, 3.1]){ const c = Math.cos(a), s = Math.sin(a);
+          const x = o.x + (dx * c - dz * s) * r, z = o.z + (dx * s + dz * c) * r;
+          if(fuchsFrei(x, z) && Math.hypot(x - g.x, z - g.z) > ABSTAND_MIN + 0.25){ S.platz = { x, z }; break; } }
+        if(S.platz) break;
+      }
       if(!S.platz) S.platz = { x: fp.x, z: fp.z };
+      if(fuchs.weg) fuchs.weg.pfad = [];
     }
     S.t += dt;
-    const d = fuchsLaufe(dt, S.platz.x, S.platz.z, 2.2);
-    if(d < 0.25 || S.t > 7){ S.phase = 'schnupper'; S.t = 0; fuchsAnim(FA.stehen, 0.2); }
+    const d = fuchsGeheZu(dt, S.platz.x, S.platz.z, 2.2);       // sucht sich selbst einen freien Weg (wie beim Tanzen)
+    // Notbremse: nach SUCH_MAX s schnueffelt er dort, wo er ist – das Absuchen bleibt nie haengen
+    if(d < 0.3 || S.t > SUCH_MAX){ S.phase = 'schnupper'; S.t = 0; fuchsAnim(FA.stehen, 0.2); }
     return;
   }
   S.t += dt;
@@ -1628,6 +1690,9 @@ function pauseAnzeige(an){
 function pauseWechsel(an){
   pauseAnzeige(an && pause.art !== 'inventar');
   document.body.classList.toggle('pausiert', an);                 // Kompass, Radar, Schubbalken aus (data-etappe-hud)
+  // die Y-Zeichen ueber den Objekten auch (sie schimmerten durch die Inventar-Flaeche); danach setzt updateInteraktion sie neu
+  if(an) for(const o of interListe) if(o.zeichen) o.zeichen.visible = false;
+  if(an && story.stegZustand && story.stegZustand.zeichen) story.stegZustand.zeichen.visible = false;
   // Stimme anhalten – ABER nur, wenn wirklich gerade gesprochen wird. Live-Befund 16.10. ("die gesamte Sprachausgabe ist
   // gestoert"): Chrome haengt, wenn pause() OHNE laufenden Satz kommt (Pause/Inventar gleich zu Beginn) – jeder spaetere
   // Satz bleibt dann stumm, bis zufaellig wieder resume() kommt (nachgestellt in echtem Chrome, C:/tmp/jfg/test/tts_echt.js).

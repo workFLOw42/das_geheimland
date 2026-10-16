@@ -146,7 +146,8 @@ function naechstes(){
     // alles im Rucksack: Lob, dann der Funkspruch fuer den ersten Fall (story.js)
     if(!zustand.komplett && Object.keys(TEXT).every(n => zustand[n])){
       zustand.komplett = true;
-      story.sprich(TEXT_KOMPLETT, () => { rucksack.ziel = 0; if(story.fall1Funk) story.fall1Funk(); });
+      // Funkspruch erst, wenn auch draussen alles abgesucht und angesehen ist (story.fall1Pruefen)
+      story.sprich(TEXT_KOMPLETT, () => { rucksack.ziel = 0; if(story.fall1Pruefen) story.fall1Pruefen(); });
       return;
     }
     story.spaeter(1.6, () => { if(!flug.akt) rucksack.ziel = 0; }); return;
@@ -379,8 +380,9 @@ function hookAusruestung(){
     }
     return r;
   };
-  // Modelle vorab laden (sonst stockt es beim Betreten der Huette)
-  story.spaeter(2, () => { for(const n of Object.keys(SACHEN)) vorlage(n); });
+  // Modelle vorab laden – schon waehrend des Startbildschirms (story.js wartet damit auf den Knopf), sonst stockt es beim
+  // Betreten der Huette
+  story.ausruestungVorladen = () => { for(const n of Object.keys(SACHEN)) vorlage(n); };
 }
 const hookVorher = window.STORY_HOOK;
 window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookAusruestung(); };

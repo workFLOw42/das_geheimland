@@ -26,9 +26,14 @@ function glbBytes(daten){
   for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
   return u.buffer;
 }
+// story.laedt zaehlt die GLBs, die gerade dekodiert werden – der Start-Knopf kommt erst, wenn alles fertig ist (startbildschirm)
+story.laedt = 0;
 function ladeGlb(daten, name, fertig){
   if(!daten || !THREE.GLTFLoader) return;
-  new THREE.GLTFLoader().parse(glbBytes(daten), '', fertig, (e) => console.warn(name + '-GLB Ladefehler:', e));
+  story.laedt++;
+  const ende = () => { story.laedt = Math.max(0, story.laedt - 1); };
+  new THREE.GLTFLoader().parse(glbBytes(daten), '', (g) => { try { fertig(g); } finally { ende(); } },
+    (e) => { ende(); console.warn(name + '-GLB Ladefehler:', e); });
 }
 story.ladeGlb = ladeGlb;
 function entsorgen(obj){
@@ -812,7 +817,8 @@ story.fuchsInsBoot = function(rein){
   else if(eva){ fuchs.modus = 'streifen'; fuchs.sitzt = false; fuchs.warte = 1.5; fuchsAnim(FA.aufstehen, 0.2);
     const v = nebenFigur(-1.0, 0.5), n = story.freierPlatz(v.x, v.z, 'fuchs'); fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z); fuchs.yaw = eva.yaw + Math.PI; }
 };
-// Fuchs bei (x, z) in die Welt setzen, Blick p.blick (Winkel ab +Z), p.modus (Standard: streifen)
+// Fuchs bei (x, z) in die Welt setzen, Blick p.blick (Winkel ab +Z), p.modus (Standard: streifen), p.sitzt (sitzend
+// anfangen), p.warte (s bis er losstreift)
 function fuchsAbsetzen(p){
   if(!fuchs.obj){ fuchs.wartetAuf = p; return; }
   fuchs.wartetAuf = null;
@@ -821,8 +827,8 @@ function fuchsAbsetzen(p){
   fuchs.obj.position.set(n.x, evaFootY(n.x, n.z), n.z);
   fuchs.yaw = p.blick;
   fuchs.aktiv = true;
-  fuchs.modus = p.modus || 'streifen'; fuchs.ziel = null; fuchs.warte = 2;
-  if(fuchs.modus === 'warten'){ fuchs.acts[FA.sitzen] && (fuchs.cur = null, fuchsAnim(FA.sitzen, 0.01)); fuchs.sitzt = true; }
+  fuchs.modus = p.modus || 'streifen'; fuchs.ziel = null; fuchs.warte = p.warte || 2;
+  if(fuchs.modus === 'warten' || p.sitzt){ fuchs.acts[FA.sitzen] && (fuchs.cur = null, fuchsAnim(FA.sitzen, 0.01)); fuchs.sitzt = true; }
 }
 // ---- Fuchs tanzt zur Gitarre (Live-Wunsch 14.10.2026) ----------------------------------------------------------
 // Spielt die Figur Gitarre, rennt der Fuchs an einen Platz TANZ_ABST m vor ihr und laeuft dort quer vor ihr hin und
@@ -1168,7 +1174,7 @@ function interAktion(o){
     o.spricht = true;
     // Info-Objekt: das Y verschwindet sofort; nach dem Text erscheint es nicht wieder
     if(o.einmal){ o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; }
-    sprich(o.text, () => { o.spricht = false; }, o.rolle);       // Erzaehlerin (weiblich); rolle z. B. 'funkRahmen'
+    sprich(o.text, () => { o.spricht = false; if(story.fall1Pruefen) story.fall1Pruefen(); }, o.rolle);   // Erzaehlerin; danach: Funk faellig?
   }
 }
 function hookInteraktion(){
@@ -1338,10 +1344,16 @@ function sprich(saetze, fertig, rolle){
       u.lang = 'de-DE'; if(st) u.voice = st;
       u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
       u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
-      if(synth.paused && !hilfeOffen()) synth.resume();   // manche Browser stehen nach dem Laden auf Pause (nicht im Spiel-Pause)
       u.onend = u.onerror = () => { if(sprichtGerade === me) weiter(); };
-      synth.speak(u);
-      stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
+      // Faellt der Satz in eine Pause (z. B. ein Funkruf), wartet er, bis sie vorbei ist – nicht sprechen und sofort
+      // anhalten (genau dabei haengt Chrome). Sonst vorher immer resume(): ein haengender Zustand ueberlebt so nie.
+      const los = () => {
+        if(hilfeOffen()){ stelle(los, 200); return; }
+        synth.resume(); story.stimmePausiert = false;
+        synth.speak(u);
+        stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
+      };
+      los();
     } else stelle(weiter, satzDauer(s));                     // ohne Sprachausgabe: nur die Pause
   }
   weiter();
@@ -1366,42 +1378,63 @@ function startbildschirm(weiter){
   }
   el.style.background = 'radial-gradient(ellipse at center,rgba(20,30,70,.55),rgba(0,0,10,.85))';
   const platz = document.getElementById('ladeknopf') || el;
-  platz.style.height = '';
-  platz.innerHTML = '<button style="margin-top:38px;min-width:220px;height:64px;border-radius:16px;border:3px solid #ffd23f;'
-    + 'background:#ffd23f;color:#1a1a1a;font:800 26px system-ui;cursor:pointer;transform:scale(1.05)">▶ Los geht\'s</button>';
   // Joshi erst beim Start zeigen
   if(eva) eva.group.visible = false;
-  let los = false;
+  let los = false, bereit = false, bilder = 0;
+  // Der Knopf kommt erst, wenn das Spiel wirklich bereit ist (Live-Wunsch 16.10.: vorher reagierte ein frueher Druck oft
+  // nicht): keine Modelle mehr im Dekodieren, Figur und Fuchs da, Ausruestung vorgeladen, ein paar Bilder gezeichnet
+  // (damit die Shader fertig sind und der erste Schritt nicht ruckelt). Spaetestens nach START_MAX s kommt er trotzdem.
+  const START_BILDER = 30, START_MAX = 25, t0 = performance.now();
+  if(story.ausruestungVorladen) story.ausruestungVorladen();
+  function knopfZeigen(){
+    bereit = true;
+    platz.style.height = '';
+    platz.innerHTML = '<button style="margin-top:38px;min-width:220px;height:64px;border-radius:16px;border:3px solid #ffd23f;'
+      + 'background:#ffd23f;color:#1a1a1a;font:800 26px system-ui;cursor:pointer;transform:scale(1.05)">▶ Los geht\'s</button>';
+    platz.querySelector('button').addEventListener('pointerdown', (e) => { e.stopPropagation(); start(); });
+  }
+  (function warte(){
+    if(bereit) return;
+    bilder++;
+    const fertig = story.laedt === 0 && figur.obj && fuchs.obj && bilder >= START_BILDER;
+    if(fertig || performance.now() - t0 > START_MAX * 1000){ knopfZeigen(); return; }
+    requestAnimationFrame(warte);
+  })();
   function start(){
-    if(los) return; los = true;
+    if(los || !bereit) return; los = true;
     el.remove();
     if(eva) eva.group.visible = true;
     removeEventListener('keydown', taste, true);
+    // Das A, das gestartet hat, ist noch gedrueckt: nicht gleich als Sprung zaehlen (erst nach dem Loslassen)
+    tasten.prevA = true; tasten.a = false;
     story.ton = true; story.gestartet = true;
     if(!soundOn) story.tonAn();
     funkLaden();                                      // Funk-Ton gleich dekodieren – sonst fehlte beim ersten Ruf das Rauschen
     // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
-    if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
+    if(window.speechSynthesis){ window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
   }
   function taste(e){
     if(e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter'){ e.preventDefault(); e.stopPropagation(); start(); }
   }
   addEventListener('keydown', taste, true);
-  el.querySelector('button').addEventListener('pointerdown', (e) => { e.stopPropagation(); start(); });
-  let prevA = true;                                   // erst nach dem Loslassen zaehlen
+  // A an JEDEM Controller (vorher nur am ersten in der Liste – war das ein anderer als der der Engine, reagierte der erste
+  // Druck nicht, und beim zweiten sprang Joshi). Erst nach dem Loslassen zaehlen.
+  const prevA = {};
   (function pad(){
     if(los) return;
     for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])){
       if(!gp) continue;
       const a = !!(gp.buttons[0] && gp.buttons[0].pressed);
-      if(a && !prevA){ start(); return; }
-      prevA = a; break;
+      if(a && prevA[gp.index] === false && bereit){ start(); return; }
+      prevA[gp.index] = a;
     }
     requestAnimationFrame(pad);
   })();
 }
-function steuerbar(){ return story.gestartet; }
+// Laufen, springen, knien, umschauen: erst nach dem Start – und nicht, waehrend etwas in den Rucksack gesteckt wird
+// (Live-Befund 16.10.: man konnte waehrend der Einpack-Animation weglaufen)
+function steuerbar(){ return story.gestartet && !(story.szeneLaeuft && story.szeneLaeuft()); }
 
 // ---- Etappe 1: Start am Lagerfeuer, Kurbel-Funkgeraet daneben --------------------------------
 // Die Insel selbst (Huette, Palmen, Feuer, Moewen) baut insel.js. Hier: Funkgeraet, Startplatz, Durchsage.
@@ -1505,8 +1538,10 @@ function startSzene(){
     eva.group.position.set(x, evaFootY(x, z), z);
     eva.yaw = 0; eva.group.rotation.y = eva.yaw;
   }
-  // Fuchs sitzt am Strand zwischen Feuer und Meer und schaut aufs Wasser (+z)
-  fuchsAbsetzen({ x: F.x + 1.2, z: I.R * 1.04, blick: 0, modus: 'warten' });
+  // Fuchs (Live-Wunsch 16.10.): zwischen Huette, linker Palme und Feuer – vor Joshi im Bild, nicht hinter ihm am Strand.
+  // Er sitzt und schaut zu Joshi; ab dem Start begleitet er ihn (auch in die Huette – sonst fand der Suchblick dort
+  // nichts, weil der Fuchs draussen wartete).
+  fuchsAbsetzen({ x: F.x - 2.2, z: F.z - 2.3, blick: Math.atan2((F.x - 0.6) - (F.x - 2.2), (F.z + 3.2) - (F.z - 2.3)), modus: 'streifen', sitzt: true, warte: 3 });
 }
 function durchsage(){
   radio.an = true;
@@ -1520,6 +1555,19 @@ const FALL1_RUF = ['Hallo ' + NAME + ', bist du da?'];
 const FALL1_NOCHMAL = [NAME + ', bitte kommen.'];
 const FALL1_FUNK = ['Wir haben ein großes Problem und brauchen bitte deine Hilfe.'];
 const FALL1_WIEDER = 15;
+// Wann darf der Funkspruch kommen? (Live-Wunsch 16.10.) Erst wenn draussen UND in der Huette abgesucht (X) und an jedem
+// Objekt der Etappe einmal Y gedrueckt wurde – Lagerfeuer, Huette, Funkgeraet, Regal, Tisch. Geprueft nach dem Einpacken
+// und nach jedem Y; der Ruf kommt dann mit einer kurzen Pause, damit er nicht in eine laufende Ansage faellt.
+function fall1Bereit(){
+  const H = hinweisStand;
+  if(!H.aussenGeschaut || !H.innenGeschaut) return false;
+  if(!(story.ausruestung && story.ausruestung.komplett)) return false;
+  return interListe.every(o => o.welt !== story.etappe || (o.entdeckt && o.benutzt > 0));
+}
+story.fall1Pruefen = function(){
+  if(radio.fall1 || !fall1Bereit()) return;
+  spaeter(1.5, () => { if(!radio.fall1 && fall1Bereit()) story.fall1Funk(); });
+};
 story.fall1Funk = function(){
   if(radio.fall1) return;
   radio.fall1 = 'ruft';
@@ -1580,10 +1628,16 @@ function pauseAnzeige(an){
 function pauseWechsel(an){
   pauseAnzeige(an && pause.art !== 'inventar');
   document.body.classList.toggle('pausiert', an);                 // Kompass, Radar, Schubbalken aus (data-etappe-hud)
+  // Stimme anhalten – ABER nur, wenn wirklich gerade gesprochen wird. Live-Befund 16.10. ("die gesamte Sprachausgabe ist
+  // gestoert"): Chrome haengt, wenn pause() OHNE laufenden Satz kommt (Pause/Inventar gleich zu Beginn) – jeder spaetere
+  // Satz bleibt dann stumm, bis zufaellig wieder resume() kommt (nachgestellt in echtem Chrome, C:/tmp/jfg/test/tts_echt.js).
+  // speechSynthesis.paused meldet das nicht zuverlaessig (es stand auf false). Darum: pause() nur bei laufendem Satz,
+  // resume() danach immer – und sprich() ruft vor jedem neuen Satz resume() (siehe dort).
   const synth = window.speechSynthesis;
-  if(synth){ if(an) synth.pause(); else synth.resume(); }
-  // Ton: in der Pause ganz aus, danach wieder an (ausser der Globus laeuft – der hat den Ton selbst ausgeblendet)
-  if(story.master && audioCtx){ const g = story.master.gain, t = audioCtx.currentTime;
+  if(synth){ if(an){ if(synth.speaking){ synth.pause(); story.stimmePausiert = true; } } else { synth.resume(); story.stimmePausiert = false; } }
+  // Ton: in der Pause ganz aus, im Inventar bleibt das Hintergrundgeraeusch (Meer, Moewen) – Live-Wunsch 16.10.; danach
+  // wieder an (ausser der Globus laeuft – der hat den Ton selbst ausgeblendet)
+  if(story.master && audioCtx && (pause.art !== 'inventar' || !an)){ const g = story.master.gain, t = audioCtx.currentTime;
     if(an){ story.master.vorPause = g.value; g.cancelScheduledValues(t); g.setValueAtTime(0, t); }
     else { const ziel = story.globusAktiv && story.globusAktiv() ? 0 : (story.master.vorPause === undefined ? 1 : Math.max(story.master.vorPause, 1));
       g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(ziel, t + 0.3); } }

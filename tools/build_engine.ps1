@@ -57,7 +57,8 @@ foreach($a in $assets){ Copy-Item -Force (Join-Path $src $a) (Join-Path $dst $a)
 
 # Eigene Modelle als eingebettete GLBs (wie die Flugspiel-Modelle): models/<name>.glb -> <name>_glb.js
 $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB'; segelboot = 'SEGELBOOT_GLB';
-             notizbuch = 'NOTIZBUCH_GLB'; stift = 'STIFT_GLB'; kompass = 'KOMPASS_GLB'; messer = 'MESSER_GLB'; lupe = 'LUPE_GLB'; kamera = 'KAMERA_GLB'; rucksack = 'RUCKSACK_GLB' }
+             notizbuch = 'NOTIZBUCH_GLB'; stift = 'STIFT_GLB'; kompass = 'KOMPASS_GLB'; messer = 'MESSER_GLB'; lupe = 'LUPE_GLB'; kamera = 'KAMERA_GLB'; rucksack = 'RUCKSACK_GLB';
+             holzfuchs = 'HOLZFUCHS_GLB'; schmetterling = 'SCHMETTERLING_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"

@@ -318,7 +318,7 @@ function setzeUm(ziel){
     const x = RAUM.x, z = RAUM.z + RAUM.T / 2 - 2.4;      // ein Stueck im Raum, damit die Kamera hinter ihr Platz hat
     g.position.set(x, BODEN_Y, z);
     eva.yaw = 0;                                          // Blick in den Raum (-z)
-    innen.drin = true;
+    innen.drin = true; innen.warDrin = true;
   } else {
     // ein Stueck vor der Huette (etwa wie beim Spielstart am Feuer), damit die Kamera hinter Joshi nicht in der Huette
     // haengt; seitlich versetzt, damit er nicht im Lagerfeuer steht (das liegt genau vor der Tuer)

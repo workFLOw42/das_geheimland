@@ -282,6 +282,22 @@ function figurAnim(name, blend, tempo){
   figur.cur = name;
 }
 story.figurAnim = (n, b, t) => figurAnim(n, b, t);
+// Mond und Milchstrasse haengen an der Kamera (unendlich weit weg). Fuer eine andere Kamera (Foto, notizbuch.js) kurz zu
+// deren Position, danach wieder story.mondAn(camera.position)
+story.mondAn = function(pos){
+  const r = new THREE.Vector3(Math.sin(MOND.az) * Math.cos(MOND.hoch), Math.sin(MOND.hoch), Math.cos(MOND.az) * Math.cos(MOND.hoch));
+  if(mond.obj){ mond.obj.position.copy(pos).addScaledVector(r, MOND.dist); mond.halo.position.copy(pos).addScaledVector(r, MOND.dist * 1.02); }
+  if(typeof mwDome !== 'undefined' && mwDome) mwDome.position.copy(pos);
+};
+// Fuchs-Animationen von aussen (notizbuch.js: beim Foto ins Bild laufen und hinsetzen)
+story.fuchsAnim = function(was){ const n = { gehen: FA.gehen, setzen: FA.setzen, sitzen: FA.sitzen, stehen: FA.stehen }[was]; if(n) fuchsAnim(n, 0.25); };
+// Joshi arbeitet (hockt sich hin, z. B. zum Schnitzen) – ohne dass der Fuchs zum Spielen kommt. blick: { x, z } = dorthin
+// schauen (z. B. das Lagerfeuer). an = false: steht wieder auf.
+story.arbeiten = function(an, blick){
+  figur.arbeitet = !!an;
+  if(an && blick && eva){ eva.yaw = Math.atan2(eva.group.position.x - blick.x, eva.group.position.z - blick.z); eva.group.rotation.y = eva.yaw; }
+  if(!an && figur.cur === 'kneel') figurAnim('idle', 0.35, 1);
+};
 function hookFigur(){
   preloadFigur();
   // Die Figur ist EIN Objekt (Skelett!) – kein clone(), sondern in die neue Gruppe umhaengen
@@ -319,7 +335,8 @@ function hookFigur(){
     return updateEvaOrig(dt, Object.assign({}, inp, { pitch: -Math.sign(roh) * f }));
   };
   // B zu Fuss: hinknien / aufstehen (Engine: buttonB -> evaActionB, Tastatur B und Controller-Knopf 1)
-  evaActionB = function(){ if(hilfeOffen()) return; knieUmschalten(); };   // im Inventar ist B "zu" (ausruestung.js)
+  // im Inventar ist B "zu" (ausruestung.js), bei einem grossen Bild "fertig" (notizbuch.js) – dann nicht knien
+  evaActionB = function(){ if(hilfeOffen() || (story.szeneLaeuft && story.szeneLaeuft())) return; knieUmschalten(); };
   evaJump = function(){};          // der Engine-Huepfer passt nicht zur Figur
   // Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund
   const solidFigOrig = evaSolid;
@@ -501,6 +518,9 @@ function updateFigur(dt){
     figur.aktion = null;                          // naechster Clip blendet aus dem Endbild
   }
   if(figur.kniet) return;
+  // Arbeiten (z. B. Schnitzen, notizbuch.js – story.arbeiten): Joshi hockt sich hin, dieselbe Pose wie Knien, aber OHNE
+  // figur.kniet – der Fuchs kommt dann nicht zum Spielen (Live-Wunsch 16.10.). Fuer jede kuenftige Arbeit wiederverwendbar.
+  if(figur.arbeitet){ figurAnim('kneel', 0.35, 1); figur.steht = 0; return; }
   if(sw.aktiv){ figurAnim('swim', 0.3, 0.6 + figur.ausschlag * 0.6); figur.steht = 0; return; }
   const v = figur.tempo;
   if(figur.ausschlag > 0.5){ figurAnim('run', 0.2, klemme(v / 5.2, 0.8, 1.3)); figur.steht = 0; }
@@ -508,7 +528,8 @@ function updateFigur(dt){
   else {
     // Waehrend die Stimme spricht (oder eine Szene laeuft) gilt Stillstand nicht als "idle": keine Gitarre (Live-Befund
     // 16.10.: sie fing mitten in der Erklaerung an). Die Zeit beginnt danach von vorn.
-    if(sprichtGerade || sprichWarte.length || (story.szeneLaeuft && story.szeneLaeuft())){
+    // ... und nicht, waehrend der Fuchs gerade markiert (Live-Wunsch 16.10.)
+    if(sprichtGerade || sprichWarte.length || (story.szeneLaeuft && story.szeneLaeuft()) || fuchs.modus === 'schnueffeln'){
       figur.steht = 0;
       if(figur.cur === 'guitar'){ gitarreMusik(false); fuchsTanzEnde(); }
       figurAnim('idle', 0.3, 1); return;
@@ -896,6 +917,10 @@ function fuchsTanz(dt, fp){
 }
 function fuchsRufen(){
   if(!fuchs.aktiv) return;
+  // Kniet Joshi mitten im Markieren hin, kommt der Fuchs – merkt sich aber, was er noch nicht markiert hat (Live-Wunsch
+  // 16.10.: als markiert gilt nur, was einmal angetippt und geblinkt hat), und macht nach dem Aufstehen weiter
+  if(fuchs.modus === 'schnueffeln' && fuchs.such) fuchs.suchRest = fuchs.such.liste.slice(fuchs.such.i).filter(o => !o.entdeckt);
+  fuchs.such = null;
   fuchs.modus = 'kommen'; fuchs.ziel = null; fuchs.sitzt = false;
 }
 function fuchsLoslassen(){
@@ -904,6 +929,9 @@ function fuchsLoslassen(){
   fuchs.warte = fuchs.sitzt ? 0.6 : 0;
   if(fuchs.sitzt) fuchsAnim(FA.aufstehen, 0.2);
   fuchs.sitzt = false;
+  // unterbrochener Rundgang: weiter mit dem, was noch fehlt
+  const rest = (fuchs.suchRest || []).filter(o => !o.entdeckt); fuchs.suchRest = null;
+  if(rest.length){ fuchs.modus = 'schnueffeln'; fuchs.such = { liste: rest, i: 0, phase: 'hin', t: 0, platz: null }; }
 }
 const STREIF_R = 9;            // m: so weit streift er um die Figur herum
 const STREIF_MAX = 16;         // m: weiter weg -> er kommt zuegig hinterher
@@ -1042,6 +1070,9 @@ function updateFuchs(dt){
     if(fuchs.cur === FA.sitzen && Math.random() < dt / 10) fuchsAnim(FA.sitzPause, 0.2);
     else if(fuchs.cur === FA.sitzPause && !fuchsClipLaeuft(FA.sitzPause)) fuchsAnim(FA.sitzen, 0.2);
     return;
+  } else if(fuchs.modus === 'foto'){
+    // notizbuch.js fuehrt ihn (laeuft ins Bild, setzt sich, schaut in die Kamera) – hier nichts tun
+    if(fuchs.cur === FA.setzen && !fuchsClipLaeuft(FA.setzen)) fuchsAnim(FA.sitzen, 0.2);
   } else if(fuchs.modus === 'schnueffeln' && eva){
     fuchsSchnueffeln(dt, fp);
   } else if(fuchs.modus === 'tanzen' && eva){
@@ -1166,9 +1197,18 @@ function fuchsNeuesZiel(zu){
 //   welt: Etappe, in der es wichtig ist (Standard: die aktuelle) ·
 //   innen: true = steht im Huetten-Raum (Live-Wunsch: dort gibt es auch Interaktionsobjekte). Nicht jedes Objekt ist in
 //   jeder Etappe wichtig – angemeldet wird nur, was die Geschichte dort braucht.
-const INTER_SUCH_R = 15, INTER_Y_R = 1.6, GLOW_T = 1.6;
+const INTER_SUCH_R = 20, INTER_Y_R = 1.6, GLOW_T = 1.6;   // X untersucht 20 m weit (Live-Wunsch 16.10.)
 const INNEN_BODEN = 150;
 const TEXT_ALLES_ENTDECKT = ['Hier hast Du schon alles entdeckt.'];
+// Alles entdeckt, aber noch nicht an allem Y gedrueckt (Live-Wunsch 16.10.) – Hinweis-Taste und X sagen das
+const TEXT_NOCH_OFFEN = ['Klasse, Du hast alles entdeckt. Gehe zu jedem Objekt und schau, ob du was tun kannst.'];
+// EINHEITLICHE LOGIK (Live-Wunsch 16.10.) fuer Objekte und farbige Kreise (notizbuch.js):
+//   unentdeckt  -> X schaltet frei, der Fuchs laeuft hin und markiert (Pfote + Blinken)
+//   offen       -> entdeckt, aber noch nicht mit Y benutzt: X schickt den Fuchs NOCHMAL hin (zeigt es, ohne Ansage),
+//                  die Detektivmuetze erscheint in der Naehe, die Hinweis-Taste sagt TEXT_NOCH_OFFEN
+//   erledigt    -> einmal mit Y benutzt (das Funkgeraet bleibt mit Y bedienbar, zaehlt aber dann als erledigt)
+function offen(o){ return o.entdeckt && !o.benutzt && !o.erledigt; }
+story.objektOffen = offen;
 const TEXT_NICHTS_HIER = ['Hier scheint es nichts Interessantes zu geben.'];      // Boden des Huetten-Raums (huette_innen.js BODEN_Y)
 const GLOW_FARBE = new THREE.Color(0xffd27a);
 const interListe = [];
@@ -1229,7 +1269,8 @@ function interAktion(o){
     o.spricht = true;
     // Info-Objekt: das Y verschwindet sofort; nach dem Text erscheint es nicht wieder
     if(o.einmal){ o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; }
-    sprich(o.text, () => { o.spricht = false; if(story.fall1Pruefen) story.fall1Pruefen(); }, o.rolle);   // Erzaehlerin; danach: Funk faellig?
+    const text = typeof o.text === 'function' ? o.text(o) : o.text;   // Text kann vom Spielstand abhaengen (Huette)
+    sprich(text, () => { o.spricht = false; if(story.fall1Pruefen) story.fall1Pruefen(); }, o.rolle);   // Erzaehlerin; danach: Funk faellig?
   }
 }
 function hookInteraktion(){
@@ -1245,17 +1286,39 @@ function fuchsSuche(){
   if(!fuchs.aktiv || !eva) return;
   const g = eva.group.position;
   const drin = !!(story.innen && story.innen.drin);
-  const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && Math.hypot(o.x - g.x, o.z - g.z) < INTER_SUCH_R);
-  const rest = hier.filter(o => !o.entdeckt);
-  // Nichts mehr zu finden: schon alles entdeckt – oder hier gibt es gar nichts (zwei verschiedene Saetze)
-  if(!rest.length){ if(!story.allesGesagt){ story.allesGesagt = true; sprich(hier.length ? TEXT_ALLES_ENTDECKT : TEXT_NICHTS_HIER, () => { story.allesGesagt = false; }); } return; }
+  // Global (Live-Wunsch 16.10.): X untersucht im Umkreis INTER_SUCH_R (20 m) und schaltet alles darin frei – Objekte UND
+  // farbige Markierungen (notizbuch.js). Der Fuchs laeuft dann ALLES Freigeschaltete ab, das er noch nicht markiert hat,
+  // auch wenn es weiter weg liegt (z. B. die Markierungen, die nach der Erklaerung freigeschaltet wurden), und markiert es.
+  story.fuchsRundgang(g.x, g.z, drin, INTER_SUCH_R);
+}
+// Rundgang des Fuchses: zuerst im Umkreis r um (x, z) alles freischalten, dann alles Freigeschaltete, aber noch nicht
+// Markierte ablaufen (das naechste zuerst). r = 0: nichts Neues freischalten, nur ablaufen (nach der Erklaerung).
+// nurOffen: nur die offenen Dinge (entdeckt, aber noch ohne Y) zeigen, ohne Ansage (die Hinweis-Taste spricht selbst)
+story.fuchsRundgang = function(x, z, drin, r, nurOffen){
+  if(!fuchs.aktiv || !eva) return;
+  if(r) for(const o of interListe) if(o.welt === story.etappe && o.innen === drin && Math.hypot(o.x - x, o.z - z) < r) o.frei = true;
+  if(r && story.kreiseFreischalten) story.kreiseFreischalten(x, z, r, drin);
+  const kreise = story.sucheKreise ? story.sucheKreise(drin) : [];
+  const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && o.frei).concat(kreise);
+  let rest = nurOffen ? [] : hier.filter(o => !o.entdeckt);
+  if(nurOffen){ rest = hier.filter(o => o.kreis ? true : offen(o)); if(!rest.length) return; }
+  // Nichts Neues: beim X laeuft der Fuchs dann die OFFENEN Dinge ab (entdeckt, aber noch ohne Y; Kreise: noch nicht
+  // gemacht) – mit dem Satz, dass man jetzt hingehen soll. Ist auch nichts offen: "schon alles entdeckt" bzw. "nichts hier".
+  let nochmal = false;
+  if(!rest.length && r && !nurOffen){ rest = hier.filter(o => o.kreis ? true : offen(o)); nochmal = rest.length > 0; }
+  if(r && !rest.length || nochmal){ if(!story.allesGesagt){ story.allesGesagt = true;
+    sprich(nochmal ? TEXT_NOCH_OFFEN : (hier.length ? TEXT_ALLES_ENTDECKT : TEXT_NICHTS_HIER), () => { story.allesGesagt = false; }); } }
+  if(!rest.length) return;
   const liste = []; let px = fuchs.obj.position.x, pz = fuchs.obj.position.z;
   while(rest.length){ rest.sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz)); const o = rest.shift(); liste.push(o); px = o.x; pz = o.z; }
   if(fuchs.sitzt || fuchs.modus === 'warten') fuchsAnim(FA.aufstehen, 0.2);
   fuchs.sitzt = false; fuchs.tanz = null; fuchs.ziel = null;
-  fuchs.modus = 'schnueffeln'; fuchs.such = { liste, i: 0, phase: 'hin', t: 0, platz: null };
+  fuchs.modus = 'schnueffeln'; fuchs.such = { liste, i: 0, phase: 'hin', t: 0, platz: null, nochmal };
 }
-const SUCH_MAX = 4;            // s: so lange laeuft er hoechstens zu einem Objekt, dann schnueffelt er, wo er ist
+// Notbremse: er laeuft hoechstens so lange zu einem Objekt, wie der Weg dauert (+ SUCH_LUFT s, mindestens SUCH_MAX s) –
+// oder bis er SUCH_FEST s nicht vorankommt; dann schnueffelt er, wo er ist. Live-Befund 16.10.: mit festen 4 s blieb er
+// bei den Kreisen am Strand (15 m weit) auf halbem Weg stehen und pfotete von dort.
+const SUCH_MAX = 4, SUCH_LUFT = 3, SUCH_FEST = 2;
 function fuchsSchnueffeln(dt, fp){
   const S = fuchs.such;
   if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)) return;
@@ -1274,18 +1337,20 @@ function fuchsSchnueffeln(dt, fp){
       }
       if(!S.platz) S.platz = { x: fp.x, z: fp.z };
       if(fuchs.weg) fuchs.weg.pfad = [];
+      S.tMax = Math.max(SUCH_MAX, Math.hypot(S.platz.x - fp.x, S.platz.z - fp.z) * 1.4 / 2.2 + SUCH_LUFT);
+      S.fest = 0; S.bester = Infinity;
     }
     S.t += dt;
     const d = fuchsGeheZu(dt, S.platz.x, S.platz.z, 2.2);       // sucht sich selbst einen freien Weg (wie beim Tanzen)
-    // Notbremse: nach SUCH_MAX s schnueffelt er dort, wo er ist – das Absuchen bleibt nie haengen
-    if(d < 0.3 || S.t > SUCH_MAX){ S.phase = 'schnupper'; S.t = 0; fuchsAnim(FA.stehen, 0.2); }
+    if(d < S.bester - 0.05){ S.bester = d; S.fest = 0; } else S.fest += dt;
+    if(d < 0.3 || S.t > S.tMax || S.fest > SUCH_FEST){ S.phase = 'schnupper'; S.t = 0; fuchsAnim(FA.stehen, 0.2); }
     return;
   }
   S.t += dt;
   fuchsSchaue(dt, o.x, o.z, 5);
   if(S.phase === 'schnupper'){
     fuchs.yaw += Math.sin(S.t * 9) * 0.9 * dt;                    // schnuppert, Kopf hin und her
-    if(S.t > 0.7){ S.phase = 'paw'; S.t = 0; fuchsNeu('Fox_Attack_Paws'); o.entdeckt = true; glowStart(o, GLOW_T); }
+    if(S.t > 0.7){ S.phase = 'paw'; S.t = 0; fuchsNeu('Fox_Attack_Paws'); o.entdeckt = true; if(o.blinken) o.blinken(); else glowStart(o, GLOW_T); }   // auch beim "nochmal": zeigt es
     return;
   }
   if(S.phase === 'paw' && !fuchsClipLaeuft('Fox_Attack_Paws')){ S.i++; S.phase = 'hin'; S.platz = null; S.t = 0; }
@@ -1305,6 +1370,7 @@ const HINWEIS = {
   huette: ['Schau dir doch mal deine Hütte von innen ganz genau an.'],
   funk:   ['Schau doch mal zum Funkgerät. Jemand möchte mit dir sprechen und braucht vielleicht deine Hilfe.'],
   boot:   ['Steuere das Boot einfach auf den roten Punkt des Radars zu.'],
+  detektiv: ['Schau dich ganz genau um, um alles zu entdecken.'],
 };
 const hinweisStand = { xSatz: 0, aussenGeschaut: false, innenGeschaut: false, spricht: false };
 story.hinweisStand = hinweisStand;
@@ -1314,12 +1380,25 @@ function hinweisGeben(){
   let satz;
   // Alles eingesammelt und der Funk ruft (Live-Wunsch 16.10.): zum Funkgeraet schicken – geht allem anderen vor
   if(story.imBoot && story.imBoot()){ if(!story.ziel) return; satz = HINWEIS.boot; }   // im Segelboot: zum roten Punkt (ohne Ziel kein Satz)
+  else if(story.detektivPhase && story.detektivPhase()) satz = HINWEIS.detektiv;      // Markierungen offen (notizbuch.js)
   else if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
   else if(!H.aussenGeschaut && !H.innenGeschaut){
     if(H.xSatz >= 2) satz = HINWEIS.feuer;
     else { satz = HINWEIS.x; H.xSatz++; }
-  } else if(!H.innenGeschaut) satz = HINWEIS.huette;
-  else satz = interListe.some(o => o.welt === story.etappe && !o.entdeckt) ? HINWEIS.x : TEXT_ALLES_ENTDECKT;
+  } else {
+    // Pro Welt getrennt (Live-Befund 16.10.: in der fertig ausgeraeumten Huette kam der Satz fuer die offenen Dinge
+    // draussen): Huetten-Raum und Insel draussen zaehlen jeweils fuer sich
+    const drin = !!(story.innen && story.innen.drin);
+    const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin);
+    if(!H.innenGeschaut && !drin && !hier.some(o => !o.entdeckt || offen(o))) satz = HINWEIS.huette;
+    else if(hier.some(o => !o.entdeckt)) satz = HINWEIS.x;
+    else if(hier.some(offen)){
+      satz = TEXT_NOCH_OFFEN;                                      // entdeckt, aber noch ohne Y: der Fuchs zeigt sie nochmal
+      const g = eva && eva.group.position; if(g) story.fuchsRundgang(g.x, g.z, drin, 0, true);
+    }
+    else if(!drin && !H.innenGeschaut) satz = HINWEIS.huette;
+    else satz = TEXT_ALLES_ENTDECKT;
+  }
   H.spricht = true;
   sprich(satz, () => { H.spricht = false; });
 }
@@ -1361,13 +1440,32 @@ function stimmeFuer(rolle){
   return de.filter(v => re.test(v.name)).sort((a, b) => (a.localService ? 1 : 0) - (b.localService ? 1 : 0))[0] || de[0] || null;
 }
 function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
-let sprichtGerade = null;
+let sprichtGerade = null, gehalten = null;
 const sprichWarte = [];
+// Inventar-Erklaerungen (rolle 'inventar', Live-Frage 16.10.): sie stellen sich nicht hinten an, sondern schieben sich
+// dazwischen. Ein laufender Spielsatz wird dafuer "gehalten" (gehalten) – nicht abgebrochen, sein fertig() bleibt offen.
+// Schliesst man das Inventar, geht er weiter: genau an der Stelle, wenn nichts erklaert wurde, sonst wird der
+// unterbrochene Satz noch einmal von vorn gesprochen (Chrome kann nach einem anderen Satz nicht mitten im Satz weiter).
+function halten(){
+  const me = sprichtGerade; if(!me || me.rolle === 'inventar') return;
+  me.pause(true); me.wiederholen = !!me.satzLaeuft;
+  gehalten = me; sprichtGerade = null;
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+}
+// beim Schliessen von Inventar/Pause: Erklaerung beenden, gehaltenen Satz fortsetzen; true = erledigt
+function fortsetzen(){
+  story.stimmeStopp();
+  const g = gehalten; gehalten = null;
+  if(g){ sprichtGerade = g; if(g.wiederholen) g.nochmal(); else g.pause(false); return true; }
+  if(!sprichtGerade){ const n = sprichWarte.shift(); if(n) n(); }
+  return false;
+}
 // Saetze nacheinander sprechen; fertig() genau einmal. rolle 'radio' = Radiostimme (tiefer), 'funkRahmen' = Erzaehlerin
 // mit Funkrauschen. Funk: vor dem ersten Satz und nach dem letzten je FUNK_RAHMEN s Funkrauschen (Live-Wunsch 16.10.).
 const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
-  if(sprichtGerade){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
+  if(rolle === 'inventar'){ story.stimmeStopp(); halten(); }
+  else if(sprichtGerade || gehalten){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
   const me = sprichtGerade = { rolle };
@@ -1376,14 +1474,19 @@ function sprich(saetze, fertig, rolle){
   // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
   let tFn = null, tBis = 0, tRest = 0;
   const stelle = (fn, ms) => { clearTimeout(timer); tFn = fn; tBis = performance.now() + ms; timer = setTimeout(fn, ms); };
+  me.stopp = () => { clearTimeout(timer); tFn = null; done = true; };   // story.stimmeStopp
   me.pause = (an) => {
+    if(!!an === !!me.angehalten) return;                          // doppelt anhalten verfaelscht die Restzeit
+    me.angehalten = !!an;
     if(!tFn) return;
     if(an){ clearTimeout(timer); tRest = Math.max(0, tBis - performance.now()); }
     else stelle(tFn, tRest);
   };
+  me.nochmal = () => { me.angehalten = false; me.satzLaeuft = false; i--; weiter(); };   // gehaltenen Satz neu sprechen
   function ende(){
     done = true; untertitel(''); sprichtGerade = null;
     if(fertig) fertig();
+    if(rolle === 'inventar') return;                             // die Warteschlange setzt fortsetzen() fort
     const n = sprichWarte.shift(); if(n) n();
   }
   function weiter(){
@@ -1408,13 +1511,17 @@ function sprich(saetze, fertig, rolle){
       u.lang = 'de-DE'; if(st) u.voice = st;
       u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
       u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
-      u.onend = u.onerror = () => { if(sprichtGerade === me) weiter(); };
+      u.onend = u.onerror = () => { if(sprichtGerade === me){ me.satzLaeuft = false; weiter(); } };
       // Faellt der Satz in eine Pause (z. B. ein Funkruf), wartet er, bis sie vorbei ist – nicht sprechen und sofort
       // anhalten (genau dabei haengt Chrome). Sonst vorher immer resume(): ein haengender Zustand ueberlebt so nie.
       const los = () => {
-        if(hilfeOffen()){ stelle(los, 200); return; }
+        // nur in der echten Pause warten – im Inventar spricht die Erklaerung sofort (Live-Befund 16.10.: nach A kam lange
+        // nichts, weil der Satz auf das Ende der "Pause" Inventar wartete)
+        // (Spielsaetze warten auch im Inventar – nur die Erklaerungen selbst sprechen dort)
+        if(sprichtGerade !== me) return;
+        if(hilfeOffen() && rolle !== 'inventar'){ stelle(los, 200); return; }
         synth.resume(); story.stimmePausiert = false;
-        synth.speak(u);
+        synth.speak(u); me.satzLaeuft = true;
         stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
       };
       los();
@@ -1423,6 +1530,13 @@ function sprich(saetze, fertig, rolle){
   weiter();
 }
 story.sprich = sprich;
+story.stimmeFrei = () => !sprichtGerade && !gehalten && !sprichWarte.length;   // gerade keine Ansage (notizbuch.js wartet darauf)
+// Laufende Inventar-Erklaerung abbrechen (Umwaehlen, Notizbuch, Schliessen) – ohne fertig(); Spielsaetze nie
+story.stimmeStopp = function(){
+  const me = sprichtGerade; if(!me || me.rolle !== 'inventar') return;
+  sprichtGerade = null; me.stopp(); untertitel('');
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+};
 // Stimmen frueh anstossen (Chrome/Edge laden sie verzoegert)
 if(window.speechSynthesis){ window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
@@ -1485,12 +1599,16 @@ function startbildschirm(weiter){
   // A an JEDEM Controller (vorher nur am ersten in der Liste – war das ein anderer als der der Engine, reagierte der erste
   // Druck nicht, und beim zweiten sprang Joshi). Erst nach dem Loslassen zaehlen.
   const prevA = {};
+  // Der Druck, der den Controller "aufweckt", kommt als gamepadconnected – auch der zaehlt (sofern das Spiel bereit ist)
+  addEventListener('gamepadconnected', (e) => { const gp = e.gamepad; if(!los && bereit && gp && gp.buttons[0] && gp.buttons[0].pressed) start(); });
   (function pad(){
     if(los) return;
     for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])){
       if(!gp) continue;
       const a = !!(gp.buttons[0] && gp.buttons[0].pressed);
-      if(a && prevA[gp.index] === false && bereit){ start(); return; }
+      // Chrome meldet einen Controller oft erst mit dem ersten Tastendruck (Live-Befund 16.10.: man musste immer 2x A
+      // druecken, egal wie lange man wartete) – dann ist A beim ersten Sehen schon unten und zaehlt sofort
+      if(a && prevA[gp.index] !== true && bereit){ start(); return; }
       prevA[gp.index] = a;
     }
     requestAnimationFrame(pad);
@@ -1617,7 +1735,7 @@ function durchsage(){
 // die Erklaerung des Problems kommt noch) und das Segelboot ist frei (abenteuerLos; Ziel und Radar: segeln.js).
 const FALL1_RUF = ['Hallo ' + NAME + ', bist du da?'];
 const FALL1_NOCHMAL = [NAME + ', bitte kommen.'];
-const FALL1_FUNK = ['Wir haben ein großes Problem und brauchen bitte deine Hilfe.'];
+const FALL1_FUNK = ['Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns.'];   // Live-Wunsch 16.10.
 const FALL1_WIEDER = 15;
 // Wann darf der Funkspruch kommen? (Live-Wunsch 16.10.) Erst wenn draussen UND in der Huette abgesucht (X) und an jedem
 // Objekt der Etappe einmal Y gedrueckt wurde – Lagerfeuer, Huette, Funkgeraet, Regal, Tisch. Geprueft nach dem Einpacken
@@ -1628,8 +1746,12 @@ function fall1Bereit(){
   if(!(story.ausruestung && story.ausruestung.komplett)) return false;
   return interListe.every(o => o.welt !== story.etappe || (o.entdeckt && o.benutzt > 0));
 }
+// Live-Wunsch 16.10.: ist das geschafft, kommt noch NICHT der Funkspruch – erst die Detektiv-Phase (notizbuch.js): wieder
+// draussen erklaert die Erzaehlerin die farbigen Markierungen. Der Funk kommt, wenn alle vier Markierungen erledigt sind.
+story.fall1Bereit = fall1Bereit;
 story.fall1Pruefen = function(){
   if(radio.fall1 || !fall1Bereit()) return;
+  if(story.detektivStart){ story.detektivStart(); return; }        // notizbuch.js: Markierungen, danach der Funk
   spaeter(1.5, () => { if(!radio.fall1 && fall1Bereit()) story.fall1Funk(); });
 };
 story.fall1Funk = function(){
@@ -1708,6 +1830,7 @@ function pauseWechsel(an){
     if(an){ story.master.vorPause = g.value; g.cancelScheduledValues(t); g.setValueAtTime(0, t); }
     else { const ziel = story.globusAktiv && story.globusAktiv() ? 0 : (story.master.vorPause === undefined ? 1 : Math.max(story.master.vorPause, 1));
       g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(ziel, t + 0.3); } }
+  if(!an && fortsetzen()) return;                                 // gehaltener Satz geht weiter (s. halten)
   if(sprichtGerade && sprichtGerade.pause) sprichtGerade.pause(an);
 }
 story.pauseWechsel = pauseWechsel;

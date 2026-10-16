@@ -42,7 +42,8 @@ Drückt Joshi X und es gibt in der Nähe nichts (mehr) zu finden:
 
 | Situation | Text |
 |---|---|
-| schon alles entdeckt | Hier hast Du schon alles entdeckt. |
+| alles entdeckt, aber noch nicht an allem Y gedrückt – der Fuchs läuft die offenen Dinge nochmal ab | Klasse, Du hast alles entdeckt. Gehe zu jedem Objekt und schau, ob du was tun kannst. |
+| schon alles entdeckt und alles erledigt | Hier hast Du schon alles entdeckt. |
 | hier gibt es gar nichts | Hier scheint es nichts Interessantes zu geben. |
 
 ### In der Hütte: die Ausrüstung *(im Code)*
@@ -67,7 +68,7 @@ Kommt direkt nach „Klasse. Du hast alles dabei …“. **Stimme:** `radio` (m�
 |---|---|---|
 | erster Ruf | Hallo {Name}, bist du da? | im Code |
 | danach alle 15 s, bis Joshi am Funkgerät Y drückt | {Name}, bitte kommen. | im Code |
-| Y am Funkgerät | Wir haben ein großes Problem und brauchen bitte deine Hilfe. | **Platzhalter** – die Erklärung des Problems kommt noch |
+| Y am Funkgerät | Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns. | im Code (vom Nutzer, 16.10.) |
 
 Danach ist das **Segelboot** frei.
 
@@ -85,8 +86,8 @@ Nach dem Funkspruch: ein **blauer Kreis** (Foto) und ein **roter Kreis** (Skizze
 
 | Stelle | Text (Erzählerin) | Status |
 |---|---|---|
-| Foto der Hütte (blauer Kreis am Strand vor der Hütte) | Klick! Ein schönes Foto von deiner Hütte. Es klebt jetzt in deinem Notizbuch. | im Code, *Entwurf* |
-| Skizze vom Steg (roter Kreis am Strand links vom Steg) – Steg, Boot und ein Wal, der darüber springt | Du zeichnest den Steg, dein Segelboot und einen Wal, der darüber springt, in dein Notizbuch. | im Code, *Entwurf* |
+| Foto der Hütte (blauer Kreis am Strand vor der Hütte) | Klasse. Du hast ein gutes Auge fürs Fotografieren. | im Code |
+| Skizze vom Steg (roter Kreis am Strand links vom Steg) – Steg, Boot und ein Wal, der darüber springt | Wow. Du hast ein schönes Bild gezeichnet. | im Code |
 
 **Inventar:** linker Stick wählt aus (die Auswahl wird etwas größer und leuchtet leicht), **A** = auswählen: das **Notizbuch** schlägt sich auf der zuletzt beklebten Seite auf (blättern mit links/rechts, **B** = zu, zurück ins Inventar), bei allen anderen Dingen kommt ihre Erklärung (wie beim Einpacken). **B** im Inventar = Inventar zu.
 
@@ -102,7 +103,8 @@ Nach dem Funkspruch: ein **blauer Kreis** (Foto) und ein **roter Kreis** (Skizze
 | Satz oben kam schon zweimal, trotzdem nicht umgeschaut | Stelle dich vor das Lagerfeuer und drücke X zum Umschauen. |
 | draußen schon umgeschaut, in der Hütte noch nicht | Schau dir doch mal deine Hütte von innen ganz genau an. |
 | überall umgeschaut, aber noch nicht alles entdeckt | (wie „noch nie umgeschaut“) |
-| alles entdeckt | Hier hast Du schon alles entdeckt. |
+| alles entdeckt, aber noch nicht an allem Y gedrückt (die Detektivmütze erscheint dort auch) | Klasse, Du hast alles entdeckt. Gehe zu jedem Objekt und schau, ob du was tun kannst. |
+| alles entdeckt und erledigt | Hier hast Du schon alles entdeckt. |
 
 ---
 
@@ -209,7 +211,7 @@ Das ist das Geheimland.
 - ~~**Buch aus dem Bücherregal**~~ – Notizbuch, Satz vom Nutzer (16.10.2026).
 - ~~**Taschenmesser, Kompass, Lupe**~~ – Sätze stehen als *Entwurf* im Code (dazu Stift und Kamera) – bitte bestätigen oder ändern.
 - ~~**Funkspruch kommt herein**~~ – „Hallo Joshi, bist du da?“ / „Joshi, bitte kommen.“ (vom Nutzer, 16.10.2026).
-- **Fall 1 – das Problem:** was die Funkstimme nach dem Annehmen erklärt (jetzt Platzhalter „Wir haben ein großes Problem …“).
+- ~~**Fall 1 – das Problem:**~~ – „Wir haben ein großes Problem und brauchen ganz dringend deine Hilfe. Bitte steig schnell in dein Segelboot und komme zu uns.“ (vom Nutzer, 16.10.2026).
 - **Fall 1 – am Ziel:** was dort passiert und gesagt wird (jetzt Platzhalter „Du bist angekommen!“).
 - **Orte auf dem Globus:** Name und Symbol des zweiten Orts (jetzt „Fall 1“ mit Standardpunkt).
 - **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.

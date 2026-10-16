@@ -58,6 +58,8 @@ Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixam
 - „Ring-Billed Gull“ (sitzend und fliegend) von Oregon State University Ecampus – CC-BY-4.0
 - „Sailboat“ von JinnMx (CC-BY-4.0)
 - Ausrüstung (Sketchfab, CC-BY-4.0, fürs Spiel verkleinert): „Book – RealityScan“ von teddygbg, „Pencil“ von farooq.smurf, „Compass“ von EwanLejkowski, „Pocket Knife“ von Riccardo Daniello, „Magnifying Glass“ von Laura.Clarke, „Canon AT-1 Retro Camera“ von AleixoAlonso, „Backpack low-poly“ von dimaponomar2019
+- „Wooden Fox Kit Figure“ von Yogensia (Sketchfab) – CC-BY-NC-SA-4.0 (der geschnitzte Holzfuchs)
+- „Ulysses Butterfly“ von eb78 (Sketchfab) – CC-BY-SA-4.0 (Schmetterlinge, Lupe)
 - Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
 - Funkrauschen „Searching the Radio Noise“ von freesound_community (Pixabay) – Pixabay-Lizenz
 - Modelle und Töne der Flugspiel-Engine: siehe Flugspiel-Repo

@@ -25,6 +25,10 @@ const SACHEN = {
   lupe:      { glb: 'LUPE_GLB', L: 0.21, zeigen: 1.0 },
   kamera:    { glb: 'KAMERA_GLB', L: 0.14, zeigen: 0.15, deckend: true },   // Modell steht auf alphaMode BLEND + doppelseitig: wirkte durchsichtig
   rucksack:  { glb: 'RUCKSACK_GLB', L: 0.45, dreh: [0, -Math.PI / 2, 0], zeigen: 0 },
+  // notizbuch.js: der geschnitzte Holzfuchs (Wooden Fox Kit Figure, Yogensia, CC-BY-NC-SA-4.0) und der Schmetterling
+  // (Ulysses Butterfly, eb78, CC-BY-SA-4.0) – keine Ausruestung, aber dieselben Vorlagen
+  holzfuchs: { glb: 'HOLZFUCHS_GLB', L: 0.16, zeigen: 0.2, keinRucksack: true },
+  schmetterling: { glb: 'SCHMETTERLING_GLB', L: 0.09, zeigen: 0, keinRucksack: true },
 };
 const TEXT = {
   notizbuch: ['Ah... ein Notizbuch. Das kann man immer gebrauchen.'],
@@ -65,7 +69,21 @@ function vorlage(n){
   }));
 }
 story.kompassVorlage = () => vorlage('kompass');   // segeln.js: der Kompass rechts oben
-function klon(n){ return vorlage(n).then(v => { const g = v.clone(true); g.userData.clips = v.userData.clips; g.userData.sache = n; return g; }); }
+// Kopie mit eigenem Skelett (wie SkeletonUtils.clone): object.clone() laesst SkinnedMeshes an den Knochen der Vorlage
+// haengen – die Kopien (Schwarm, Lupe, Huette) lagen dann alle unsichtbar am Ursprung der Vorlage und bewegten sich nicht
+function klonSkin(v){
+  const g = v.clone(true), quelle = new Map(), ziel = new Map();
+  const paare = (a, b) => { quelle.set(b, a); for(let i = 0; i < a.children.length; i++) paare(a.children[i], b.children[i]); };
+  paare(v, g);
+  g.traverse(o => { ziel.set(quelle.get(o), o); });
+  g.traverse(o => { if(!o.isSkinnedMesh) return; const q = quelle.get(o), sk = q.skeleton;
+    o.skeleton = sk.clone(); o.skeleton.bones = sk.bones.map(k => ziel.get(k)); o.bindMatrix.copy(q.bindMatrix);
+    o.bind(o.skeleton, o.bindMatrix); });
+  return g;
+}
+story.klonSkin = (o) => { let skin = false; o.traverse(m => { if(m.isSkinnedMesh) skin = true; }); return skin ? klonSkin(o) : o.clone(true); };
+function klon(n){ return vorlage(n).then(v => { let skin = false; v.traverse(o => { if(o.isSkinnedMesh) skin = true; });
+  const g = skin ? klonSkin(v) : v.clone(true); g.userData.clips = v.userData.clips; g.userData.sache = n; return g; }); }
 for(const n of Object.keys(SACHEN)) story.typ(n, { bau: () => klon(n), untergrund: 'egal' });
 
 // ---- Animationen der Dinge (Nadel, Klinge) ----------------------------------------------------------------------
@@ -147,10 +165,11 @@ function naechstes(){
     if(!zustand.komplett && Object.keys(TEXT).every(n => zustand[n])){
       zustand.komplett = true;
       // Funkspruch erst, wenn auch draussen alles abgesucht und angesehen ist (story.fall1Pruefen)
-      story.sprich(TEXT_KOMPLETT, () => { rucksack.ziel = 0; if(story.fall1Pruefen) story.fall1Pruefen(); });
+      story.spaeter(0.4, () => { if(!flug.akt) rucksack.ziel = 0; });   // nicht erst nach dem Lob ausblenden
+      story.sprich(TEXT_KOMPLETT, () => { if(story.fall1Pruefen) story.fall1Pruefen(); });
       return;
     }
-    story.spaeter(1.6, () => { if(!flug.akt) rucksack.ziel = 0; }); return;
+    story.spaeter(0.4, () => { if(!flug.akt) rucksack.ziel = 0; }); return;   // schneller weg (Live-Wunsch 16.10., vorher 1,6 s)
   }
   const n = d.obj.userData.sache;
   const f = flug.akt = { d, n, t: 0, phase: 'auf', gesagt: false, fertigAnim: false, fertigText: false };
@@ -236,7 +255,7 @@ function updateFlug(dt){
 }
 function updateRucksack(dt){
   if(!rucksack) return;
-  rucksack.an += klemme(rucksack.ziel - rucksack.an, -dt * 3, dt * 3);
+  rucksack.an += klemme(rucksack.ziel - rucksack.an, -dt * 5, dt * 3);   // aus schneller als an
   const p = rucksack.pivot;
   p.visible = rucksack.an > 0.001;
   if(!p.visible) return;
@@ -272,8 +291,46 @@ story.ausRucksack = function(n, fertig){
   });
 };
 story.rucksackZurueck = function(){ if(raus.akt){ raus.akt.phase = 'rein'; raus.akt.t = 0; raus.akt.von = raus.akt.p.position.clone(); raus.akt.vonS = raus.akt.p.scale.x; } };
+// notizbuch.js (Schnitzen, Lupe): ein Klon eines Modells, Mitte auf 0, laengste Kante = 1 (Rueckgabe: { g, L }) – und die
+// Bildebene selbst (Szene, Hoehe der sichtbaren Ebene), um ihn dort zu zeigen
+// Groesse eines Modells – bei animierten (SkinnedMesh) mit den Knochen gemessen: Box3.setFromObject sieht nur die rohe
+// Geometrie, beim Schmetterling 14x zu klein (unter der Lupe riesig, im Schwarm und in der Huette falsch)
+function echteBox(o){
+  const bb = new THREE.Box3(), v = new THREE.Vector3(); let skin = false;
+  o.traverse(m => { if(!m.isSkinnedMesh) return; skin = true; m.skeleton.update(); const p = m.geometry.attributes.position;
+    for(let i = 0; i < p.count; i += 3){ v.fromBufferAttribute(p, i); m.boneTransform(i, v); bb.expandByPoint(v.applyMatrix4(m.matrixWorld)); } });
+  return skin ? bb : new THREE.Box3().setFromObject(o);
+}
+story.modellKlon = (n) => klon(n).then(o => { o.updateMatrixWorld(true); const bb = echteBox(o), L = Math.max(...bb.getSize(new THREE.Vector3()).toArray());
+  o.position.sub(bb.getCenter(new THREE.Vector3())); o.traverse(m => { if(m.isMesh){ m.castShadow = false; m.frustumCulled = false; } });
+  const g = new THREE.Group(); g.add(o); g.userData.clips = o.userData.clips; g.userData.inner = o; return { g, L }; });
+story.ebene = () => { ebene(); return { szene, hoehe: hoeheEbene() }; };
+story.spiele = (obj, namen, tempo) => spiele(obj, namen, tempo);
+story.stoppe = (mx) => stoppe(mx);
 // Der Stift zeichnet mit (notizbuch.js): Spitze an die Stelle (u, v = 0..1 auf dem Bild der Breite bw, Hoehe bh, Mitte 0,0)
 story.stiftAn = function(u, v, bw, bh){ const r = raus.akt; if(!r) return; r.stift = { u, v, bw, bh }; };
+// Schnitzen: das Messer rechts am Holzklotz, es schabt (dx, dy = kleine Bewegung) – Lupe: gross in der Mitte vor dem Bild
+story.messerAn = function(dx, dy){ const r = raus.akt; if(!r) return; r.halt = { x: 0.55 + dx * 0.4, y: 0.05 + dy, s: 0.6, kipp: -0.6 + dx }; };
+story.lupeAn = function(){ const r = raus.akt; if(!r) return;
+  if(!r.glas){ r.glas = true;
+    // Das Glas (das flachste Teil des Modells) durchsichtig, damit man den Schmetterling darunter sieht
+    let flach = null, d = Infinity; r.p.traverse(m => { if(!m.isMesh) return; m.geometry.computeBoundingBox(); const s = m.geometry.boundingBox.getSize(new THREE.Vector3()); const t = Math.min(s.x, s.y, s.z) / Math.max(s.x, s.y, s.z); if(t < d){ d = t; flach = m; } });
+    if(flach){ flach.material = flach.material.clone(); flach.material.color && flach.material.color.set(0xd8f0ff); flach.material.map = null; flach.material.opacity = 0.22; flach.material.depthWrite = false; flach.renderOrder = 8; }
+    r.glasMesh = flach;
+    // aufrecht zur Kamera: das Glas liegt im Modell flach (Normale = kuerzeste Achse) -> diese Achse auf die Blickrichtung
+    if(flach){ flach.geometry.computeBoundingBox(); const s = flach.geometry.boundingBox.getSize(new THREE.Vector3());
+      const kurz = s.x <= s.y && s.x <= s.z ? new THREE.Vector3(1, 0, 0) : (s.y <= s.z ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1));
+      kurz.transformDirection(flach.matrixWorld).applyQuaternion(r.p.quaternion.clone().invert());
+      r.qAufrecht = new THREE.Quaternion().setFromUnitVectors(kurz.normalize(), new THREE.Vector3(0, 0, 1)); } }
+  // Live-Wunsch 16.10.: das GLAS mittig im Bild und groesser – der Stiel darf links abgeschnitten sein. Dafuer wird die
+  // ganze Lupe um den Versatz Glasmitte -> Bildmitte geschoben (r.glasVersatz, laufend nachgefuehrt)
+  r.halt = { x: 0, y: 0.02, s: 1.7, kipp: 0, vorn: true, q: r.qAufrecht, glasMitte: true }; };
+// Mitte und Radius des Lupenglases in der Bildebene (notizbuch.js legt den Schmetterling genau dahinter)
+story.lupeGlas = function(){
+  const r = raus.akt; if(!r || !r.glasMesh) return null;
+  r.glasMesh.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(r.glasMesh), c = bb.getCenter(new THREE.Vector3()), s = bb.getSize(new THREE.Vector3());
+  return { x: c.x, y: c.y, z: c.z, r: Math.max(s.x, s.y) / 2 };
+};
 story.rausAktiv = () => !!raus.akt;
 function updateRaus(dt){
   const r = raus.akt; if(!r) return;
@@ -287,7 +344,18 @@ function updateRaus(dt){
     _qy.setFromAxisAngle(_y, k * Math.PI * 2); r.p.quaternion.copy(_qy).multiply(r.q);
     if(r.t >= 1.1){ r.phase = 'warte'; r.t = 0; rucksack.hops = 1; const f = r.fertig; r.fertig = null; if(f) f(); }
   } else if(r.phase === 'warte'){                                  // steht gross in der Mitte, waehrend das Bild kommt
-    if(r.stift){
+    if(r.halt){
+      // Messer am Klotz bzw. Lupe vorn in der Mitte (notizbuch.js setzt die Lage jedes Bild)
+      const h = r.halt, ziel = new THREE.Vector3(h.x, h.y, h.vorn ? 1.6 : 0.9);
+      if(h.glasMitte && r.glasMesh){                               // Glas (nicht der Griff) auf die Mitte
+        r.glasMesh.updateMatrixWorld(true); const c = new THREE.Box3().setFromObject(r.glasMesh).getCenter(new THREE.Vector3());
+        r.glasVersatz = (r.glasVersatz || new THREE.Vector3()).lerp(c.sub(r.p.position).setZ(0), 0.3);
+        ziel.sub(r.glasVersatz);
+      }
+      r.p.position.lerp(ziel, 0.3); r.p.scale.setScalar(gross * h.s);
+      if(h.q) r.p.quaternion.slerp(h.q, 0.2);                     // Lupe: aufrecht, das Glas zur Kamera
+      else { _qy.setFromAxisAngle(_y, h.kipp); r.p.quaternion.copy(_qy).multiply(r.q); }
+    } else if(r.stift){
       // Stift zeichnet: die Spitze (Modell: schraeg, Spitze unten links) folgt der Zeichenstelle, mit leichtem Zittern
       const S = r.stift, zx = (S.u - 0.5) * S.bw, zy = (0.5 - S.v) * S.bh;
       const ziel = new THREE.Vector3(zx + 0.32, zy + 0.32, 1.5);
@@ -301,7 +369,7 @@ function updateRaus(dt){
     const k = weich(r.t / 0.9), von = r.von || new THREE.Vector3(-GROSS * 1.2, 0.12, 0.6), vonS = r.vonS || gross * 0.7;
     r.p.position.lerpVectors(von, unten, k); r.p.position.y += Math.sin(k * Math.PI) * 0.25;
     r.p.scale.setScalar(vonS + (klein - vonS) * k);
-    if(r.t >= 0.9){ stoppe(r.mx); szene.remove(r.p); raus.akt = null; rucksack.hops = 1; story.spaeter(1.0, () => { if(!raus.akt && !flug.akt) rucksack.ziel = 0; }); }
+    if(r.t >= 0.9){ stoppe(r.mx); szene.remove(r.p); raus.akt = null; rucksack.hops = 1; story.spaeter(0.4, () => { if(!raus.akt && !flug.akt) rucksack.ziel = 0; }); }
   }
 }
 
@@ -310,6 +378,10 @@ function updateRaus(dt){
 // updateRadio) – so erkennt man einen Funkspruch immer sofort. Beide zugleich gibt es nicht: waehrend des Einsteckens
 // kommt kein Funkspruch, das Inventar ist eine Pause, und in der Pause ist das Symbol aus.
 const funk = { pivot: null, geraet: null, an: 0 };
+// Platz unten rechts belegt (Rucksack, Funkgeraet, Einpacken/Auspacken)? Dann weicht die Detektivmuetze (notizbuch.js)
+story.eckeBelegt = () => !!(flug.akt || raus.akt || (rucksack && (rucksack.ziel || rucksack.an > 0.01)) || funk.an > 0.01
+  || (story.funkAktiv && story.funkAktiv()));
+story.rucksackNdc = RUCKSACK_NDC;
 function updateFunkSymbol(dt){
   const soll = story.funkAktiv && story.funkAktiv() && !(story.pause && story.pause()) ? 1 : 0;
   if(!funk.pivot){
@@ -430,21 +502,29 @@ function inventarSteuern(dt){
   const k = eingabeKanten(dt);
   if(buch.offen){ buchSteuern(k); return; }
   if(k.b){ inventarSchliessen(); return; }                       // B geht immer, auch waehrend einer Erklaerung
-  if(inv.sprichtWahl) return;                                    // Erklaerung laeuft: sonst warten
-  const n = inv.anzahl || 0; if(!n) { if(k.b) inventarSchliessen(); return; }
+  // Der Stick bleibt immer frei (Live-Befund: waehrend einer Erklaerung reagierte er nicht). Waehlt man um oder drueckt A
+  // erneut, endet die laufende Erklaerung, und die neue kommt sofort.
+  const n = inv.anzahl || 0; if(!n) return;
   const zeilen = Math.ceil(n / INV_PRO_ZEILE);
   let z = Math.floor(inv.wahl / INV_PRO_ZEILE), s = inv.wahl % INV_PRO_ZEILE;
   if(k.x){ s = (s + k.x + INV_PRO_ZEILE) % INV_PRO_ZEILE; }
   if(k.y){ z = (z + k.y + zeilen) % zeilen; }
+  const vorher = inv.wahl;
   inv.wahl = Math.min(n - 1, z * INV_PRO_ZEILE + s);
-  if(k.b){ inventarSchliessen(); return; }
+  if(inv.wahl !== vorher && inv.sprichtWahl && story.stimmeStopp){ story.stimmeStopp(); inv.sprichtWahl = false; }
   if(k.a){
     const d = inv.dinge.find(q => q.i === inv.wahl); if(!d) return;
-    if(d.n === 'notizbuch' && story.notizSeiten && story.notizSeiten().length){ buchOeffnen(); return; }
+    if(d.n === 'notizbuch' && story.notizSeiten && story.notizSeiten().length){ if(story.stimmeStopp) story.stimmeStopp(); inv.sprichtWahl = false; buchOeffnen(); return; }
+    if(inv.sprichtWahl && story.stimmeStopp) story.stimmeStopp();
     inv.sprichtWahl = true;
-    story.sprich(TEXT[d.n] || [], () => { inv.sprichtWahl = false; });
+    story.sprich(TEXT_INVENTAR[d.n] || TEXT[d.n] || [], () => { inv.sprichtWahl = false; }, 'inventar');
   }
 }
+// Im Inventar ohne das "Und" vom Einpacken (Live-Wunsch 16.10.) – dort steht jeder Satz fuer sich
+const TEXT_INVENTAR = {
+  stift:  ['Ein Stift. Damit kannst du alles aufschreiben.'],
+  kamera: ['Deine Kamera! Damit machst du Fotos von allen Hinweisen.'],
+};
 function inventarSchliessen(){ inv.sprichtWahl = false; buch.offen = false; if(story.inventarZu) story.inventarZu(); }
 
 // ---- Notizbuch (Live-Wunsch 16.10.) -------------------------------------------------------------------------------
@@ -462,15 +542,48 @@ function buchBauen(){
 function buchOeffnen(){
   buchBauen();
   const seiten = story.notizSeiten();
-  buch.offen = true; buch.seite = Math.max(0, seiten.length - 1);    // zuletzt beklebte Seite
+  buch.offen = true; buch.um = null; buch.seite = Math.max(0, seiten.length - 1);    // zuletzt beklebte Seite
   buch.seite -= buch.seite % 2;                                      // Doppelseiten: gerade Nummer links
   buchMalen();
 }
 function buchSteuern(k){
   const n = story.notizSeiten().length;
   if(k.b){ buch.offen = false; return; }                             // zu: zurueck ins Inventar
-  if(k.x > 0 && buch.seite + 2 < n){ buch.seite += 2; buch.blatt = 1; buchMalen(); }
-  if(k.x < 0 && buch.seite > 0){ buch.seite -= 2; buch.blatt = -1; buchMalen(); }
+  if(buch.um) return;                                                 // erst fertig umblaettern
+  if(k.x > 0 && buch.seite + 2 < n) blaettern(1);
+  if(k.x < 0 && buch.seite > 0) blaettern(-1);
+}
+// Umblaettern (Live-Wunsch 16.10.: nicht das ganze Buch wackeln lassen, nur die Seite): die neue Doppelseite liegt schon
+// darunter, ein Blatt klappt um die Bindung herum – erst die alte Seite (schmaler werdend, dunkler), dann die
+// Rueckseite = neue Seite auf der anderen Seite (breiter werdend). Gemalt aus zwei Canvas-Bildern (alt/neu).
+const T_BLATT = 0.55;
+function blaettern(r){
+  if(!buch.alt){ buch.alt = document.createElement('canvas'); buch.alt.width = buch.cv.width; buch.alt.height = buch.cv.height;
+    buch.neu = document.createElement('canvas'); buch.neu.width = buch.cv.width; buch.neu.height = buch.cv.height; }
+  buch.alt.getContext('2d').clearRect(0, 0, buch.alt.width, buch.alt.height); buch.alt.getContext('2d').drawImage(buch.cv, 0, 0);
+  buch.seite += 2 * r; buchMalen();
+  buch.neu.getContext('2d').clearRect(0, 0, buch.neu.width, buch.neu.height); buch.neu.getContext('2d').drawImage(buch.cv, 0, 0);
+  buch.um = { r, t: 0 }; blattMalen();
+}
+function blattMalen(){
+  const u = buch.um, c = buch.cv.getContext('2d'), W = buch.cv.width, H = buch.cv.height, M = W / 2, k = weich(Math.min(1, u.t / T_BLATT));
+  c.clearRect(0, 0, W, H);
+  // unten: links bzw. rechts schon die neue Seite, auf der anderen Seite noch die alte (bis das Blatt dort ankommt)
+  const vorn = u.r > 0;                                               // vorwaerts: das rechte Blatt klappt nach links
+  c.drawImage(buch.neu, 0, 0);
+  if(vorn) c.drawImage(buch.alt, 0, 0, M, H, 0, 0, M, H); else c.drawImage(buch.alt, M, 0, M, H, M, 0, M, H);
+  // das Blatt: erste Haelfte die alte Seite (schmaler), zweite Haelfte die neue (breiter), immer an der Bindung
+  const erste = k < 0.5, b = Math.abs(Math.cos(k * Math.PI)), dunkel = 0.35 * (1 - b);
+  let sx, dx;
+  if(vorn){ if(erste){ sx = M; dx = M; } else { sx = 0; dx = M - b * M; } }
+  else { if(erste){ sx = 0; dx = M - b * M; } else { sx = M; dx = M; } }
+  const quelle = erste ? buch.alt : buch.neu, bw = Math.max(1, b * M);
+  c.drawImage(quelle, sx, 0, M, H, dx, 0, bw, H);
+  c.fillStyle = 'rgba(40,20,10,' + dunkel.toFixed(3) + ')'; c.fillRect(dx, 54, bw, H - 108);
+  // Schatten an der Bindung, wo das Blatt aufsteht
+  const sg = c.createLinearGradient(M - 40, 0, M + 40, 0); sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(0.5, 'rgba(0,0,0,' + (0.25 * (1 - b)).toFixed(3) + ')'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = sg; c.fillRect(M - 40, 54, 80, H - 108);
+  buch.tex.needsUpdate = true;
 }
 // Doppelseite malen: Einband, zwei Papierseiten, Bindung, eingeklebte Bilder mit Klebestreifen, Seitenzahlen
 function buchMalen(){
@@ -505,8 +618,13 @@ function buchMalen(){
     c.fillStyle = 'rgba(255,248,210,.75)';
     for(const [ex, ey, r] of [[-w / 2, -h / 2 - 10, -0.6], [w / 2, -h / 2 - 10, 0.6]]){ c.save(); c.translate(ex, ey); c.rotate(r); c.fillRect(-46, -14, 92, 28); c.restore(); }
     c.restore();
-    c.fillStyle = 'rgba(80,60,40,.7)'; c.font = '600 30px system-ui,sans-serif'; c.textAlign = 'center';
-    c.fillText(String(i + 1), x + bw / 2, H - 70);
+    // Seitenzahl und Ortssymbol (wo die Seite entstanden ist) zusammen mittig auf der Seite und mit Abstand zum Rand
+    // (Live-Befund 16.10.: das Symbol ragte unten bis an den Rand, die Zahl stand links daneben aus der Mitte)
+    c.fillStyle = 'rgba(80,60,40,.7)'; c.font = '600 30px system-ui,sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle';
+    const zahl = String(i + 1), zw = c.measureText(zahl).width, sym = s.ort ? 52 : 0, luft = sym ? 14 : 0;
+    const x0 = x + bw / 2 - (zw + luft + sym) / 2, ym = H - 104;
+    c.fillText(zahl, x0, ym + 2); c.textBaseline = 'alphabetic';
+    if(sym) ortSymbol(c, s.ort, x0 + zw + luft + sym / 2, ym, sym);
   }
   // Pfeile, wenn man weiterblaettern kann
   c.fillStyle = 'rgba(255,230,160,.9)';
@@ -515,6 +633,53 @@ function buchMalen(){
   if(buch.seite + 2 < seiten.length) pfeil(W - 52, 1);
   buch.tex.needsUpdate = true;
 }
+// ---- Symbol fuer Joshis Insel (Live-Wunsch 16.10.: farbig auf dem Globus, als Bleistift-Miniskizze im Notizbuch) ----
+// Selbst gezeichnet (nach dem Motiv einer Vorlage, nicht kopiert): Sand und Wasser, zwei Palmen, Strohhuette auf Stelzen.
+// art 'farbe' = ausgemalt mit Umriss, 'stift' = nur Bleistiftlinien (leicht versetzt nachgezogen). (cx, cy) = Mitte, g = Groesse.
+story.inselIcon = function(c, cx, cy, g, art){
+  const k = g / 200, stift = art === 'stift';
+  c.save(); c.translate(cx - 100 * k, cy - 105 * k); c.scale(k, k); c.lineCap = 'round'; c.lineJoin = 'round';
+  const durchgaenge = stift ? 2 : 1;
+  for(let d = 0; d < durchgaenge; d++){
+    const v = stift ? (d ? 1.2 : -0.6) : 0;                         // Bleistift: zweiter Strich leicht versetzt
+    c.save(); c.translate(v, -v * 0.5);
+    const tinte = stift ? 'rgba(60,52,44,' + (d ? 0.45 : 0.8) + ')' : '#4a3424';
+    c.lineWidth = stift ? (d ? 1.6 : 2.4) : 2.5; c.strokeStyle = tinte;
+    const form = (pfad, fuell) => { c.beginPath(); pfad(); if(!stift && fuell){ c.fillStyle = fuell; c.fill(); } c.stroke(); };
+    // Wasser und Sand
+    form(() => c.ellipse(100, 168, 92, 22, 0, 0, Math.PI * 2), '#5cc6e0');
+    form(() => c.ellipse(100, 160, 70, 14, 0, 0, Math.PI * 2), '#f2d48b');
+    if(!stift){ c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2; for(const [x, y] of [[22, 172], [160, 176], [140, 182]]){ c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 7, y - 4, x + 14, y); c.stroke(); } c.strokeStyle = tinte; c.lineWidth = 2.5; }
+    else for(let x = 52; x < 150; x += 9){ c.beginPath(); c.moveTo(x, 163); c.lineTo(x + 5, 157); c.stroke(); }   // Sand schraffiert
+    // Palmen: Stamm als zwei Linien (Bleistift) bzw. dicker brauner Strich mit Ringen
+    for(const [x0, xm, ym, x1, y1] of [[76, 64, 112, 88, 66], [94, 104, 104, 124, 50]]){
+      if(stift){ for(const o of [-4, 4]){ c.beginPath(); c.moveTo(x0 + o, 158); c.quadraticCurveTo(xm + o, ym, x1 + o * 0.6, y1); c.stroke(); } }
+      else { c.save(); c.strokeStyle = '#4a3424'; c.lineWidth = 11; c.beginPath(); c.moveTo(x0, 158); c.quadraticCurveTo(xm, ym, x1, y1); c.stroke();
+        c.strokeStyle = '#a0683a'; c.lineWidth = 7.5; c.stroke(); c.restore(); }
+      // Wedel: sechs Blaetter um die Krone
+      for(let i = 0; i < 6; i++){
+        const w = -Math.PI * 0.95 + i * Math.PI * 0.38, L = 30 + (i % 2) * 6, ex = x1 + Math.cos(w) * L, ey = y1 + Math.sin(w) * L * 0.75 + 10;
+        const mx = x1 + Math.cos(w) * L * 0.5, my = y1 + Math.sin(w) * L * 0.5 - 8;
+        form(() => { c.moveTo(x1, y1); c.quadraticCurveTo(mx - 6, my - 4, ex, ey); c.quadraticCurveTo(mx + 6, my + 6, x1, y1); }, i % 2 ? '#3f9a45' : '#5cb85c');
+        if(stift){ c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo(mx, my, ex, ey); c.stroke(); }   // Mittelrippe
+      }
+    }
+    // Huette auf Stelzen: Stelzen, Wand, Tuer, Strohdach
+    for(const x of [118, 132, 146, 160]){ c.beginPath(); c.moveTo(x, 146); c.lineTo(x, 160); c.stroke(); }
+    form(() => c.rect(114, 118, 50, 28), '#c98f52');
+    form(() => c.rect(130, 126, 16, 20), '#3a2416');
+    form(() => { c.moveTo(104, 122); c.quadraticCurveTo(138, 84, 140, 84); c.quadraticCurveTo(142, 84, 174, 122); c.closePath(); }, '#ebc35e');
+    if(stift) for(let x = 112; x < 168; x += 7){ c.beginPath(); c.moveTo(x, 120); c.lineTo(x + (140 - x) * 0.3, 104); c.stroke(); }   // Strohstriche
+    c.restore();
+  }
+  c.restore();
+};
+// Ortssymbol neben der Seitenzahl, wie mit dem Bleistift gezeichnet: Insel = die Insel mit Huette und Palmen
+// (weitere Orte bekommen hier ihr Symbol, sobald sie feststehen)
+// (x, y) = Mitte, g = Groesse
+function ortSymbol(c, ort, x, y, g){
+  if(ort === 'insel') story.inselIcon(c, x, y, g, 'stift');
+}
 function updateBuch(dt){
   if(!buch.mesh) return;
   buch.k += klemme((buch.offen ? 1 : 0) - buch.k, -dt * 4, dt * 4);
@@ -522,8 +687,8 @@ function updateBuch(dt){
   if(!buch.mesh.visible) return;
   const H = hoeheEbene(), B = H * innerWidth / innerHeight, s = weich(buch.k);
   const w = Math.min(B * 0.86, H * 0.86 * 1.6);
-  buch.blatt *= Math.max(0, 1 - dt * 6);                             // kleiner Ruck beim Blaettern
-  buch.mesh.position.set(buch.blatt * 0.15, 0, 1);
+  if(buch.um){ buch.um.t += dt; if(buch.um.t >= T_BLATT){ buch.um = null; buchMalen(); } else blattMalen(); }   // nur das Blatt bewegt sich
+  buch.mesh.position.set(0, 0, 1);
   buch.mesh.scale.set(w * s, w / 1.6 * s, 1);
   buch.mesh.material.opacity = s;
 }
@@ -548,12 +713,14 @@ function updateInventar(dt){
     const gewaehlt = d.i === inv.wahl && !buch.offen;
     d.w = (d.w || 0) + ((gewaehlt ? 1 : 0) - (d.w || 0)) * Math.min(1, dt * 8);
     d.p.position.set(x, y, 0.3);
-    d.p.scale.setScalar(s * gross / d.L * (1 + 0.25 * d.w) * (buch.offen ? 1 - buch.k : 1));
+    // Live-Wunsch: die Auswahl etwas groesser (40 %); ohne Auswahl nur ein Hauch von Schein, mit Auswahl deutlich – vorher
+    // war der normale Schein so stark, dass man keinen Unterschied sah
+    d.p.scale.setScalar(s * gross / d.L * (1 + 0.4 * d.w) * (buch.offen ? 1 - buch.k : 1));
     _iq.setFromAxisAngle(_y, inv.t * 0.9 + d.i * 1.1);            // langsam drehen, jedes etwas versetzt
     d.p.quaternion.copy(_iq).multiply(d.q);
     d.glow.position.set(x, y, -0.2);                              // hinter dem Ding
-    d.glow.scale.setScalar(platz * (0.7 + 0.3 * d.w) * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
-    d.glow.material.opacity = (0.18 + 0.32 * d.w) * s * (buch.offen ? 1 - buch.k : 1);
+    d.glow.scale.setScalar(platz * (0.6 + 0.5 * d.w) * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
+    d.glow.material.opacity = (0.05 + 0.8 * d.w) * s * (buch.offen ? 1 - buch.k : 1);
   }
 }
 
@@ -568,7 +735,8 @@ function hookAusruestung(){
     if(!p) for(const mx of mixer) mx.update(dt);
     else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.mx) d.mx.update(dt);   // Messer klappt, Nadel dreht
     // Funkspruch oder offene Foto-/Skizzenstelle, bevor je etwas eingesteckt wurde: die Bildebene gleich anlegen
-    if(!szene && ((story.funkAktiv && story.funkAktiv()) || (story.notiz && story.notiz.frei))) ebene();
+    // (notizbuch.js braucht sie ab dem Start: Detektivmuetze, Markierungen, Schwarm)
+    if(!szene && story.gestartet) ebene();
     if(szene){
       // In der Pause steht alles – ausser dem Inventar selbst (das IST die Inventar-Pause): Rucksack und Dinge drehen weiter
       const inventarPause = p && story.pauseArt && story.pauseArt() === 'inventar';

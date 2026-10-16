@@ -56,7 +56,7 @@ function bauen(){
   gl.punkte = new THREE.Group(); gl.erde.add(gl.punkte);
   gl.faden = new THREE.Group(); gl.erde.add(gl.faden);
   // feste Symbole (einmal gebaut, nicht jedes Bild): Haus auf Joshis Insel, Joshis Gesicht an der Fadenspitze
-  gl.haus = symbolSprite(hausBild(), 0.16); gl.erde.add(gl.haus);
+  gl.haus = symbolSprite(inselBild(), 0.22); gl.erde.add(gl.haus);
   gl.gesicht = symbolSprite(gesichtBild(), 0.15); gl.gesicht.visible = false; gl.erde.add(gl.gesicht);
 }
 // Karte als Canvas (equirektangular: x = Laenge, y = Breite) – passt zu latLon und SphereGeometry
@@ -82,6 +82,12 @@ function weltTextur(){
 function symbolSprite(canvas, gross){
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false }));
   sp.scale.setScalar(gross); sp.renderOrder = 5; return sp;
+}
+// Joshis Insel auf dem Globus: dasselbe Symbol wie im Notizbuch, hier farbig (ausruestung.js story.inselIcon); fehlt es,
+// das alte Haus
+function inselBild(){
+  if(!story.inselIcon) return hausBild();
+  const c = document.createElement('canvas'); c.width = c.height = 200; story.inselIcon(c.getContext('2d'), 100, 100, 190, 'farbe'); return c;
 }
 function hausBild(){
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');

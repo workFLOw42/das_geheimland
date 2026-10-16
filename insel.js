@@ -68,7 +68,8 @@ function baueInsel(){
   const h = story.setze('huette', 1, { x: HUETTE.x, z: HUETTE.z, y: ISLAND_Y, dreh: HUETTE.yaw, fest: true }).obj;
   story.setze('lagerfeuer', 1, { x: FEUER.x, z: FEUER.z, fest: true });
   story.interaktion(h, { name: 'Hütte', x: HUETTE.x, z: HUETTE.z, r: 2.3, yHoehe: 4.6, einmal: true,     // Info
-    text: ['Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um.'] });
+    // war Joshi schon drin, faellt "Geh ruhig rein ..." weg (Live-Wunsch 16.10.)
+    text: () => story.innen && story.innen.warDrin ? ['Die Hütte ist dein Zuhause.'] : ['Die Hütte ist dein Zuhause. Geh ruhig rein und schau dich um.'] });
   for(const p of PALMEN_VORN) setzePalme(p);
   // weitere Palmen verteilt (nicht vor der Huette)
   let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;

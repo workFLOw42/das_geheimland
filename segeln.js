@@ -10,10 +10,11 @@
 const story = window.STORY;
 const klemme = (v, a, b) => Math.max(a, Math.min(b, v));
 
-// Ziel des ersten Falls: draussen auf dem Meer, gut 200 m vom Steg (Fahrt ~ 1 min). Was dort ist, kommt noch.
+// Ziel des ersten Falls: draussen auf dem Meer. Direkt hingesteuert hoechstens ~15 s (zielZiehen). Was dort ist, kommt noch.
 // r: Zielzone (wie in Trip to Japan: den Punkt nicht genau treffen muessen – Live-Befund: bei 30 m verschwand der Punkt und
 // man segelte noch ein Stueck weiter, bevor die Blende kam)
-const FALL1_ZIEL = { x: 150, z: 300, r: 60 };
+// Startpunkt weit draussen (~450 m); er rueckt entgegen, wenn man auf ihn zufaehrt (zielZiehen)
+const FALL1_ZIEL = { x: 201, z: 402, r: 60 };
 const RADAR_WEIT = 300;          // m am Radarrand
 const W = 130;                   // Groesse von Radar und Kompass (px), wie die Engine-Scheiben
 const SCHUB_H = 293;            // Hoehe des Schubbalkens (px) – Segmente um 1/3 groesser als zuerst (220, Live-Wunsch)
@@ -207,6 +208,7 @@ function update(dt){
   malSchub(story.bootSchub ? story.bootSchub() : 0, dt);
   // Angekommen? Grob in der Naehe reicht (wie in Trip to Japan)
   const z = story.ziel;
+  if(z) zielZiehen(z, s, dt);
   if(z && Math.hypot(s.bx - z.x, s.bz - z.z) < (z.r || 60)){
     story.ziel = null;
     state.throttle = 0;                                           // das Boot laeuft aus, die Blende kommt sofort
@@ -214,6 +216,24 @@ function update(dt){
   }
 }
 story.fall1Angenommen = function(){ story.ziel = Object.assign({}, FALL1_ZIEL); };
+// Das Ziel kommt entgegen (Live-Wunsch 16.10.): es liegt weit draussen, damit rund um die Insel Platz zum Herumfahren
+// bleibt – faehrt man aber auf den Punkt zu, rueckt er dem Boot entgegen: so schnell wie das Boot ihm naeherkommt, mal
+// ZIEL_ZUG – aber nur, wenn der Bug wirklich auf ihn zeigt (Abweichung unter ~45 Grad, voll ab ~18 Grad). Direkt vom
+// Steg mit voller Fahrt: ~14 s (im Spiel gemessen, C:/tmp/jfg/test/ziel15.js); wer herumkreuzt, dem rueckt es kaum nach. Nie naeher
+// als ZIEL_MIN m an die Inselmitte: der Ring ums Ufer (Sand bis ~99 m) bleibt frei zum Herumfahren. Ankommen zaehlt nur
+// im Boot (s. o. imBoot) – schwimmend ist das Ziel nie erreichbar.
+const ZIEL_ZUG = 8, ZIEL_MIN = 200;
+function zielZiehen(z, s, dt){
+  const dx = z.x - s.bx, dz = z.z - s.bz, d = Math.hypot(dx, dz); if(d < 1) return;
+  const c = (Math.sin(s.yaw) * dx + Math.cos(s.yaw) * dz) / d;   // cos der Abweichung Bug <-> Ziel
+  const naeher = Math.max(0, c) * Math.max(0, s.v) * klemme((c - 0.7) / 0.25, 0, 1);   // m/s in Richtung Ziel
+  if(naeher <= 0) return;
+  const w = Math.min(naeher * ZIEL_ZUG * dt, d - (z.r || 60) * 0.5);
+  if(w <= 0) return;
+  const nx = z.x - dx / d * w, nz = z.z - dz / d * w;
+  if(Math.hypot(nx, nz) < ZIEL_MIN) return;                      // nicht bis an die Insel heranruecken
+  z.x = nx; z.z = nz;
+}
 // Was am Ziel passiert, kommt noch – vorerst nur ein Satz der Erzaehlerin
 story.zielErreicht = story.zielErreicht || function(){ story.sprich(['Du bist angekommen!']); };   // globus.js ersetzt das
 

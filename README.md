@@ -41,6 +41,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `objekte.js` | Objekt-Katalog: jedes Objekt einmal definieren (`story.typ`), in jede Welt setzen (`story.setze`); Grenzen in exakter Form, freier Platz beim Setzen, nie verhaken, Orcas |
 | `huette_innen.js` | Innenraum der Hütte als eigene Welt (Blende an der Tür, innen größer als außen) |
 | `ausruestung.js` | Notizbuch im Regal, Lupe/Kompass/Messer/Stift/Kamera auf dem Tisch – mit Y groß zeigen und in den Rucksack |
+| `notizbuch.js` | Foto- und Skizzenstellen (blauer/roter Kreis), Bild mit Sucher bzw. Bleistift, ins Notizbuch kleben |
 | `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
 | `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
 

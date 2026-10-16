@@ -79,6 +79,17 @@ Danach ist das **Segelboot** frei.
 | Y im Boot, weit weg vom Steg | Erzählerin | Fahr erst zurück zum Steg. Dann kannst du aussteigen. |
 | am Ziel (die Blende zum Globus kommt sofort, der Satz im Globus) | Erzählerin | Du bist angekommen! – **Platzhalter** |
 
+### Fotos und Skizzen fürs Notizbuch *(im Code)*
+
+Nach dem Funkspruch: ein **blauer Kreis** (Foto) und ein **roter Kreis** (Skizze) am Boden; auf dem Kreis erscheint ein Y. Mit Y kommt die Kamera bzw. der Stift aus dem Rucksack, das Bild erscheint (Sucher mit Klick und Blitz bzw. Bleistift, der die Skizze kritzelt, Signatur „J“ unten rechts) und fliegt ins Notizbuch. Jede Stelle geht nur einmal. Später: **grüner Kreis** = Taschenmesser, **brauner Kreis** = Lupe.
+
+| Stelle | Text (Erzählerin) | Status |
+|---|---|---|
+| Foto der Hütte (blauer Kreis am Strand vor der Hütte) | Klick! Ein schönes Foto von deiner Hütte. Es klebt jetzt in deinem Notizbuch. | im Code, *Entwurf* |
+| Skizze vom Steg (roter Kreis am Strand links vom Steg) – Steg, Boot und ein Wal, der darüber springt | Du zeichnest den Steg, dein Segelboot und einen Wal, der darüber springt, in dein Notizbuch. | im Code, *Entwurf* |
+
+**Inventar:** linker Stick wählt aus (die Auswahl wird etwas größer und leuchtet leicht), **A** = auswählen: das **Notizbuch** schlägt sich auf der zuletzt beklebten Seite auf (blättern mit links/rechts, **B** = zu, zurück ins Inventar), bei allen anderen Dingen kommt ihre Erklärung (wie beim Einpacken). **B** im Inventar = Inventar zu.
+
 ### Hinweise auf D-Pad links / Taste T *(im Code)*
 
 **Stimme:** Erzählerin – wie die kleinen Infos in *Trip to Japan*, nur gesprochen. Was sie sagt, hängt davon ab, wo Joshi ist und wie weit er ist (von oben nach unten: das Erste, was passt).

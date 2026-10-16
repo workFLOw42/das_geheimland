@@ -132,7 +132,7 @@ const GROSS = 1.25;               // so gross (Ebene, Bildhoehe 2,68) wird ein D
 // ---- Ein Ding zeigen: auftauchen (in der Welt) -> gross -> drehen -> klein in den Rucksack -------------------------
 const T_AUF = 0.55, T_GROSS = 0.7, T_DREH = 1.5, T_WEG = 0.8, T_REIN = 0.22;
 const flug = { liste: [], akt: null, fertig: null };
-story.szeneLaeuft = () => !!flug.akt;                  // story.js: waehrenddessen keine Gitarre
+story.szeneLaeuft = () => !!flug.akt || !!(typeof raus !== 'undefined' && raus.akt) || !!(story.bildEbeneAktiv && story.bildEbeneAktiv());   // story.js: keine Gitarre, nicht laufen
 function zeige(dinge){
   ebene();
   flug.liste.push(...dinge.filter(d => d && d.obj));
@@ -248,6 +248,63 @@ function updateRucksack(dt){
   p.rotation.set(0.25, -0.35 + Math.sin(performance.now() / 900) * 0.08, 0);
 }
 
+// ---- Etwas AUS dem Rucksack holen (Kamera, Stift – notizbuch.js) ------------------------------------------------------
+// Umgekehrt wie das Einpacken: der Rucksack erscheint unten rechts, das Ding steigt klein heraus, wird gross, dreht sich
+// einmal und bleibt kurz in der Mitte stehen; fertig() kommt, wenn es gross ist (dann zeigt notizbuch.js das Bild).
+// Danach story.rucksackZurueck(n): das Ding wandert wieder klein in den Rucksack, der Rucksack verschwindet.
+const raus = { akt: null };
+story.ausRucksack = function(n, fertig){
+  ebene();
+  rucksack.ziel = 1;
+  klon(n).then(o => {
+    o.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(o), L = Math.max(...bb.getSize(new THREE.Vector3()).toArray());
+    // ueber dem Bild (notizbuch.js zeigt es mit renderOrder 4, ohne Tiefentest) – sonst verschwaende der Stift darunter
+    // three.js zeichnet erst alles Undurchsichtige, dann das Transparente – das Bild ist transparent, also muss das Ding es
+    // auch sein (Deckkraft 1), damit renderOrder gilt (eigene Material-Kopien: die Vorlage bleibt, wie sie ist)
+    o.position.sub(bb.getCenter(new THREE.Vector3())); o.traverse(m => { if(m.isMesh){ m.castShadow = false; m.renderOrder = 5;
+      m.material = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const k = x.clone(); k.transparent = true; k.opacity = 1; return k; });
+      if(m.material.length === 1) m.material = m.material[0]; } });
+    const p = new THREE.Group(); p.add(o); szene.add(p);
+    const A = SACHEN[n].zeigenAnim;
+    raus.akt = { n, p, L, t: 0, phase: 'raus', fertig, mx: A ? spiele(o, A, 1) : null,
+      q: new THREE.Quaternion().setFromEuler(new THREE.Euler(SACHEN[n].zeigen || 0, 0, 0)) };
+  });
+};
+story.rucksackZurueck = function(){ if(raus.akt){ raus.akt.phase = 'rein'; raus.akt.t = 0; raus.akt.von = raus.akt.p.position.clone(); raus.akt.vonS = raus.akt.p.scale.x; } };
+// Der Stift zeichnet mit (notizbuch.js): Spitze an die Stelle (u, v = 0..1 auf dem Bild der Breite bw, Hoehe bh, Mitte 0,0)
+story.stiftAn = function(u, v, bw, bh){ const r = raus.akt; if(!r) return; r.stift = { u, v, bw, bh }; };
+story.rausAktiv = () => !!raus.akt;
+function updateRaus(dt){
+  const r = raus.akt; if(!r) return;
+  r.t += dt;
+  ndcZuEbene(RUCKSACK_NDC.x, RUCKSACK_NDC.y, _r);
+  const unten = _r.clone().add(new THREE.Vector3(0, 0.32, 0.2)), mitte = new THREE.Vector3(0, 0.12, 0.6), gross = GROSS / r.L, klein = 0.16 / r.L;
+  if(r.phase === 'raus'){                                         // aus dem Rucksack hoch, gross werden, einmal drehen
+    const k = weich(r.t / 1.1);
+    r.p.position.lerpVectors(unten, mitte, k); r.p.position.y += Math.sin(k * Math.PI) * 0.25;
+    r.p.scale.setScalar(klein + (gross - klein) * k);
+    _qy.setFromAxisAngle(_y, k * Math.PI * 2); r.p.quaternion.copy(_qy).multiply(r.q);
+    if(r.t >= 1.1){ r.phase = 'warte'; r.t = 0; rucksack.hops = 1; const f = r.fertig; r.fertig = null; if(f) f(); }
+  } else if(r.phase === 'warte'){                                  // steht gross in der Mitte, waehrend das Bild kommt
+    if(r.stift){
+      // Stift zeichnet: die Spitze (Modell: schraeg, Spitze unten links) folgt der Zeichenstelle, mit leichtem Zittern
+      const S = r.stift, zx = (S.u - 0.5) * S.bw, zy = (0.5 - S.v) * S.bh;
+      const ziel = new THREE.Vector3(zx + 0.32, zy + 0.32, 1.5);
+      r.p.position.lerp(ziel, 0.35); r.p.position.x += Math.sin(r.t * 40) * 0.01; r.p.position.y += Math.cos(r.t * 33) * 0.01;
+      r.p.scale.setScalar(gross * 0.55); r.p.quaternion.copy(r.q);
+    } else {
+      r.p.position.copy(mitte); r.p.scale.setScalar(gross * 0.7); r.p.position.x = -GROSS * 1.2;   // ruckt nach links zur Seite
+      _qy.setFromAxisAngle(_y, Math.sin(r.t) * 0.3); r.p.quaternion.copy(_qy).multiply(r.q);
+    }
+  } else if(r.phase === 'rein'){                                   // zurueck in den Rucksack
+    const k = weich(r.t / 0.9), von = r.von || new THREE.Vector3(-GROSS * 1.2, 0.12, 0.6), vonS = r.vonS || gross * 0.7;
+    r.p.position.lerpVectors(von, unten, k); r.p.position.y += Math.sin(k * Math.PI) * 0.25;
+    r.p.scale.setScalar(vonS + (klein - vonS) * k);
+    if(r.t >= 0.9){ stoppe(r.mx); szene.remove(r.p); raus.akt = null; rucksack.hops = 1; story.spaeter(1.0, () => { if(!raus.akt && !flug.akt) rucksack.ziel = 0; }); }
+  }
+}
+
 // ---- Funkgeraet unten rechts, wenn ein Funkspruch kommt (Live-Wunsch 16.10.) -----------------------------------------
 // An der Stelle des Rucksacks erscheint das Funkgeraet und wackelt und blinkt genau wie das echte am Lagerfeuer (story.js
 // updateRadio) – so erkennt man einen Funkspruch immer sofort. Beide zugleich gibt es nicht: waehrend des Einsteckens
@@ -330,6 +387,146 @@ function inventarAn(an){
 // story.js (D-Pad runter / N): an = Spiel pausiert, aus = weiter
 story.inventar = (an) => inventarAn(an === undefined ? !inv.an : an);
 story.inventarOffen = () => inv.an;
+// ---- Auswahl im Inventar (Live-Wunsch 16.10.) ---------------------------------------------------------------------
+// Linker Stick / Pfeiltasten: links, rechts, hoch, runter durchs Raster; die Auswahl wird etwas groesser und leuchtet
+// leicht. A (Enter/Leertaste) = auswaehlen: Notizbuch -> aufschlagen (wenn schon etwas drin ist), sonst die Erklaerung wie
+// beim Einpacken. B = Inventar zu (wie D-Pad runter). Gelesen wird hier selbst – die Engine steht in der Pause.
+inv.wahl = 0;
+const eingabe = { x: 0, y: 0, a: false, b: false, sperre: 0 };
+// Tastatur zusaetzlich ueber keydown sammeln: ein kurzes Antippen faellt sonst zwischen zwei Bilder und geht verloren
+const tipp = { x: 0, y: 0, a: false, b: false };
+addEventListener('keydown', (e) => {
+  if(!(story.pauseArt && story.pauseArt() === 'inventar') || e.repeat) return;
+  if(e.code === 'ArrowLeft') tipp.x = -1; else if(e.code === 'ArrowRight') tipp.x = 1;
+  else if(e.code === 'ArrowUp') tipp.y = -1; else if(e.code === 'ArrowDown') tipp.y = 1;
+  else if(e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') tipp.a = true;
+  else if(e.code === 'KeyB' || e.code === 'Backspace' || e.code === 'Escape') tipp.b = true;
+}, true);
+function liesEingabe(){
+  let x = 0, y = 0, a = false, b = false;
+  if(keys['ArrowLeft']) x -= 1; if(keys['ArrowRight']) x += 1; if(keys['ArrowUp']) y -= 1; if(keys['ArrowDown']) y += 1;
+  if(keys['Enter'] || keys['Space'] || keys['NumpadEnter']) a = true; if(keys['KeyB'] || keys['Backspace'] || keys['Escape']) b = true;
+  for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])){ if(!gp) continue;
+    const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0; if(Math.abs(ax) > 0.5) x = Math.sign(ax); if(Math.abs(ay) > 0.5) y = Math.sign(ay);
+    if(gp.buttons[14] && gp.buttons[14].pressed) x = -1; if(gp.buttons[15] && gp.buttons[15].pressed) x = 1;
+    if(gp.buttons[12] && gp.buttons[12].pressed) y = -1;
+    if(gp.buttons[0] && gp.buttons[0].pressed) a = true; if(gp.buttons[1] && gp.buttons[1].pressed) b = true; }
+  return { x, y, a, b };
+}
+// Kanten erkennen (ein Druck = ein Schritt), Stick mit Wiederholung nach 0,35 s
+function eingabeKanten(dt){
+  const e = liesEingabe(), out = { x: 0, y: 0, a: (e.a && !eingabe.a) || tipp.a, b: (e.b && !eingabe.b) || tipp.b };
+  if(tipp.x || tipp.y){ out.x = tipp.x; out.y = tipp.y; eingabe.sperre = 0.35; }
+  const getippt = !!(tipp.x || tipp.y); tipp.x = tipp.y = 0; tipp.a = tipp.b = false;
+  if(getippt){ eingabe.x = e.x; eingabe.y = e.y; eingabe.a = e.a; eingabe.b = e.b; return out; }
+  const dir = e.x || e.y;
+  if(!dir){ eingabe.sperre = 0; }
+  else if(eingabe.sperre <= 0 || (e.x !== eingabe.x || e.y !== eingabe.y)){ out.x = e.x; out.y = e.y; eingabe.sperre = eingabe.x === e.x && eingabe.y === e.y ? 0.18 : 0.35; }
+  else eingabe.sperre -= dt;
+  eingabe.x = e.x; eingabe.y = e.y; eingabe.a = e.a; eingabe.b = e.b;
+  return out;
+}
+function inventarSteuern(dt){
+  const k = eingabeKanten(dt);
+  if(buch.offen){ buchSteuern(k); return; }
+  if(k.b){ inventarSchliessen(); return; }                       // B geht immer, auch waehrend einer Erklaerung
+  if(inv.sprichtWahl) return;                                    // Erklaerung laeuft: sonst warten
+  const n = inv.anzahl || 0; if(!n) { if(k.b) inventarSchliessen(); return; }
+  const zeilen = Math.ceil(n / INV_PRO_ZEILE);
+  let z = Math.floor(inv.wahl / INV_PRO_ZEILE), s = inv.wahl % INV_PRO_ZEILE;
+  if(k.x){ s = (s + k.x + INV_PRO_ZEILE) % INV_PRO_ZEILE; }
+  if(k.y){ z = (z + k.y + zeilen) % zeilen; }
+  inv.wahl = Math.min(n - 1, z * INV_PRO_ZEILE + s);
+  if(k.b){ inventarSchliessen(); return; }
+  if(k.a){
+    const d = inv.dinge.find(q => q.i === inv.wahl); if(!d) return;
+    if(d.n === 'notizbuch' && story.notizSeiten && story.notizSeiten().length){ buchOeffnen(); return; }
+    inv.sprichtWahl = true;
+    story.sprich(TEXT[d.n] || [], () => { inv.sprichtWahl = false; });
+  }
+}
+function inventarSchliessen(){ inv.sprichtWahl = false; buch.offen = false; if(story.inventarZu) story.inventarZu(); }
+
+// ---- Notizbuch (Live-Wunsch 16.10.) -------------------------------------------------------------------------------
+// Im Inventar das Notizbuch mit A: es wird gross und schlaegt sich auf der zuletzt beklebten Seite auf (Doppelseite: links
+// die Seite, rechts die naechste). Links/rechts blaettert, B schlaegt es zu – man ist wieder im Inventar. Die Seiten
+// (Foto, Skizze ...) liefert notizbuch.js als Canvas (story.notizSeiten). Gezeichnet auf eine Ebene in der Bildebene.
+const buch = { offen: false, k: 0, mesh: null, cv: null, seite: 0, blatt: 0 };
+function buchBauen(){
+  if(buch.mesh) return;
+  buch.cv = document.createElement('canvas'); buch.cv.width = 1600; buch.cv.height = 1000;
+  buch.tex = new THREE.CanvasTexture(buch.cv);
+  buch.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: buch.tex, transparent: true, depthWrite: false }));
+  buch.mesh.renderOrder = 3; buch.mesh.visible = false; szene.add(buch.mesh);
+}
+function buchOeffnen(){
+  buchBauen();
+  const seiten = story.notizSeiten();
+  buch.offen = true; buch.seite = Math.max(0, seiten.length - 1);    // zuletzt beklebte Seite
+  buch.seite -= buch.seite % 2;                                      // Doppelseiten: gerade Nummer links
+  buchMalen();
+}
+function buchSteuern(k){
+  const n = story.notizSeiten().length;
+  if(k.b){ buch.offen = false; return; }                             // zu: zurueck ins Inventar
+  if(k.x > 0 && buch.seite + 2 < n){ buch.seite += 2; buch.blatt = 1; buchMalen(); }
+  if(k.x < 0 && buch.seite > 0){ buch.seite -= 2; buch.blatt = -1; buchMalen(); }
+}
+// Doppelseite malen: Einband, zwei Papierseiten, Bindung, eingeklebte Bilder mit Klebestreifen, Seitenzahlen
+function buchMalen(){
+  const c = buch.cv.getContext('2d'), W = 1600, H = 1000, seiten = story.notizSeiten();
+  c.clearRect(0, 0, W, H);
+  // Einband (dunkles Leder) mit runden Ecken
+  const rund = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+  c.fillStyle = '#5a2e1a'; rund(20, 20, W - 40, H - 40, 34); c.fill();
+  c.strokeStyle = '#3a1c0f'; c.lineWidth = 6; c.stroke();
+  // Papier: zwei Seiten
+  for(const [x, links] of [[60, true], [W / 2 + 6, false]]){
+    const g = c.createLinearGradient(x, 0, x + W / 2 - 66, 0);
+    g.addColorStop(links ? 0 : 1, '#f3ead2'); g.addColorStop(links ? 0.92 : 0.08, '#efe4c8'); g.addColorStop(links ? 1 : 0, '#d9caa6');
+    c.fillStyle = g; c.fillRect(x, 54, W / 2 - 66, H - 108);
+    // feine Linien wie im Schreibheft
+    c.strokeStyle = 'rgba(120,140,170,.18)'; c.lineWidth = 2;
+    for(let y = 120; y < H - 70; y += 46){ c.beginPath(); c.moveTo(x + 30, y); c.lineTo(x + W / 2 - 96, y); c.stroke(); }
+  }
+  // Bindung in der Mitte
+  const bg = c.createLinearGradient(W / 2 - 30, 0, W / 2 + 30, 0); bg.addColorStop(0, 'rgba(0,0,0,0)'); bg.addColorStop(0.5, 'rgba(0,0,0,.35)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = bg; c.fillRect(W / 2 - 30, 54, 60, H - 108);
+  // Inhalt: links Seite buch.seite, rechts buch.seite + 1
+  for(const [i, x] of [[buch.seite, 60], [buch.seite + 1, W / 2 + 6]]){
+    const s = seiten[i]; if(!s) continue;
+    const bw = W / 2 - 66, bh = H - 108, pad = 70;
+    const ar = s.bild.width / s.bild.height; let w = bw - pad * 2, h = w / ar; if(h > bh - pad * 2 - 60){ h = bh - pad * 2 - 60; w = h * ar; }
+    const bx = x + (bw - w) / 2, by = 54 + pad + 10;
+    c.save(); c.translate(bx + w / 2, by + h / 2); c.rotate(s.dreh || 0);
+    if(s.art === 'foto'){ c.fillStyle = '#ffffff'; c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillRect(-w / 2 - 18, -h / 2 - 18, w + 36, h + 80); c.shadowColor = 'transparent'; }
+    c.drawImage(s.bild, -w / 2, -h / 2, w, h);
+    // Klebestreifen an zwei Ecken
+    c.fillStyle = 'rgba(255,248,210,.75)';
+    for(const [ex, ey, r] of [[-w / 2, -h / 2 - 10, -0.6], [w / 2, -h / 2 - 10, 0.6]]){ c.save(); c.translate(ex, ey); c.rotate(r); c.fillRect(-46, -14, 92, 28); c.restore(); }
+    c.restore();
+    c.fillStyle = 'rgba(80,60,40,.7)'; c.font = '600 30px system-ui,sans-serif'; c.textAlign = 'center';
+    c.fillText(String(i + 1), x + bw / 2, H - 70);
+  }
+  // Pfeile, wenn man weiterblaettern kann
+  c.fillStyle = 'rgba(255,230,160,.9)';
+  const pfeil = (x, r) => { c.beginPath(); c.moveTo(x, H / 2 - 34); c.lineTo(x + 34 * r, H / 2); c.lineTo(x, H / 2 + 34); c.closePath(); c.fill(); };
+  if(buch.seite > 0) pfeil(52, -1);
+  if(buch.seite + 2 < seiten.length) pfeil(W - 52, 1);
+  buch.tex.needsUpdate = true;
+}
+function updateBuch(dt){
+  if(!buch.mesh) return;
+  buch.k += klemme((buch.offen ? 1 : 0) - buch.k, -dt * 4, dt * 4);
+  buch.mesh.visible = buch.k > 0.001;
+  if(!buch.mesh.visible) return;
+  const H = hoeheEbene(), B = H * innerWidth / innerHeight, s = weich(buch.k);
+  const w = Math.min(B * 0.86, H * 0.86 * 1.6);
+  buch.blatt *= Math.max(0, 1 - dt * 6);                             // kleiner Ruck beim Blaettern
+  buch.mesh.position.set(buch.blatt * 0.15, 0, 1);
+  buch.mesh.scale.set(w * s, w / 1.6 * s, 1);
+  buch.mesh.material.opacity = s;
+}
 const _iq = new THREE.Quaternion();
 function updateInventar(dt){
   inv.k += klemme((inv.an ? 1 : 0) - inv.k, -dt * 4, dt * 4);
@@ -347,13 +544,16 @@ function updateInventar(dt){
   for(const d of inv.dinge){
     const zeile = Math.floor(d.i / INV_PRO_ZEILE), spalte = d.i % INV_PRO_ZEILE, inZeile = Math.min(INV_PRO_ZEILE, n - zeile * INV_PRO_ZEILE);
     const x = (spalte - (inZeile - 1) / 2) * platz, y = ((zeilen - 1) / 2 - zeile) * platz;
+    // Auswahl: weich etwas groesser (25 %) und mit leichtem Schein; alle anderen nur ein ganz dezenter Schein
+    const gewaehlt = d.i === inv.wahl && !buch.offen;
+    d.w = (d.w || 0) + ((gewaehlt ? 1 : 0) - (d.w || 0)) * Math.min(1, dt * 8);
     d.p.position.set(x, y, 0.3);
-    d.p.scale.setScalar(s * gross / d.L);
+    d.p.scale.setScalar(s * gross / d.L * (1 + 0.25 * d.w) * (buch.offen ? 1 - buch.k : 1));
     _iq.setFromAxisAngle(_y, inv.t * 0.9 + d.i * 1.1);            // langsam drehen, jedes etwas versetzt
     d.p.quaternion.copy(_iq).multiply(d.q);
     d.glow.position.set(x, y, -0.2);                              // hinter dem Ding
-    d.glow.scale.setScalar(platz * 0.95 * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
-    d.glow.material.opacity = 0.75 * s;
+    d.glow.scale.setScalar(platz * (0.7 + 0.3 * d.w) * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
+    d.glow.material.opacity = (0.18 + 0.32 * d.w) * s * (buch.offen ? 1 - buch.k : 1);
   }
 }
 
@@ -367,14 +567,19 @@ function hookAusruestung(){
     const p = story.pause && story.pause();                       // Pause: alles steht, gezeichnet wird weiter
     if(!p) for(const mx of mixer) mx.update(dt);
     else if(story.pauseArt && story.pauseArt() === 'inventar') for(const d of inv.dinge) if(d.mx) d.mx.update(dt);   // Messer klappt, Nadel dreht
-    if(!szene && story.funkAktiv && story.funkAktiv()) ebene();   // Funkspruch, bevor je etwas eingesteckt wurde
+    // Funkspruch oder offene Foto-/Skizzenstelle, bevor je etwas eingesteckt wurde: die Bildebene gleich anlegen
+    if(!szene && ((story.funkAktiv && story.funkAktiv()) || (story.notiz && story.notiz.frei))) ebene();
     if(szene){
       // In der Pause steht alles – ausser dem Inventar selbst (das IST die Inventar-Pause): Rucksack und Dinge drehen weiter
       const inventarPause = p && story.pauseArt && story.pauseArt() === 'inventar';
-      if(!p){ updateFlug(dt); updateRucksack(dt); updateInventar(dt); }
+      if(!p){ updateFlug(dt); updateRucksack(dt); updateInventar(dt); updateRaus(dt); }
       else if(inventarPause || inv.k > 0){ updateRucksack(dt); updateInventar(dt); }
+      if(inventarPause && inv.an) inventarSteuern(dt);            // Auswahl, A, B, Notizbuch blaettern
+      updateBuch(dt);
+      if(story.bildEbene) story.bildEbene(dt, szene, p);          // notizbuch.js: Foto/Skizze zeigen und einkleben
       updateFunkSymbol(dt);                                       // in der Pause blendet es aus
-      if(flug.akt || rucksack.pivot.visible || inv.dinge.length || (inv.flaeche && inv.flaeche.visible) || (funk.pivot && funk.pivot.visible)){
+      if(flug.akt || rucksack.pivot.visible || inv.dinge.length || (inv.flaeche && inv.flaeche.visible) || (funk.pivot && funk.pivot.visible)
+         || (buch.mesh && buch.mesh.visible) || raus.akt || (story.bildEbeneAktiv && story.bildEbeneAktiv())){
         kam.aspect = innerWidth / innerHeight; kam.updateProjectionMatrix();
         const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth();
         renderer.render(szene, kam); renderer.autoClear = ac;

@@ -319,7 +319,7 @@ function hookFigur(){
     return updateEvaOrig(dt, Object.assign({}, inp, { pitch: -Math.sign(roh) * f }));
   };
   // B zu Fuss: hinknien / aufstehen (Engine: buttonB -> evaActionB, Tastatur B und Controller-Knopf 1)
-  evaActionB = function(){ knieUmschalten(); };
+  evaActionB = function(){ if(hilfeOffen()) return; knieUmschalten(); };   // im Inventar ist B "zu" (ausruestung.js)
   evaJump = function(){};          // der Engine-Huepfer passt nicht zur Figur
   // Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund
   const solidFigOrig = evaSolid;
@@ -1235,7 +1235,9 @@ function interAktion(o){
 function hookInteraktion(){
   // Y an einem entdeckten Objekt = dessen Aktion (statt Ein-/Aussteigen der Engine)
   const yOrig = buttonY;
-  buttonY = function(){ const o = interNaechstes(); if(o){ interAktion(o); return; } return yOrig.apply(this, arguments); };
+  // In Pause und Inventar tun Y (und B, siehe hookFigur) nichts – sonst stieg man z. B. im Inventar ins Boot
+  buttonY = function(){ if(hilfeOffen()) return; if(story.fotoY && story.fotoY()) return;   // notizbuch.js: Foto-/Skizzenstelle
+    const o = interNaechstes(); if(o){ interAktion(o); return; } return yOrig.apply(this, arguments); };
 }
 // Suchblick: Fuchs besucht die unentdeckten Objekte in der Naehe, jeweils das naechste zuerst
 function fuchsSuche(){
@@ -1765,9 +1767,11 @@ function hookTon(){
   toggleSound = function(){
     story.tonAn();
     if(!story.gestartet || !story.inventar || (story.globusAktiv && story.globusAktiv())) return;
-    if(pause.art === 'inventar'){ pauseSetzen(null); story.inventar(false); }
+    if(pause.art === 'inventar') story.inventarZu();
     else if(!pause.art && story.inventar(true)) pauseSetzen('inventar');
   };
+  // Inventar zu (D-Pad runter, oder B im Inventar – ausruestung.js): auch ein offenes Notizbuch klappt mit zu
+  story.inventarZu = function(){ if(pause.art !== 'inventar') return; pauseSetzen(null); story.inventar(false); };
   // D-Pad hoch / H (vorher das Hilfe-Fenster) = Pause mit PAUSE-Zeichen
   toggleHelp = function(){
     if(!story.gestartet) return;

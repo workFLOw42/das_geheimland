@@ -285,7 +285,7 @@ function setzeUm(ziel){
 function hookBoot(){
   const yOrig = buttonY;
   buttonY = function(){
-    if(s.wechsel) return;
+    if(s.wechsel || (story.pause && story.pause())) return;        // in Pause und Inventar kein Ein-/Aussteigen
     if(s.imBoot){
       if(Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) < ANLEGEN){ wechsle('steg'); return; }
       if(!s.hinweis){ s.hinweis = true; story.sprich(TEXT_ZURUECK, () => { s.hinweis = false; }); }

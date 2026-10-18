@@ -30,6 +30,16 @@ const FAHRT_MAX = 3.2, FAHRT_RUECK = 0.8;   // m/s vorwaerts / rueckwaerts
 const DREH_MAX = 0.55;                      // rad/s in voller Fahrt (im Stand dreht es kaum)
 const FAHRT_WEIT = 260;                     // m: so weit faehrt es vom Steg weg (dahinter laedt die Engine keine Inseln)
 const ANLEGEN = 9;                          // m: so nah am Liegeplatz kann man aussteigen
+// Live-Wunsch 18.10.2026 ("der Bereich am Steg, an dem man aussteigen kann, darf grosszuegiger werden"): zusaetzlich
+// ueberall entlang des Stegs – seitlich und vor seinem Ende – bis ANLEGEN_KANTE von den Planken weg. Nicht mitten auf
+// dem Wasser: weiter draussen bleibt "Fahr erst zurueck zum Steg". Ausgestiegen wird wie bisher auf dem Steg neben dem
+// Liegeplatz (das Boot legt dort an).
+const ANLEGEN_KANTE = 6;
+function amSteg(){
+  if(Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) < ANLEGEN) return true;
+  const dx = Math.max(0, Math.abs(s.bx - STEG.x) - STEG.B / 2), dz = Math.max(0, s.bz - STEG.zEnde, STEG.zUfer - s.bz);
+  return Math.hypot(dx, dz) < ANLEGEN_KANTE;
+}
 const TEXT_ZURUECK = ['Fahr erst zurück zum Steg. Dann kannst du aussteigen.'];
 story.stegZustand = s;
 
@@ -287,7 +297,7 @@ function hookBoot(){
   buttonY = function(){
     if(s.wechsel || (story.pause && story.pause())) return;        // in Pause und Inventar kein Ein-/Aussteigen
     if(s.imBoot){
-      if(Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) < ANLEGEN){ wechsle('steg'); return; }
+      if(amSteg()){ wechsle('steg'); return; }
       if(!s.hinweis){ s.hinweis = true; story.sprich(TEXT_ZURUECK, () => { s.hinweis = false; }); }
       return;
     }
@@ -310,7 +320,7 @@ function hookBoot(){
     const yaw = story.bootYaw() + evaOrbit;                       // Bug-Richtung der Welt (Winkel ab +z)
     const b = s.boot.position;
     _z.set(b.x + Math.sin(yaw) * 3.0, b.y + 1.0, b.z + Math.cos(yaw) * 3.0);       // Blickpunkt: vorn im Boot
-    _k.set(b.x - Math.sin(yaw) * 6.5, b.y + 3.4, b.z - Math.cos(yaw) * 6.5);         // mittig hinter dem Heck
+    _k.set(b.x - Math.sin(yaw) * 7.8, b.y + 3.8, b.z - Math.cos(yaw) * 7.8);         // mittig hinter dem Heck (18.10.: ein Stueck weiter zurueck, +20 %)
     camera.position.lerp(_k, Math.min(1, 3 * dtCam)); camera.up.set(0, 1, 0); camera.lookAt(_z);
   };
   // Im Boot: Joshi sitzt, der linke Stick faehrt das Boot (vor/zurueck, lenken) – siehe updateFahrt
@@ -430,12 +440,26 @@ story.updateSteg = function(dt){
   if(s.zeichen){
     s.zeichen.visible = zeigen;
     // im Boot: das Y zum Aussteigen nur, wenn das Boot am Steg liegt UND (fast) steht – beim Fahren kein Y (Live-Wunsch)
-    if(s.imBoot && (Math.hypot(s.bx - BOOT.x, s.bz - BOOT.z) >= ANLEGEN || Math.abs(s.v) > 0.3)) s.zeichen.visible = false;
+    if(s.imBoot && (!amSteg() || Math.abs(s.v) > 0.3)) s.zeichen.visible = false;
     if(zeigen){ const p = s.imBoot ? eva.group.position : new THREE.Vector3(BOOT.x, STEG.H, BOOT.z);
       s.zeichen.position.set(p.x, (s.imBoot ? p.y + 1.6 : STEG.H + 2.4) + Math.sin(s.t * 3) * 0.07, p.z); }
   }
 };
 story.imBoot = () => s.imBoot;
+// Bordwand auf der Wasserlinie an der Laengsstelle vor (m, Heck -L/2 .. Bug +L/2): x links (seite -1) bzw. rechts (+1),
+// aus RUMPF_WL (ausgemessen). Live-Befund 17.10.: der Rumpf ist unsymmetrisch (links -0,97, rechts +0,78 m) – die Gischt
+// startete rechts bei +0,8 m fest und lag damit IM Boot (segeln.js nimmt jetzt diese Wand).
+// oben = true: die BORDKANTE (Draufsicht, breiteste Stelle bis Relinghoehe) – der Rumpf ist oben deutlich breiter als
+// an der Wasserlinie; was nur ausserhalb der Wasserlinie liegt, sieht man von oben/hinten noch "im Boot" (Live-Bild 17.10.)
+// RUMPF_OBEN: ausgemessen wie RUMPF_WL (C:/tmp/jfg/test/rumpf3.js), je Scheibe das Maximum der Nachbarn (Messluecken)
+const RUMPF_OBEN = [[-0.14, 0.16], [-0.68, 0.60], [-1.10, 1.04], [-1.10, 1.04], [-1.17, 1.14], [-1.20, 1.18], [-1.20, 1.18], [-1.20, 1.18],
+                    [-1.17, 1.16], [-1.17, 1.16], [-1.11, 1.10], [-1.03, 0.97], [-1.03, 0.97], [-0.82, 0.76], [-0.82, 0.76], [-0.49, 0.40]];
+story.bordwand = function(vor, seite, oben){
+  const T = oben ? RUMPF_OBEN : RUMPF_WL;
+  const N = T.length, f = klemmeS((vor / BOOT.laenge + 0.5) * N - 0.5, 0, N - 1), i = Math.min(N - 2, Math.floor(f)), t = f - i;
+  const j = seite < 0 ? 0 : 1; return T[i][j] + (T[i + 1][j] - T[i][j]) * t;
+};
+const klemmeS = (v, a, b) => Math.max(a, Math.min(b, v));
 story.bootPunkt = (vor, seit, hoch) => s.boot ? new THREE.Vector3(seit || 0, s.deckY + (hoch || 0), vor || 0).applyMatrix4(s.boot.matrixWorld) : null;
 // Bug-Richtung in der Welt als Winkel ab +z (wie fuchs.yaw): vorn im Boot = lokale +z-Achse der Bootsgruppe
 const _bv = new THREE.Vector3();

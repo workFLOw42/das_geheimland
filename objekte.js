@@ -301,7 +301,7 @@ story.freierPlatz = function(x, z, wer){
   const hits = story.hitsOhneDinge || hitsBuilding;
   const ok = (px, pz) => {
     if(!evaSolid(px, pz)) return false;
-    if(fuchs && story.watGrund(px, pz) !== null) return false;
+    if(fuchs && story.watGrund(px, pz) !== null && !(story.aufSteg && story.aufSteg(px, pz))) return false;   // oben auf dem Steg gilt die Watzone darunter nicht
     const fy = evaFootY(px, pz);
     if(hits(px, fy + (fuchs ? 0.5 : 1), pz, false)) return false;
     if(tiefe(px, pz, fy, M.h, M.r, M.stufe) > 0) return false;

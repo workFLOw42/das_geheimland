@@ -1,4 +1,4 @@
-# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
+﻿# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
 # Aufruf aus dem Projektordner:  powershell -File tools/build_engine.ps1
 # Die Engine bleibt UNVERAENDERT – die Spiellogik haengt sich in story.js per Wrapper ein.
 $ErrorActionPreference = 'Stop'
@@ -47,7 +47,10 @@ if($fehlt){ throw ('Engine-Funktionen fehlen (umbenannt?): ' + ($fehlt -join ', 
 $head = @()
 $assets = @()
 foreach($ln in $lines[0..($start-1)]){
-  if($ln -match '<link rel="manifest"'){ continue }          # noch keine eigene PWA
+  # eigene PWA (manifest.json, sw.js, pwa.js - wie in Reise nach Japan): Manifest und Icon des Geheimlands statt des Flugspiels
+  if($ln -match '<link rel="manifest"'){ $head += '<link rel="manifest" href="manifest.json">'; $head += '<link rel="apple-touch-icon" href="icon-192.png">'; continue }
+  if($ln -match '<link rel="apple-touch-icon"'){ continue }
+  $ln = $ln -replace '<meta name="theme-color" content="[^"]*">', '<meta name="theme-color" content="#0e1a3a">'
   if($ln -match '<script src="([^"]+)"></script>'){ $assets += $Matches[1]; $head += ($ln -replace 'src="', 'src="engine/'); continue }
   $ln = $ln -replace '<title>Flugspiel</title>', '<title>Das Geheimland</title>'
   $ln = $ln -replace 'content="Flugspiel"', 'content="Das Geheimland"'
@@ -80,6 +83,7 @@ foreach($n in @('gitarre', 'funk')){
 # Moewen kommen fertig aus Spiel_SFG (moewe_glb.js, MOEWE_SITZ_GLB + MOEWE_FLUG_GLB)
 if(Test-Path (Join-Path $root 'moewe_glb.js')){ $skripte += 'moewe_glb.js' }
 $skripte += 'story.js'
+$skripte += 'pwa.js'
 $skripte += 'objekte.js'
 $skripte += 'sternbilder.js'
 $skripte += 'texturen.js'
@@ -89,6 +93,7 @@ $skripte += 'huette_innen.js'
 $skripte += 'ausruestung.js'
 $skripte += 'joshi_kopf.js'
 $skripte += 'segeln.js'
+$skripte += 'wasserspuren.js'
 $skripte += 'globus.js'
 $skripte += 'notizbuch.js'
 

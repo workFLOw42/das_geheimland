@@ -33,7 +33,8 @@ function bogen(a, b, n){
   for(let i = 0; i <= n; i++){
     const t = i / n;
     const v = new THREE.Vector3().copy(va).multiplyScalar(Math.sin((1 - t) * w) / Math.sin(w)).addScaledVector(vb, Math.sin(t * w) / Math.sin(w));
-    out.push(v.normalize().multiplyScalar(GLOBUS_R * (1.01 + 0.06 * Math.sin(Math.PI * t))));
+    // 2 % ueber der Kugel statt 1 % (Live-Befund 18.10.2026 in Trip to Japan: die Kugel schnitt den Faden stellenweise an)
+    out.push(v.normalize().multiplyScalar(GLOBUS_R * (1.02 + Math.min(0.06, 0.03 + w * 0.04) * Math.sin(Math.PI * t))));
   }
   return out;
 }
@@ -152,7 +153,7 @@ function zeichnen(anteil){
     const letztes = i === r.length - 1;
     const pts = bogen(ORTE[r[i - 1]], ORTE[r[i]], 48), n = Math.max(2, Math.round(pts.length * (letztes ? anteil : 1)));
     gl.faden.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.slice(0, n)), Math.max(4, n * 2), 0.009, 8, false),
-      new THREE.MeshBasicMaterial({ color: 0xe02020 })));
+      new THREE.MeshBasicMaterial({ color: 0xe02020, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })));   // gewinnt knapp gegen die Kugel
     if(letztes) spitze = pts[n - 1];
   }
   // Joshis Insel: das Haus (statt eines Punkts), etwas ueber der Oberflaeche

@@ -73,6 +73,10 @@ function malRadar(x, z, kurs){
 // dem Hoechstwert nur an, damit blieb das letzte blaue Segment unerreichbar (Live-Befund 16.10.) ------------------------
 const SCHUB_SICHT = 5, SCHUB_AUS = 1.5;      // s sichtbar nach der letzten Aenderung, dann s ausblenden
 let schubAlt = '', schubT = 0, schubOp = '';
+// Live-Wunsch 18.10.2026: sichtbar nicht erst, wenn sich der Schub AENDERT, sondern sobald die Schubtasten betaetigt
+// werden – auch bei Vollschub und weiter hoch gedrueckt. Schubtasten: rechter Stick / W,S (thrHold), Leertaste, X, A/C
+// (Hook in hookSegeln). Eine geaenderte Stufe zaehlt weiterhin mit.
+function schubBetaetigt(){ schubT = 0; }
 function malSchub(g, dt){
   const an = g < -0.01 ? -1 : Math.round(klemme(g, 0, 1) * 10);
   if(String(an) !== schubAlt){
@@ -146,6 +150,8 @@ function fahrtBauen(){
   for(let i = 0; i < WIND_N; i++) fahrt.windT.push({ x: 0, y: 0, z: 0, life: 0 });
 }
 const _gV = new THREE.Vector3();
+const _gInv = new THREE.Matrix4(), _gL = new THREE.Vector3(), _gK = new THREE.Vector3();
+const GISCHT_RAND = 0.35;      // m ueber dem Bootsboden (Bootskoordinaten): so hoch duerfen Spritzer dicht an der Bordwand
 function updateFahrtOptik(dt, s, an){
   fahrtBauen();
   const v = an ? Math.abs(s.v) : 0, k = klemme(v / 3.2, 0, 1);
@@ -157,18 +163,41 @@ function updateFahrtOptik(dt, s, an){
     for(const seite of [-1, 1]){
       let t = fahrt.gischt.find(q => !q.m.visible);
       if(!t){ if(fahrt.gischt.length >= GISCHT_MAX) break; t = { m: new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), fahrt.gMat), v: new THREE.Vector3() }; fahrt.g.add(t.m); fahrt.gischt.push(t); }
-      // vorn an der Bordwand (etwas hinter der Spitze), auf der Wasserlinie
-      const p = story.bootPunkt((1.0 + Math.random() * 1.0) * vor, 0.8 * seite, -0.3) || _gV.set(s.bx, 0, s.bz);   // Bugwelle: entlang der vorderen Bordwand
+      // vorn an der Bordwand (etwas hinter der Spitze), auf der Wasserlinie – genau AUSSEN an der Wand dieser Stelle
+      // (story.bordwand: der Rumpf ist unsymmetrisch; mit festen 0,8 m lag die Gischt rechts im Boot, Live-Befund 17.10.)
+      // ausserhalb der BORDKANTE (Draufsicht), nicht nur der Wasserlinie – sonst sah man sie von oben im Boot
+      const lz = (1.0 + Math.random() * 1.0) * vor, wand = story.bordwand ? story.bordwand(lz, seite, true) : 0.8 * seite;
+      const p = story.bootPunkt(lz, wand + seite * 0.12, -0.3) || _gV.set(s.bx, 0, s.bz);
       t.m.position.set(p.x, seaYAt(p.x, p.z) + 0.05, p.z); t.m.visible = true; t.t = 0; t.s = 0.6 + Math.random() * 1.0;
       // seitlich hinaus, nach hinten und ein Stueck hoch
       const quer = (0.8 + Math.random() * 0.9) * (0.5 + k), hoch = 0.8 + Math.random() * 1.0 * (0.4 + k), zurueck = 0.4 + k * 0.8;
       t.v.set(fz * seite * quer - fx * zurueck * vor, hoch, -fx * seite * quer - fz * zurueck * vor);
     }
   }
+  // Heckwelle (Live-Wunsch 18.10.2026, wie bei den Orcas – wasserspuren.js story.heckWelle): alle paar Zehntel eine helle
+  // Scheibe hinter dem Heck, die auseinanderlaeuft und vergeht; je schneller, desto oefter und breiter
+  fahrt.wT = (fahrt.wT || 0) - dt;
+  if(an && v > 0.5 && fahrt.wT <= 0 && story.heckWelle && story.bootPunkt){
+    fahrt.wT = 0.16 / (0.4 + k);
+    const vor = s.v >= 0 ? 1 : -1, p = story.bootPunkt(-3.3 * vor, 0, -0.3);
+    if(p) story.heckWelle(p.x, p.z, (story.bootYaw ? story.bootYaw() : s.yaw) + (vor < 0 ? Math.PI : 0), 0.3 + k * 0.6, 0.55);
+  }
+  // nie ueber dem Boot (Live-Befund 17.10.: Spritzer flogen ueber den Bug ins Boot): in Bootskoordinaten pruefen, ob
+  // der Punkt zwischen den Bordwaenden liegt (story.bordwand), egal in welcher Hoehe
+  const inv = story.stegZustand && story.stegZustand.boot ? _gInv.copy(story.stegZustand.boot.matrixWorld).invert() : null;
+  if(inv) _gK.copy(camera.position).applyMatrix4(inv);             // Kamera in Bootskoordinaten (auf welcher Seite?)
   for(const t of fahrt.gischt) if(t.m.visible){
     t.t += dt; t.v.y -= 9.81 * dt; t.m.position.addScaledVector(t.v, dt);
     t.m.scale.setScalar(t.s * Math.max(0.15, 1 - t.t * 1.4));
     if(t.t > 0.7 || t.m.position.y < seaYAt(t.m.position.x, t.m.position.z) - 0.2) t.m.visible = false;
+    else if(inv && story.bordwand){ _gL.copy(t.m.position).applyMatrix4(inv);
+      // ueber dem Boot nie – und nahe an der Bordwand nicht hoeher als ihre Oberkante (sonst sah man sie von der anderen
+      // Seite ueber den Rand hinweg "im Boot", Live-Bild 17.10.)
+      const l = story.bordwand(_gL.z, -1, true), r = story.bordwand(_gL.z, 1, true);   // Bordkante (Draufsicht)
+      if(Math.abs(_gL.z) < 3.2 && (_gL.x > l - 0.05 && _gL.x < r + 0.05 || (_gL.x > l - 0.6 && _gL.x < r + 0.6 && _gL.y > GISCHT_RAND))) t.m.visible = false;
+      // auf der von der Kamera abgewandten Seite nicht (man saehe sie ueber den niedrigen Bootsrand hinweg wie "im Boot")
+      // (nur wenn die Kamera deutlich seitlich steht – von hinten sieht man nicht ins Boot, dann beide Seiten)
+      else if(Math.abs(_gK.x) > 1.5 && Math.abs(_gL.z) < 3.2 && Math.sign(_gL.x) !== Math.sign(_gK.x)) t.m.visible = false; }
   }
   // Wind: erst ab halber Fahrt, sanft ein- und ausblenden
   const st = an ? klemme((v - 1.4) / 1.8, 0, 1) : 0;
@@ -238,6 +267,15 @@ function zielZiehen(z, s, dt){
 story.zielErreicht = story.zielErreicht || function(){ story.sprich(['Du bist angekommen!']); };   // globus.js ersetzt das
 
 function hookSegeln(){
+  // Schubtasten betaetigt -> Schubbalken sofort wieder ganz sichtbar (siehe schubBetaetigt)
+  const holdOrig = thrHold;
+  thrHold = function(dir){ if(dir) schubBetaetigt(); return holdOrig.apply(this, arguments); };
+  const leseOrig = readInput;
+  readInput = function(){
+    const r = leseOrig.apply(this, arguments);
+    if(keys['Space'] || keys['KeyC'] || keys['KeyX'] || keys['ShiftLeft'] || keys['ShiftRight'] || aPrev || boosting) schubBetaetigt();
+    return r;
+  };
   const loopOrig = loop;
   let tVor = performance.now();
   loop = function(){

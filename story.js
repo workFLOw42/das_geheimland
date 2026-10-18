@@ -599,6 +599,23 @@ function updateStaub(dt){
     if(h < STAUB_UNTEN) f.unten = true;
     else if(f.unten && h > STAUB_HOCH){ f.unten = false; if(geht) staubPuff({ x: _fp.x, y: evaFootY(_fp.x, _fp.z), z: _fp.z }, figur.ausschlag > 0.5 ? 1 : 0.65); }
   }
+  fuchsStaub(dt);
+}
+// Fuchsi wirbelt auch Staub auf (Live-Wunsch 18.10.2026): laeuft er schneller als FUCHS_STAUB_V, steigt in kurzen
+// Abstaenden hinter ihm ein kleineres Woelkchen auf (er ist klein und leicht) – nur auf Gras und Sand, nicht auf dem
+// Steg, im Wasser, im Boot oder im Innenraum.
+const FUCHS_STAUB_V = 0.3, _ffp = new THREE.Vector3();
+function fuchsStaub(dt){
+  const F = fuchs; if(!F.obj || !F.aktiv || !F.obj.visible || F.modus === 'boot' || (story.innen && story.innen.drin) || dt <= 0) return;
+  const p = F.obj.position, v = staub.fuchsVor ? Math.hypot(p.x - staub.fuchsVor.x, p.z - staub.fuchsVor.z) / dt : 0;
+  const rx = staub.fuchsVor ? p.x - staub.fuchsVor.x : 0, rz = staub.fuchsVor ? p.z - staub.fuchsVor.z : 0;
+  staub.fuchsVor = (staub.fuchsVor || _ffp).set(p.x, p.y, p.z);
+  if(v < FUCHS_STAUB_V || v > 20){ staub.fuchsT = Math.min(staub.fuchsT || 0, 0.08); return; }
+  if((staub.fuchsT = (staub.fuchsT || 0) - dt) > 0) return;
+  staub.fuchsT = 0.18 + 0.22 / (0.6 + Math.min(1.5, v / 3)) + Math.random() * 0.06;
+  if((story.aufSteg && story.aufSteg(p.x, p.z)) || watGrund(p.x, p.z) !== null || !(isOnLand(p.x, p.z) || isOnBeach(p.x, p.z))) return;
+  const l = Math.hypot(rx, rz) || 1;
+  staubPuff({ x: p.x - rx / l * 0.25, y: evaFootY(p.x, p.z), z: p.z - rz / l * 0.25 }, Math.min(0.6, 0.35 + v / 15));
 }
 story.staub = staub;
 
@@ -825,7 +842,10 @@ function fuchsClipLaeuft(name){
 // Wo darf er laufen? Gras, Sand und der Huetten-Innenraum – nicht ins Wasser (auch nicht ins Flache), nicht in Waende
 // Grenzen der Dinge (objekte.js) in seiner Groesse; steckt er schon drin (von), darf er jeden Schritt, der nicht tiefer geht
 function fuchsFrei(x, z, von){
-  if(!evaSolid(x, z) || watGrund(x, z) !== null || (story.hitsOhneDinge || hitsBuilding)(x, ISLAND_Y + 0.5, z, false)) return false;
+  // Live-Befund 18.10.2026: unter dem Steg liegt die Watzone (z 99..110) – der Fuchs steht aber OBEN auf den Planken.
+  // Vorher sperrte watGrund dort quer ueber den ganzen Steg: nach dem Segeln kam er vom Ende nicht mehr herunter.
+  const steg = !!(story.aufSteg && story.aufSteg(x, z));
+  if(!evaSolid(x, z) || (!steg && watGrund(x, z) !== null) || (story.hitsOhneDinge || hitsBuilding)(x, ISLAND_Y + 0.5, z, false)) return false;
   const t = story.fuchsTiefe(x, z);
   return t <= 0 || (!!von && t <= story.fuchsTiefe(von.x, von.z) + 1e-6);
 }
@@ -1123,8 +1143,14 @@ function updateFuchs(dt){
     // streifen: frei und neugierig
     if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)){ /* erst fertig aufstehen */ }
     else if(dFigur > STREIF_MAX){
+      // Live-Befund 18.10.2026 (nach dem Segeln hing Fuchsi auf dem Steg fest): das Nachholen lief ohne Wegsuche schraeg
+      // auf Joshi zu, auf dem schmalen Steg gegen die Randgrenze – er rannte auf der Stelle. Auf dem Steg erst laengs
+      // in der Mitte zum Strand-Ende, sonst mit Wegsuche (fuchsGeheZu) wie beim Absuchen.
+      const S = story.steg, aufSteg = S && Math.abs(fp.x - S.x) < S.B / 2 + 0.2 && fp.z > S.zSand && fp.z < S.zEnde + 0.5;
       const h = eva ? nebenFigur(-2.5, 1.2) : { x: zu.x, z: zu.z };
-      fuchsLaufe(dt, h.x, h.z, 7.5);
+      const strandSeite = S && zu.z < S.zSand + 1;                  // Joshi ist am Strand (nicht auf dem Steg/draussen)
+      if(aufSteg && strandSeite) fuchsLaufe(dt, S.x, S.zSand - 1.5, 7.5);
+      else fuchsGeheZu(dt, h.x, h.z, 7.5);
       fuchs.ziel = null; fuchs.warte = 0.5; fuchs.tun = null;
     } else if(fuchs.ziel){
       const d = fuchsLaufe(dt, fuchs.ziel.x, fuchs.ziel.z, fuchs.ziel.tempo);

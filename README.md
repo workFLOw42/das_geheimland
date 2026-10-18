@@ -3,7 +3,15 @@
 Ein 3D-Detektiv-Abenteuer für Kinder (ab ca. 5 Jahren) – zu Fuß, schwimmend und später auch fliegend,
 mit einem Fuchs als Begleiter. Teil von „Die Abenteuer von Joshi & Samu“. Konzept: [Konzept.md](Konzept.md).
 
-**Spielen:** `index.html` im Browser öffnen (Chrome/Edge, Controller empfohlen).
+**▶️ Spielen: https://workflow42.github.io/das_geheimland/**
+(Chrome/Edge empfohlen, Controller oder Tastatur. Nach dem ersten vollständigen Laden auch offline spielbar, auf Tablets über
+„Zum Startbildschirm hinzufügen“ als App installierbar.) Lokal: `index.html` im Browser öffnen.
+
+**Committen:** `powershell -File tools/commit.ps1 "Nachricht"` – zählt die Cache-Version in `sw.js` hoch, sobald sich eine
+gecachte Datei ändert (Modelle und Töne `*_glb.js` / `*_snd.js` haben einen eigenen Cache, der nur bei geänderten Modellen
+hochgeht). Die Seite prüft jede Minute auf eine neue Version und lädt am Startbildschirm von selbst neu; mitten im Spiel erscheint
+nur ein Hinweis. Der pre-commit-Hook (`cp tools/pre-commit .git/hooks/pre-commit`) ist das Sicherheitsnetz, falls die Version
+vergessen wurde.
 
 ## Steuerung zu Fuß
 

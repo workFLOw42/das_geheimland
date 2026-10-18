@@ -1,0 +1,29 @@
+#!/bin/sh
+# Das Geheimland (PWA): Sicherheitsnetz fuer die Cache-Version in sw.js – wie in "Reise nach Japan".
+# Normal committen mit:  powershell -File tools/commit.ps1 "Nachricht"   (zaehlt selbst hoch)
+#
+# Aendert ein Commit eine gecachte Datei, muss die Version in sw.js hoeher sein als in HEAD –
+# sonst laden installierte Geraete die Aenderung nie. Ein "git add" HIER drin scheitert im
+# Google-Drive-Ordner (index.lock: No such file or directory), deshalb zaehlt der Hook nur in der
+# Datei hoch, bricht ab und bittet um einen zweiten Versuch.
+# Installieren:  cp tools/pre-commit .git/hooks/pre-commit
+
+staged=$(git diff --cached --name-only)
+[ -z "$staged" ] && exit 0
+
+sw="sw.js"
+[ -f "$sw" ] || exit 0
+relevant=$(printf '%s\n' "$staged" | grep -vE '^([^/]*\.md|\.gitignore|\.nojekyll|sw\.js|tools/.*|models/.*)$')
+[ -z "$relevant" ] && exit 0
+
+ver(){ grep -oE "das-geheimland-v[0-9]+" | head -1 | grep -oE "[0-9]+$"; }
+head_v=$(git show HEAD:"$sw" 2>/dev/null | ver); [ -z "$head_v" ] && head_v=0
+idx_v=$(git show :"$sw" 2>/dev/null | ver);      [ -z "$idx_v" ] && idx_v=0
+[ "$idx_v" -gt "$head_v" ] && exit 0
+
+next=$((head_v + 1))
+swwin=$(cygpath -w "$(pwd)/$sw" 2>/dev/null || echo "$(pwd)/$sw")
+powershell.exe -NoProfile -Command "\$p='$swwin'; \$e=New-Object System.Text.UTF8Encoding(\$false); \$t=[IO.File]::ReadAllText(\$p,\$e); \$t=\$t -replace 'das-geheimland-v[0-9]+','das-geheimland-v$next'; [IO.File]::WriteAllText(\$p,\$t,\$e)"
+echo "PWA-Hook: sw.js auf v$next gesetzt, aber noch nicht gestaged. Bitte 'git add sw.js' und erneut committen" >&2
+echo "          (oder kuenftig: powershell -File tools/commit.ps1 \"Nachricht\")." >&2
+exit 1

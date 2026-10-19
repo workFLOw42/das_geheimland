@@ -205,9 +205,9 @@ function ladeBoot(w){
     const alpha = []; for(let i = 0; i <= N; i++) alpha.push(0.9, 0);  // innen deckend, aussen auslaufend
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute('alpha', new THREE.Float32BufferAttribute(alpha, 1)); geo.setIndex(idx);
     const gmat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,
-      uniforms: Object.assign({ staerke: { value: 0.8 } }, bootUni),
+      uniforms: Object.assign({ staerke: { value: 0.8 } }, hullUniforms),                          // global-ok: Engine (offene Ruempfe)
       vertexShader: 'attribute float alpha; varying float va; varying vec3 vc; varying vec3 vW; attribute vec3 color; void main(){ va = alpha; vc = color; vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: rumpfGlsl() + 'uniform float staerke; varying float va; varying vec3 vc; varying vec3 vW; void main(){ if(imRumpf(vW)) discard; gl_FragColor = vec4(vc, va * staerke); }' });
+      fragmentShader: HULL_GLSL + 'uniform float staerke; varying float va; varying vec3 vc; varying vec3 vW; void main(){ if(hullCut(vW)) discard; gl_FragColor = vec4(vc, va * staerke); }' });
     const gischt = new THREE.Mesh(geo, gmat); gischt.renderOrder = 2; gischt.frustumCulled = false;
     gischt.userData.deko = true; w.add(gischt); s.gischt = gischt;
     w.add(g); s.boot = g; s.bootInnen = innen;
@@ -221,58 +221,15 @@ function ladeBoot(w){
     meerImBootAus();
   });
 }
-// Kein Wasser im Boot (Live-Wunsch, zusaetzlich zur Wasserlinie): das Meer wird im Umriss des Rumpfs nicht gezeichnet.
-// Das Meer ist ein Mesh der Engine (ground); sein Shader bekommt die Weltposition und verwirft alles, was in Boots-
-// koordinaten INNERHALB DES RUMPFS liegt. Live-Befund 19.10.: mit EINEM Umriss (Rumpf auf Hoehe der ruhigen Wasserlinie)
-// kam bei Kurvenneigung und Wellen doch Wasser ins Boot, und vorher schon sah man innen einen dunklen Fleck: lag das
-// Wasser hoeher am Rumpf, ist der Rumpf dort breiter als der Umriss. Jetzt: der Rumpf in 7 Hoehen geschnitten (-0,2 .. 0,4 m
-// ueber der Wasserlinie des Boots, ausgemessen C:/tmp/jfg/test/rumpf3.js, nach oben nie schmaler), je Laengsscheibe (16
-// ueber die 6,2 m, Heck -z .. Bug +z) die Bordwand links/rechts. Der Shader nimmt den Umriss IN DER HOEHE, in der das
-// Wasser dort gerade am Rumpf steht (Bootskoordinaten, also mit Wellen, Kraengung und Kurvenneigung). Dasselbe gilt fuer
-// den Schatten und die Gischt des Boots (die flache Schattenscheibe lag sonst als dunkler Fleck im Boot).
-const RUMPF_HOEHEN = [
-  [[0.00, 0.12], [0.00, 0.13], [0.00, 0.00], [0.00, 0.09], [0.00, 0.05], [-0.27, 0.10], [-0.52, 0.20], [-0.50, 0.20], [-0.50, 0.20], [-0.46, 0.20], [-0.34, 0.15], [-0.22, 0.10], [0.00, 0.08], [0.00, 0.08], [0.00, 0.00], [0.00, 0.00]],
-  [[0.00, 0.12], [0.00, 0.13], [0.00, 0.09], [-0.35, 0.11], [-0.57, 0.10], [-0.68, 0.45], [-0.82, 0.56], [-0.71, 0.56], [-0.81, 0.55], [-0.75, 0.54], [-0.68, 0.48], [-0.56, 0.42], [-0.37, 0.09], [0.00, 0.08], [0.00, 0.00], [0.00, 0.00]],
-  [[0.00, 0.12], [-0.01, 0.13], [-0.19, 0.09], [-0.66, 0.47], [-0.84, 0.64], [-0.91, 0.71], [-0.97, 0.78], [-0.96, 0.77], [-0.95, 0.76], [-0.92, 0.73], [-0.74, 0.65], [-0.73, 0.63], [-0.42, 0.47], [-0.31, 0.22], [0.00, 0.06], [0.00, 0.00]],
-  [[0.00, 0.12], [-0.02, 0.13], [-0.46, 0.42], [-0.82, 0.67], [-0.86, 0.72], [-0.98, 0.83], [-1.07, 0.92], [-1.07, 0.84], [-1.05, 0.91], [-0.99, 0.87], [-0.96, 0.85], [-0.82, 0.72], [-0.64, 0.51], [-0.50, 0.43], [0.00, 0.06], [0.00, 0.00]],
-  [[-0.01, 0.12], [-0.03, 0.13], [-0.62, 0.52], [-0.91, 0.78], [-1.01, 0.92], [-1.08, 0.96], [-1.11, 1.02], [-1.10, 1.01], [-1.09, 1.00], [-1.05, 0.95], [-0.96, 0.85], [-0.89, 0.83], [-0.64, 0.69], [-0.61, 0.54], [-0.17, 0.19], [0.00, 0.00]],
-  [[-0.01, 0.12], [-0.05, 0.13], [-0.62, 0.53], [-0.99, 0.87], [-1.04, 0.92], [-1.10, 1.01], [-1.16, 1.09], [-1.15, 1.01], [-1.13, 1.08], [-1.07, 1.03], [-1.02, 1.00], [-0.93, 0.87], [-0.74, 0.69], [-0.69, 0.62], [-0.33, 0.33], [0.00, 0.00]],
-  [[-0.01, 0.12], [-0.19, 0.13], [-0.66, 0.60], [-1.03, 0.93], [-1.07, 0.92], [-1.17, 1.08], [-1.20, 1.13], [-1.19, 1.12], [-1.18, 1.11], [-1.12, 1.08], [-1.06, 1.00], [-0.99, 0.94], [-0.88, 0.69], [-0.74, 0.67], [-0.38, 0.33], [-0.02, 0.03]]];
-const RUMPF_H0 = -0.2, RUMPF_DH = 0.1;   // Hoehe der ersten Zeile, Abstand der Zeilen (m, Bootskoordinaten)
-const RUMPF_EIN = 0.04;         // m nach innen (der Umriss folgt jetzt der Wasserhoehe, es braucht kaum noch Rand)
-const bootUni = { bootInv: { value: new THREE.Matrix4() }, bootAn: { value: 0 },
-  rumpfL: { value: RUMPF_HOEHEN.flat().map(r => Math.min(0, r[0] + RUMPF_EIN)) }, rumpfR: { value: RUMPF_HOEHEN.flat().map(r => Math.max(0, r[1] - RUMPF_EIN)) } };
-// GLSL: Deklarationen und imRumpf(Weltpunkt) – Scheibe und Hoehe bilinear; die Uniform-Arrays werden in einer Schleife
-// gelesen (WebGL1 erlaubt keinen berechneten Index), nur fuer Punkte im Rechteck um den Rumpf
-function rumpfGlsl(){
-  const NS = RUMPF_HOEHEN[0].length, NH = RUMPF_HOEHEN.length, N = NS * NH, L = BOOT.laenge.toFixed(3);
-  return 'uniform mat4 bootInv; uniform float bootAn; uniform float rumpfL[' + N + ']; uniform float rumpfR[' + N + '];\n'
-    + 'bool imRumpf(vec3 w){ if(bootAn < 0.5) return false; vec3 bl = (bootInv * vec4(w, 1.0)).xyz;\n'
-    + '  if(abs(bl.x) > 1.3) return false;\n'
-    + '  float f = (bl.z / ' + L + ' + 0.5) * ' + NS + '.0 - 0.5; float i0 = floor(f), t = f - i0;\n'
-    + '  if(i0 < 0.0 || i0 >= ' + (NS - 1) + '.0) return false;\n'
-    + '  float hf = clamp((bl.y - (' + RUMPF_H0.toFixed(2) + ')) / ' + RUMPF_DH.toFixed(2) + ', 0.0, ' + (NH - 1) + '.0); float h0 = min(floor(hf), ' + (NH - 2) + '.0), u = hf - h0;\n'
-    + '  float a = h0 * ' + NS + '.0 + i0, b = a + 1.0, c = a + ' + NS + '.0, d = c + 1.0;\n'
-    + '  vec2 va = vec2(0.0), vb = vec2(0.0), vc = vec2(0.0), vd = vec2(0.0);\n'
-    + '  for(int k = 0; k < ' + N + '; k++){ float fk = float(k); vec2 v = vec2(rumpfL[k], rumpfR[k]);\n'
-    + '    if(fk == a) va = v; if(fk == b) vb = v; if(fk == c) vc = v; if(fk == d) vd = v; }\n'
-    + '  vec2 lr = mix(mix(va, vb, t), mix(vc, vd, t), u);\n'
-    + '  return bl.x > lr.x && bl.x < lr.y; }\n';
-}
-// Meer (Lambert der Engine) und Bootsschatten (Basic): Weltposition aus dem Vertex-Shader, im Rumpf verwerfen
-function lochImRumpf(mat){
-  mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, bootUni);
-    sh.vertexShader = 'varying vec3 vBootW;\n' + sh.vertexShader.replace('#include <project_vertex>',
-      '#include <project_vertex>\n  vBootW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = rumpfGlsl() + 'varying vec3 vBootW;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>',
-      '#include <clipping_planes_fragment>\n  if(imRumpf(vBootW)) discard;');
-  };
-  mat.needsUpdate = true;
-}
+// Kein Wasser im Boot (Live-Wunsch): das Meer wird im Umriss des Rumpfs nicht gezeichnet. Das macht die Engine fuer alle
+// offenen Boote (measureOpenHull / setOpenHull im Flugspiel, seit 19.10.2026): sie vermisst den Rumpf beim Laden in
+// mehreren Hoehen und nimmt je Meerespunkt den Umriss in der Hoehe, in der das Wasser dort gerade am Rumpf steht – mit
+// Wellen, Kraengung und Kurvenneigung. Hier: Rumpf vermessen (Wasserlinie = y 0 der Bootsgruppe), Schatten dazunehmen.
 function meerImBootAus(){
-  lochImRumpf(ground.material);                                 // global-ok: Meer der Engine
-  if(s.schatten) lochImRumpf(s.schatten.material);
+  const g = s.boot;
+  g.userData.hull = measureOpenHull(g, { wl: 0, meshes: /DarkBlue|Wood|Board|Flor/ });   // global-ok: Engine
+  setOpenHull(g);                                               // global-ok: Engine
+  if(s.schatten) addHullCutout(s.schatten.material);            // global-ok: Engine
 }
 
 // ---- Einsteigen / Aussteigen (Y) ----------------------------------------------------------------
@@ -452,7 +409,6 @@ story.updateSteg = function(dt){
     s.kurve = (s.kurve || 0) + (kurveZiel - (s.kurve || 0)) * Math.min(1, KURVE_ROLL_FOLGT * dt);
     b.position.set(s.bx, Math.max(yM, (yB + yH + yR + yL) / 4), s.bz);
     b.rotation.set(s.nick + Math.sin(s.t * 0.6 + 1) * 0.006, s.yaw, s.roll + s.kurve + Math.sin(s.t * 0.9) * 0.008, 'YXZ'); b.updateMatrixWorld(true);
-    bootUni.bootInv.value.copy(b.matrixWorld).invert(); bootUni.bootAn.value = 1;
   }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit
   if(s.imBoot && eva && s.boot){
@@ -481,16 +437,22 @@ story.updateSteg = function(dt){
   }
 };
 story.imBoot = () => s.imBoot;
-// Bordwand auf der Wasserlinie an der Laengsstelle vor (m, Heck -L/2 .. Bug +L/2): x links (seite -1) bzw. rechts (+1),
-// aus RUMPF_WL (ausgemessen). Live-Befund 17.10.: der Rumpf ist unsymmetrisch (links -0,97, rechts +0,78 m) – die Gischt
-// startete rechts bei +0,8 m fest und lag damit IM Boot (segeln.js nimmt jetzt diese Wand).
-// oben = true: die BORDKANTE (Draufsicht, breiteste Stelle bis Relinghoehe) – der Rumpf ist oben deutlich breiter als
-// an der Wasserlinie; was nur ausserhalb der Wasserlinie liegt, sieht man von oben/hinten noch "im Boot" (Live-Bild 17.10.)
-// RUMPF_OBEN: ausgemessen wie RUMPF_WL (C:/tmp/jfg/test/rumpf3.js), je Scheibe das Maximum der Nachbarn (Messluecken)
+// Bordwand an der Laengsstelle vor (m, Heck -L/2 .. Bug +L/2): x links (seite -1) bzw. rechts (+1). Live-Befund 17.10.:
+// der Rumpf ist unsymmetrisch (links -0,97, rechts +0,78 m) – die Gischt startete rechts bei +0,8 m fest und lag damit IM
+// Boot (segeln.js nimmt jetzt diese Wand). Ohne oben: auf der Wasserlinie, aus der Vermessung der Engine (measureOpenHull,
+// Zeile auf Hoehe 0). oben = true: die BORDKANTE (Draufsicht, breiteste Stelle bis Relinghoehe) – der Rumpf ist oben
+// deutlich breiter als an der Wasserlinie; was nur ausserhalb der Wasserlinie liegt, sieht man von oben/hinten noch "im
+// Boot" (Live-Bild 17.10.). RUMPF_OBEN: ausgemessen (C:/tmp/jfg/test/rumpf3.js), je Scheibe das Maximum der Nachbarn.
 const RUMPF_OBEN = [[-0.14, 0.16], [-0.68, 0.60], [-1.10, 1.04], [-1.10, 1.04], [-1.17, 1.14], [-1.20, 1.18], [-1.20, 1.18], [-1.20, 1.18],
                     [-1.17, 1.16], [-1.17, 1.16], [-1.11, 1.10], [-1.03, 0.97], [-1.03, 0.97], [-0.82, 0.76], [-0.82, 0.76], [-0.49, 0.40]];
+function rumpfWasserlinie(){
+  const h = s.boot && s.boot.userData.hull; if(!h) return RUMPF_OBEN.map(r => [r[0] * 0.8, r[1] * 0.8]);
+  const j = Math.round(-h.y0 / h.dh), T = [];                    // Zeile auf Hoehe 0 (Wasserlinie)
+  for(let k = 0; k < HULL_NS; k++){ const n = (j * HULL_NS + k) * 2; T.push([h.lr[n], h.lr[n + 1]]); }   // global-ok: Engine
+  return T;
+}
 story.bordwand = function(vor, seite, oben){
-  const T = oben ? RUMPF_OBEN : RUMPF_WL;
+  const T = oben ? RUMPF_OBEN : rumpfWasserlinie();
   const N = T.length, f = klemmeS((vor / BOOT.laenge + 0.5) * N - 0.5, 0, N - 1), i = Math.min(N - 2, Math.floor(f)), t = f - i;
   const j = seite < 0 ? 0 : 1; return T[i][j] + (T[i + 1][j] - T[i][j]) * t;
 };

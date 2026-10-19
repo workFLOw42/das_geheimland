@@ -30,8 +30,8 @@ const FAHRT_MAX = 3.2, FAHRT_RUECK = 0.8;   // m/s vorwaerts / rueckwaerts
 const DREH_MAX = 0.55;                      // rad/s in voller Fahrt (im Stand dreht es kaum)
 // Kurvenneigung (Live-Wunsch 19.10.2026, wie die Boote in Trip to Japan): leicht in die Kurve, aus Drehrate mal Fahrtanteil
 // (Fliehkraft) – im Stand gedreht legt sich nichts. Kommt zur Querlage aus den Wellen dazu.
-const KURVE_ROLL_MAX = 0.10;                // rad (~6 Grad)
-const KURVE_ROLL_PRO = 0.30;                // rad je rad/s (DREH_MAX 0,55 rad/s volle Fahrt -> 0,165, gekappt)
+const KURVE_ROLL_MAX = 0.16;                // rad (~9 Grad; Live-Wunsch 19.10.2026: bei 6 Grad nur zu erahnen – etwas mehr)
+const KURVE_ROLL_PRO = 0.45;                // rad je rad/s (DREH_MAX 0,55 rad/s volle Fahrt -> 0,25, gekappt)
 const KURVE_ROLL_FOLGT = 2.2;               // 1/s
 const FAHRT_WEIT = 260;                     // m: so weit faehrt es vom Steg weg (dahinter laedt die Engine keine Inseln)
 const ANLEGEN = 9;                          // m: so nah am Liegeplatz kann man aussteigen

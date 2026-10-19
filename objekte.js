@@ -339,6 +339,20 @@ const ORCA_MEIDE = 9;           // m: naeher kommt kein Orca an Joshi/das Boot h
 const ORCA_ABSTAND = 11;        // m zwischen zwei Orcas an der Oberflaeche
 const ORCA_DREH = 0.7;          // rad/s
 const ORCA_UEBER = 3;           // m zusaetzliche Hoehe im Sprung ueber das Boot (wegen des Masts)
+// Live-Wunsch 19.10.: "ich bemerke keine" (gemessen: die 3 Tiefsee-Tiere der Engine ziehen auf -11 m fuers U-Boot, das es
+// hier nicht gibt; von den 3 anderen sprang einer, und alle schwammen 150-200 m hinter den Steg) – mehr Orcas, alle an der
+// Oberflaeche, feste Springer, und sie bleiben in Sichtweite. Dazu springt ab und zu einer ueber das Boot am Steg (wie in
+// der Skizze), wenn Joshi in der Naehe ist.
+const ORCA_EXTRA = 3;           // zu den 6 der Engine
+const ORCA_SPRINGER = 4;        // so viele davon springen (fest, die Engine wuerfelt beim Umsetzen neu)
+const ORCA_UFER = 120;          // m ab Inselmitte: naeher ans Ufer kommt keiner (Sand bis 98,6; tauchen braucht Wasser)
+const ORCA_REVIER = 80;         // m: weiter weg von Joshi/dem Boot schwimmt er zurueck
+const STEG_NAH = 50;            // m: so nah muss Joshi am liegenden Boot sein
+const STEG_ERST = 15, STEG_PAUSE = 60;   // s bis zum ersten Sprung, danach 60-90 s
+const STEG_KURS = Math.PI / 2 + 0.2;     // quer zum Blick vom Strand wie in der Skizze (dort + 0,3; so beginnt der Anlauf
+                                         // 60 m vor dem Boot noch im Wasser und nicht am Ufer)
+const STEG_SCHEITEL = { dx: 1.0, dz: 1.5 };   // Scheitel etwas hinter dem Boot (vom Strand aus)
+const stegSprung = { t: STEG_ERST };
 const ziel = { x: 0, z: 0, vx: 0, vz: 0, da: false, boot: false };
 function zielNachfuehren(dt){
   let p = null, boot = false;
@@ -360,10 +374,34 @@ function orcaVorher(dt){
   const vh = ORCA_JUMP_V * Math.cos(ORCA_JUMP_A);
   const tScheitel = ORCA_RUNUP_T + ORCA_JUMP_T / 2, wegScheitel = ORCA_SPD * ORCA_RUNUP_T + vh * ORCA_JUMP_T / 2;
   const w = 2 * Math.PI / ORCA_PERIOD;
+  const tUnter = tSchwimm + ORCA_RUNUP_T + ORCA_JUMP_T;                          // ab hier unter Wasser
+  const B = story.stegZustand, jo = eva && !(story.innen && story.innen.drin) ? eva.group.position : null;
+  const stegBereit = !!(jo && B && B.boot && !B.imBoot && Math.hypot(jo.x - B.bx, jo.z - B.bz) < STEG_NAH);
+  if(stegBereit) stegSprung.t -= dt; else stegSprung.t = Math.max(stegSprung.t, STEG_ERST);
+  if(stegBereit && stegSprung.t <= 0 && !orcas.some(o => o.jfg && o.jfg.modus === 'steg')){
+    // Ein Springer, der gerade tief unter Wasser ist (4-6 m, nachts unsichtbar), wird an den Anfang der Bahn gesetzt: noch
+    // 1,5 s auftauchen, 7 s an der Oberflaeche heranschwimmen (Heckwelle), Anlauf, Sprung – Scheitel genau ueber dem Boot.
+    const o = orcas.find(q => q.group && q.placed && q.jumper && q.jfg && !q.jfg.modus && q.t > tUnter + 0.3 * ORCA_UNDER_T && q.t < tUnter + 0.75 * ORCA_UNDER_T);
+    if(o){
+      o.t = tUnter + 0.75 * ORCA_UNDER_T;
+      const fx = -Math.sin(STEG_KURS), fz = -Math.cos(STEG_KURS);
+      const weg = ORCA_SPD * (ORCA_JUMP_CYCLE - o.t + tSchwimm) + wegScheitel;
+      o.x = B.bx + STEG_SCHEITEL.dx - fx * weg; o.z = B.bz + STEG_SCHEITEL.dz - fz * weg; o.heading = STEG_KURS; o.spur = null;
+      Object.assign(o.jfg, { modus: 'steg', kurs: STEG_KURS, ueber: ORCA_UEBER, flog: false });
+      stegSprung.t = STEG_PAUSE + Math.random() * 30;
+    }
+  }
   for(const o of orcas){
     if(!o.group || !o.placed || o.deep) continue;
     const st = o.jfg || (o.jfg = { modus: null, t: 0, kuehl: Math.random() * 8, seite: 1, ueber: 0 });
     st.kuehl -= dt;
+    if(st.modus === 'steg'){
+      // Kurs halten (die Engine laesst ihn sonst wandern, siehe unten bei 'sprung'); nach dem Eintauchen wieder frei
+      if(o.t > tSchwimm + ORCA_RUNUP_T && o.t < tUnter) st.flog = true;
+      else if(st.flog && o.t >= tUnter){ st.modus = null; st.kuehl = 20; }
+      o.heading = st.kurs - Math.sin(seaTime * 0.11 + o.x * 0.002) * 0.10 * dt;
+      continue;
+    }
     let soll = null, rate = ORCA_DREH;
     const dx = ziel.x - o.x, dz = ziel.z - o.z, d = Math.hypot(dx, dz) || 1e-3;
     if(o.jumper){
@@ -416,6 +454,12 @@ function orcaVorher(dt){
     }
     // Ausweichen: Joshi/das Boot nie rammen ...
     if(ziel.da && d < ORCA_MEIDE){ soll = Math.atan2(dx, dz); rate = 1.4; }
+    // ... und in Sichtweite bleiben: nicht ans Ufer, nicht weit weg von Joshi bzw. dem Boot
+    if(soll === null && jo){
+      const px = ziel.da ? ziel.x : jo.x, pz = ziel.da ? ziel.z : jo.z;
+      if(Math.hypot(o.x, o.z) < ORCA_UFER) soll = Math.atan2(-o.x, -o.z);            // von der Inselmitte weg
+      else if(Math.hypot(px - o.x, pz - o.z) > ORCA_REVIER) soll = Math.atan2(o.x - px, o.z - pz);
+    }
     if(soll !== null) o.heading += klemme(wd(o.heading, soll), -rate * dt, rate * dt);
     // ... und umeinander herum (nur wer an der Oberflaeche ist; die Tiefsee-Tiere ziehen weit darunter)
     const fx = -Math.sin(o.heading), fz = -Math.cos(o.heading);
@@ -426,12 +470,29 @@ function orcaVorher(dt){
     }
   }
 }
+// Die Herde der Engine (gerade gesetzt) um ORCA_EXTRA ergaenzen und die Rollen fest verteilen
+function mehrOrcas(){
+  const F = worldFocus();
+  for(let i = 0; i < ORCA_EXTRA; i++){
+    const o = { group: null, mixer: null, x: 0, z: 0, heading: 0, t: 0, jumper: false, y: 0, pitch: 0, placed: false,
+                deep: false, band: 0, deepY: 0, jfgExtra: true };
+    o.placed = placeOrca(o, F.x, F.z);
+    if(o.placed) buildOrcaBody(o);
+    orcas.push(o);
+  }
+  orcas.forEach((o, i) => {
+    o.jfgSpringer = i % 2 === 0 && i / 2 < ORCA_SPRINGER;
+    o.deep = false; o.jumper = o.jfgSpringer; o.t = Math.random() * (o.jumper ? ORCA_JUMP_CYCLE : ORCA_PERIOD);
+  });
+}
 function orcaNachher(){
   const tSchwimm = ORCA_JUMP_CYCLE - ORCA_RUNUP_T - ORCA_JUMP_T - ORCA_UNDER_T;
+  if(orcas.length && !orcas.some(o => o.jfgExtra)) mehrOrcas();                   // auch nach clearOrcas (neue Herde)
   for(const o of orcas){
+    if(o.jfgSpringer !== undefined){ o.deep = false; o.jumper = o.jfgSpringer; }   // placeOrca wuerfelt beim Umsetzen neu
     if(!o.group) continue;
     const st = o.jfg;
-    if(st && st.modus === 'sprung' && st.ueber){
+    if(st && (st.modus === 'sprung' || st.modus === 'steg') && st.ueber){
       const tf = o.t - tSchwimm - ORCA_RUNUP_T;
       if(tf > 0 && tf < ORCA_JUMP_T) o.group.position.y += st.ueber * Math.sin(Math.PI * tf / ORCA_JUMP_T);
     }

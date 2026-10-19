@@ -1573,6 +1573,17 @@ story.stimmeStopp = function(){
   sprichtGerade = null; me.stopp(); untertitel('');
   if(window.speechSynthesis) window.speechSynthesis.cancel();
 };
+// Live-Befund 19.10.2026 (in "Reise nach Japan" kein Ton, bis der Browser neu gestartet war): die Sprachausgabe ist in
+// Chrome EINE Warteschlange fuer den ganzen Browser. Steht dieser Tab mitten im Satz in der Pause (synth.pause, siehe
+// pauseWechsel), bleibt jede Stimme in jedem anderen Tab stumm (nachgestellt, C:/tmp/jfg/test/tts_tabs2.js). Darum: wird
+// der Tab verlassen oder versteckt, wird der angehaltene Satz verworfen – er faellt danach als "fertig" weiter (onerror),
+// und der naechste wartet wie gewohnt, bis die Pause vorbei ist.
+function stimmeFreigeben(){
+  const synth = window.speechSynthesis; if(!synth) return;
+  if(story.stimmePausiert || synth.paused){ synth.cancel(); synth.resume(); story.stimmePausiert = false; }
+}
+addEventListener('pagehide', () => { if(window.speechSynthesis) window.speechSynthesis.cancel(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden) stimmeFreigeben(); });
 // Stimmen frueh anstossen (Chrome/Edge laden sie verzoegert)
 if(window.speechSynthesis){ window.speechSynthesis.getVoices(); window.speechSynthesis.addEventListener('voiceschanged', () => window.speechSynthesis.getVoices()); }
 
@@ -1626,7 +1637,8 @@ function startbildschirm(weiter){
     funkLaden();                                      // Funk-Ton gleich dekodieren – sonst fehlte beim ersten Ruf das Rauschen
     gitarreLaden();                                   // ebenso die Gitarre (sonst blieb das erste Spielen stumm)
     // Sprachausgabe mit der Nutzergeste freischalten: ein stummer, leerer Satz – danach spricht der Browser zuverlaessig
-    if(window.speechSynthesis){ window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
+    // (vorher cancel: ein anderer Tab kann sie angehalten haben, siehe stimmeFreigeben)
+    if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
   }
   function taste(e){

@@ -1543,11 +1543,17 @@ function sprich(saetze, fertig, rolle){
     if(synth){
       untertitel('');
       // Gesprochen "Joschi" (Live-Wunsch 16.10.: klingt in der deutschen Sprachausgabe richtiger) – geschrieben bleibt NAME
-      const u = new SpeechSynthesisUtterance(s.replace(/Joshi/g, 'Joschi')), st = stimmeFuer(rolle);
-      u.lang = 'de-DE'; if(st) u.voice = st;
-      u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
-      u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
-      u.onend = u.onerror = () => { if(sprichtGerade === me){ me.satzLaeuft = false; weiter(); } };
+      // Ein Satzobjekt je Versuch (Wache unten): ein verworfener Versuch darf mit seinem onerror nichts mehr ausloesen.
+      let aktU = null;
+      const neuU = () => {
+        const u = new SpeechSynthesisUtterance(s.replace(/Joshi/g, 'Joschi')), st = stimmeFuer(rolle);
+        u.lang = 'de-DE'; if(st) u.voice = st;
+        u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
+        u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
+        u.onend = u.onerror = () => { if(aktU === u && sprichtGerade === me){ me.satzLaeuft = false; weiter(); } };
+        u.onstart = () => { if(aktU === u) u.lief = true; };
+        return u;
+      };
       // Faellt der Satz in eine Pause (z. B. ein Funkruf), wartet er, bis sie vorbei ist – nicht sprechen und sofort
       // anhalten (genau dabei haengt Chrome). Sonst vorher immer resume(): ein haengender Zustand ueberlebt so nie.
       const los = () => {
@@ -1556,14 +1562,21 @@ function sprich(saetze, fertig, rolle){
         // (Spielsaetze warten auch im Inventar – nur die Erklaerungen selbst sprechen dort)
         if(sprichtGerade !== me) return;
         if(hilfeOffen() && rolle !== 'inventar'){ stelle(los, 200); return; }
-        // Von uns spricht hier niemand (sprich laeuft immer nur einmal, der vorige Satz ist fertig): was noch laeuft oder
-        // wartet, ist fremd – z. B. ein anderer Tab, der die browserweite Sprachausgabe angehalten hat (siehe
-        // stimmeFreigeben) oder eine andere Webseite mit Vorlesefunktion. Verwerfen, sonst bliebe jeder Satz stumm (wie in
-        // Reise nach Japan, 19.10.2026). OHNE Bedingung: diese Seite sieht den fremden Stau nicht (speaking, pending und
-        // paused stehen hier alle auf false – nachgemessen, C:/tmp/jfg/test/tts_var.js).
-        synth.cancel();
+        // Live-Befund 19.10.2026: hier stand heute zuerst ein cancel() vor JEDEM Satz (gegen den Stau eines fremden Tabs) –
+        // zu grob, seitdem gab es "Probleme, die es vorher nie gab" (Schnitzen, Aussteigen). Jetzt wird nur freigeraeumt, wenn
+        // ein Satz nachweislich nicht anfaengt: kein onstart nach START_WARTE ms -> verwerfen, freiraeumen, neu (einmal).
         synth.resume(); story.stimmePausiert = false;
-        synth.speak(u); me.satzLaeuft = true;
+        const START_WARTE = 1500;
+        const versuch = (n) => {
+          const u = aktU = neuU(); synth.speak(u); me.satzLaeuft = true;
+          setTimeout(() => {
+            if(aktU !== u || u.lief || sprichtGerade !== me || me.angehalten) return;
+            aktU = null; synth.cancel(); synth.resume();      // zuerst aktU weg: das onerror des Verworfenen geht ins Leere
+            if(n < 2) versuch(n + 1);
+            else { me.satzLaeuft = false; stelle(weiter, satzDauer(s)); }   // spricht gar nicht: weiter wie ohne Stimme
+          }, START_WARTE);
+        };
+        versuch(1);
         stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);
       };
       los();

@@ -483,7 +483,8 @@ story.bildEbene = function(dt, szene, pause){
       // ins Notizbuch: Skizzen mit dem J; dazu der Ort, an dem die Seite entstanden ist (Symbol neben der Seitenzahl)
       zustand.seiten.push({ art: ab.s.art, bild: ab.s.art === 'foto' ? ab.bild : mitSignatur(ab.bild), name: ab.s.name, ort: ab.s.ort || 'insel',
         dreh: (zustand.seiten.length % 2 ? 0.03 : -0.025) });
-      const s = ab.s; story.sprich(s.text, () => { zustand.aktiv = null; pruefeFall1(); });
+      const s = ab.s; let frei = false; const fertig = () => { if(frei) return; frei = true; if(zustand.aktiv === s) zustand.aktiv = null; pruefeFall1(); };
+      story.sprich(s.text, fertig); setTimeout(fertig, SZENE_ENDE_WARTE * 1000);   // spaetestens dann frei (wie beim Schnitzen)
     }
   }
 };
@@ -548,8 +549,21 @@ function szeneStarten(s){
     // leichtes Atmen (updateSzene setzt die Zeit selbst) – im Schlag sah man ihn sonst von der Kante
     if(s.art === 'lupe' && g.userData.clips && g.userData.clips.length){ sz.falterMx = new THREE.AnimationMixer(g.userData.inner || g); sz.falterMx.clipAction(g.userData.clips[0]).play(); sz.falterMx.setTime(0); }
     if(s.art === 'messer' && story.arbeiten && !story.figur.arbeitet) story.arbeiten(true, story.insel.feuer);   // hockt (falls noch nicht), Blick zum Feuer
-    story.ausRucksack(WERKZEUG[s.art], () => { sz.phase = s.art === 'messer' ? 'schnitzen' : 'lupe'; sz.t = 0; sz.gruppe.visible = true; });
-  });
+    // Live-Befund 19.10.2026: "die ganze Schnitz-Animation ist nicht mehr zu sehen, Joshi bleibt am Feuer hocken, das Spiel
+    // haengt" – nach Y im gruenen Kreis, waehrend die Kreise gerade neu erschienen waren und Fuchsi zum Markieren lief. Die
+    // Szene begann NUR im fertig() von ausRucksack (Messer raus und aufgeklappt); kam das nicht, hing sie fuer immer. Jetzt
+    // beginnt sie spaetestens nach SZENE_WARTE s auch ohne (die Ursache war hier nicht nachstellbar).
+    const los = () => { if(sz.phase || sz.s !== s) return; sz.phase = s.art === 'messer' ? 'schnitzen' : 'lupe'; sz.t = 0; sz.gruppe.visible = true; };
+    story.ausRucksack(WERKZEUG[s.art], los);
+    setTimeout(los, SZENE_WARTE * 1000);
+  }).catch(e => { console.warn('Szene', s.id, e); szeneAbbrechen(s); });
+}
+const SZENE_WARTE = 5;        // s: so lange darf das Werkzeug zum Herauskommen brauchen
+const SZENE_ENDE_WARTE = 8;   // s: spaetestens dann ist die Szene vorbei, auch wenn die Ansage danach haengt
+// Laedt das Modell nicht: Joshi steht wieder auf, die Stelle ist wieder frei (sonst hockte er am Feuer fest)
+function szeneAbbrechen(s){
+  if(story.arbeiten) story.arbeiten(false);
+  zustand.gemacht[s.id] = false; zustand.aktiv = null; sz.phase = null;
 }
 // Bleistiftskizze eines Modells: einmal vor hellem Grund gerendert und durch denselben Bleistift-Filter (wie die Steg-Skizze)
 // Maske des Klotzes bei Fortschritt k (0..1): von aussen nach innen weg, weicher Rand, die Mitte bleibt am laengsten
@@ -637,7 +651,11 @@ function updateSzene(dt, pause){
       zustand.seiten.push({ art: 'skizze', bild: sz.skizze, name: s.name, ort: s.ort || 'insel', dreh: (zustand.seiten.length % 2 ? 0.03 : -0.025) });
       fertigInHuette(s);
       if(story.arbeiten) story.arbeiten(false);                    // steht wieder auf
-      story.sprich(s.text, () => { zustand.aktiv = null; pruefeFall1(); });
+      // frei wird es mit dem Ende der Ansage – spaetestens aber nach SZENE_ENDE_WARTE s (haengt sie, blieb sonst jede
+      // weitere Stelle gesperrt, siehe fotoY: zustand.aktiv)
+      let frei = false; const fertig = () => { if(frei) return; frei = true; if(zustand.aktiv === s) zustand.aktiv = null; pruefeFall1(); };
+      story.sprich(s.text, fertig);
+      setTimeout(fertig, SZENE_ENDE_WARTE * 1000);
     }
   }
   for(let i = sz.spaene.length - 1; i >= 0; i--){ const p = sz.spaene[i]; p.t += dt; p.v.y -= 2.2 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.z += dt * 6;

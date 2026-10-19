@@ -28,6 +28,11 @@ const s = { gruppe: null, boot: null, bootInnen: null, imBoot: false, t: 0, wech
   bx: BOOT.x, bz: BOOT.z, yaw: 0, v: 0, eingabe: null, koerper: null };
 const FAHRT_MAX = 3.2, FAHRT_RUECK = 0.8;   // m/s vorwaerts / rueckwaerts
 const DREH_MAX = 0.55;                      // rad/s in voller Fahrt (im Stand dreht es kaum)
+// Kurvenneigung (Live-Wunsch 19.10.2026, wie die Boote in Trip to Japan): leicht in die Kurve, aus Drehrate mal Fahrtanteil
+// (Fliehkraft) – im Stand gedreht legt sich nichts. Kommt zur Querlage aus den Wellen dazu.
+const KURVE_ROLL_MAX = 0.10;                // rad (~6 Grad)
+const KURVE_ROLL_PRO = 0.30;                // rad je rad/s (DREH_MAX 0,55 rad/s volle Fahrt -> 0,165, gekappt)
+const KURVE_ROLL_FOLGT = 2.2;               // 1/s
 const FAHRT_WEIT = 260;                     // m: so weit faehrt es vom Steg weg (dahinter laedt die Engine keine Inseln)
 const ANLEGEN = 9;                          // m: so nah am Liegeplatz kann man aussteigen
 // Live-Wunsch 18.10.2026 ("der Bereich am Steg, an dem man aussteigen kann, darf grosszuegiger werden"): zusaetzlich
@@ -415,8 +420,16 @@ story.updateSteg = function(dt){
     const nick = Math.atan2(yH - yB, 2 * L), roll = Math.atan2(yR - yL, 2 * Q);
     const k = Math.min(1, dt * 4);
     s.nick = (s.nick || 0) + (nick - (s.nick || 0)) * k; s.roll = (s.roll || 0) + (roll - (s.roll || 0)) * k;
+    // Kurvenneigung: Drehrate aus dem Kurs (s.yaw), mal Fahrtanteil, in die Kurve hinein. Das Vorzeichen ist hier ANDERS als in
+    // Trip to Japan: der Bug zeigt auf +z (dort -z), damit dreht sich die Rollrichtung um – mit dem Vorzeichen von dort legte
+    // es sich nach aussen (gemessen, C:/tmp/jfg/test/segel_neigen2.js).
+    if(s.yawVor === undefined || dt <= 0) s.yawVor = s.yaw;
+    let dy = s.yaw - s.yawVor; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); s.yawVor = s.yaw;
+    const fahrt = Math.min(1, Math.abs(s.v) / FAHRT_MAX);
+    const kurveZiel = dt > 0 ? Math.max(-KURVE_ROLL_MAX, Math.min(KURVE_ROLL_MAX, -dy / dt * KURVE_ROLL_PRO * fahrt)) : 0;
+    s.kurve = (s.kurve || 0) + (kurveZiel - (s.kurve || 0)) * Math.min(1, KURVE_ROLL_FOLGT * dt);
     b.position.set(s.bx, Math.max(yM, (yB + yH + yR + yL) / 4), s.bz);
-    b.rotation.set(s.nick + Math.sin(s.t * 0.6 + 1) * 0.006, s.yaw, s.roll + Math.sin(s.t * 0.9) * 0.008, 'YXZ'); b.updateMatrixWorld(true);
+    b.rotation.set(s.nick + Math.sin(s.t * 0.6 + 1) * 0.006, s.yaw, s.roll + s.kurve + Math.sin(s.t * 0.9) * 0.008, 'YXZ'); b.updateMatrixWorld(true);
     bootUni.bootInv.value.copy(b.matrixWorld).invert(); bootUni.bootAn.value = 1;
   }
   // im Boot: Joshi mittschiffs (etwas hinter der Mitte), sitzt auf den Bodenbrettern und schaukelt mit

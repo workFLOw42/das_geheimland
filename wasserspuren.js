@@ -30,6 +30,8 @@ function spritzer(x, wy, z, n, kraft){
   }
 }
 story.spritzer = spritzer;
+// Fuer die Skizze (notizbuch.js): alle Tropfen und Wellen kurz aus- und danach wieder einblenden (Rueckgabe: wieder an)
+story.spurenVerstecken = function(){ const weg = []; for(const t of ws.tropfen) if(t.m.visible){ t.m.visible = false; weg.push(t.m); } for(const w of ws.wellen) if(w.m.visible){ w.m.visible = false; weg.push(w.m); } return () => { for(const m of weg) m.visible = true; }; };
 function welle(x, z, rich, k, groesse){
   bauen();
   let w = ws.wellen.find(q => !q.m.visible);

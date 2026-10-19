@@ -147,7 +147,34 @@ story.fotoY = function(){
 
 // ---- Das Bild aufnehmen (Foto: echte Szene aus dem vorgegebenen Blick; Skizze: daraus eine Bleistiftzeichnung) ----
 const BILD_W = 1200, BILD_H = 800;
-function aufnehmen(s){
+// Wassertropfen am springenden Skizzen-Wal: kleine runde Spritzer, locker um ihn herum (vor allem unter Bauch und Fluke –
+// dort reisst er das Wasser mit), ein paar fallen schon herunter. Fester Zufall (immer dieselbe Skizze). Feine Kugeln:
+// im Bleistiftbild kleine Kringel. Erste Fassung: zu gross, eckig und als Strang hinter dem Wal – sah aus wie Steine.
+function walTropfen(wal){
+  let s = 4711; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  // flach weiss (ohne Licht): der Bleistift-Filter zeichnet Helligkeitskanten – so wird jeder Tropfen ein feiner Kringel; mit
+  // Licht hatte er eine dunkle Schattenseite und sah aus wie ein Schmutzpunkt
+  const g = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const geo = new THREE.SphereGeometry(1, 14, 10);
+  wal.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(wal), c = bb.getCenter(new THREE.Vector3()), gr = bb.getSize(new THREE.Vector3());
+  const L = Math.max(gr.x, gr.z), H = gr.y;
+  const kopf = new THREE.Vector3(0, 0, 1).applyQuaternion(wal.quaternion); kopf.y = 0; kopf.normalize();
+  const quer = new THREE.Vector3(-kopf.z, 0, kopf.x);
+  for(let i = 0; i < 30; i++){
+    // laengs ueber den Koerper verteilt, hinten (Fluke) dichter; senkrecht meist unter der Mitte, wenige darueber
+    const l = Math.pow(rnd(), 0.7) * 2 - 1, laengs = -l * L * 0.55;       // + vorn, - hinten
+    const seit = (rnd() - 0.5) * L * 0.5, hoch = (rnd() < 0.8 ? -1 : 0.4) * (0.2 + rnd() * 0.9) * H;
+    const r = 0.09 + rnd() * 0.1;
+    const m = new THREE.Mesh(geo, mat); m.scale.setScalar(r);
+    m.position.set(c.x + kopf.x * laengs + quer.x * seit, c.y + hoch, c.z + kopf.z * laengs + quer.z * seit); g.add(m);
+  }
+  for(let i = 0; i < 7; i++){                                     // ein paar fallen schon (tiefer, nahe der Fluke)
+    const m = new THREE.Mesh(geo, mat); m.scale.setScalar(0.1 + rnd() * 0.07);
+    m.position.set(c.x - kopf.x * L * (0.3 + rnd() * 0.3) + quer.x * (rnd() - 0.5) * L * 0.3, c.y - H * (1.3 + rnd() * 1.4), c.z - kopf.z * L * (0.3 + rnd() * 0.3) + quer.z * (rnd() - 0.5) * L * 0.3); g.add(m);
+  }
+  scene.add(g); g.updateMatrixWorld(true); wal.userData.tropfen = g;   // global-ok: nur fuer die Aufnahme
+}function aufnehmen(s){
   // Skizze: Fernebene bei 1,5 km – Sterne, Sternbilder, Milchstrasse und Mond fallen weg (Linien und Punkte waeren auf dem
   // Papier stoerend geworden), Meer, Steg und Boot bleiben
   const kam = new THREE.PerspectiveCamera(s.blick.fov, BILD_W / BILD_H, 0.5, s.art === 'skizze' ? 1500 : 1600000);
@@ -167,7 +194,14 @@ function aufnehmen(s){
     wal.position.set(b.bx + s.wal.dx, s.wal.hoch, b.bz + s.wal.dz);
     wal.rotation.set(s.wal.nick, s.wal.kurs, 0, 'YXZ');
     scene.add(wal); wal.updateMatrixWorld(true);                    // global-ok: nur fuer die Aufnahme, gleich wieder entfernt
+    walTropfen(wal);
   }
+  // Live-Befund 19.10.2026: "die Skizze sieht immer ein wenig anders aus, je nachdem, was sonst in der Umgebung ist" – die
+  // echten Orcas (seit heute mehr und nah am Steg, einer springt ueber das Boot) kamen mit ins Bild, als "zweiter Wal", mal
+  // mit ihren Spritzern, mal ohne. Fuer die Aufnahme sind sie und ihre Spuren weg; der Skizzen-Wal hat eigene Tropfen.
+  const orcasWeg = [];
+  if(s.wal && typeof orcas !== 'undefined') for(const o of orcas) if(o.group && o.group.visible){ o.group.visible = false; orcasWeg.push(o.group); }
+  const spurenZurueck = s.wal && story.spurenVerstecken ? story.spurenVerstecken() : null;
   // Markierungen (Kreise, Y) gehoeren nicht ins Bild (Live-Befund: der rote Kreis stand mit in der Skizze)
   const versteckt = [];
   for(const k of marken) for(const o of [k.m, k.y]) if(o.visible){ o.visible = false; versteckt.push(o); }
@@ -179,7 +213,7 @@ function aufnehmen(s){
   let schichten = null;
   if(s.art === 'skizze'){
     const St = story.stegZustand || {}, meer = typeof ground !== 'undefined' ? ground : null;
-    const teile = [St.boot, St.schatten, St.gischt, meer, wal].filter(Boolean);
+    const teile = [St.boot, St.schatten, St.gischt, meer, wal, wal && wal.userData.tropfen].filter(Boolean);
     const sichtbar = (an) => { for(const o of teile) o.visible = an.includes(o); };
     schichten = [];
     sichtbar([]);                     schichten.push(bleistift(rendern(kam), false, 'nur'));   // Strand und Steg
@@ -193,7 +227,9 @@ function aufnehmen(s){
   mondZu(camera);
   if(eva){ eva.group.visible = joshiSichtbar; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = schatten; }
   if(f.obj){ if(fp) f.obj.position.copy(fp); f.yaw = fyaw; f.obj.rotation.y = frot; f.obj.visible = true; }
-  if(wal) scene.remove(wal);
+  if(wal){ scene.remove(wal); if(wal.userData.tropfen) scene.remove(wal.userData.tropfen); }
+  for(const g of orcasWeg) g.visible = true;
+  if(spurenZurueck) spurenZurueck();
   if(schichten){ ab.schichten = schichten; return schichten[schichten.length - 1]; }
   return polaroid(bild);
 }

@@ -223,7 +223,13 @@ function update(dt){
     gl.ende = true;
     schwarz(null, () => {
       const f = gl.fertig;
-      if(f){ gl.aktiv = false; gl.unterwegs = false; gl.textEl.style.opacity = '0'; document.body.classList.remove('globus'); f(); schwarzEl.style.opacity = '0'; tonBlende(1, 1.5); return; }
+      // Ton erst ZWEI Bilder nach dem Aufbau der neuen Welt (f) – dann hat die Engine ihre Regler (Motor, Ambiente) auf die
+      // neue Lage gestellt. Vorher kam im ersten Bild noch ein Rest der alten Welt durch (Live-Befund 19.10.2026 in Trip to
+      // Japan: Schub des X-Wing nach dem Globus). Der Motor wird dazu gleich still gestellt.
+      if(f){ gl.aktiv = false; gl.unterwegs = false; gl.textEl.style.opacity = '0'; document.body.classList.remove('globus');
+        if(typeof engineGain !== 'undefined' && engineGain) engineGain.gain.value = 0;
+        f(); schwarzEl.style.opacity = '0';
+        requestAnimationFrame(() => requestAnimationFrame(() => { if(!gl.aktiv) tonBlende(1, 1.5); })); return; }
       // Etappe komplett zuruecksetzen: neu laden (der Bildschirm bleibt schwarz, bis der Startbildschirm kommt)
       try { sessionStorage.setItem('geheimland.reise', JSON.stringify(story.reise)); } catch(e){}
       location.reload();

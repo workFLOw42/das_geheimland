@@ -148,13 +148,18 @@ function punkt(ort, farbe, gross){
 function zeichnen(anteil){
   for(const o of [...gl.punkte.children, ...gl.faden.children]) story.entsorgen(o);   // jedes Bild neu: alte Stuecke freigeben
   const r = story.reise;
-  let spitze = null;
+  let spitze = null, spitzeHoch = 0;
   for(let i = 1; i < r.length; i++){
     const letztes = i === r.length - 1;
     const pts = bogen(ORTE[r[i - 1]], ORTE[r[i]], 48), n = Math.max(2, Math.round(pts.length * (letztes ? anteil : 1)));
     gl.faden.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.slice(0, n)), Math.max(4, n * 2), 0.009, 8, false),
       new THREE.MeshBasicMaterial({ color: 0xe02020, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })));   // gewinnt knapp gegen die Kugel
-    if(letztes) spitze = pts[n - 1];
+    if(letztes){
+      spitze = pts[n - 1];
+      // hoechste Stelle des Fadens auf dem Stueck unter dem Gesicht (wie in Reise nach Japan, Live-Befund 19.10.2026: hinter
+      // dem Scheitel lag der Faden sonst naeher an der Kamera als das fest auf 9 % gesetzte Gesicht und verdeckte es)
+      for(let j = n - 1; j >= 0 && pts[j].distanceTo(spitze) < 0.15; j--) spitzeHoch = Math.max(spitzeHoch, pts[j].length());
+    }
   }
   // Joshis Insel: das Haus (statt eines Punkts), etwas ueber der Oberflaeche
   gl.haus.position.copy(latLon(ORTE[0].lat, ORTE[0].lon, GLOBUS_R * 1.06));
@@ -162,7 +167,7 @@ function zeichnen(anteil){
   for(let i = 1; i < r.length; i++){ if(i === r.length - 1 && anteil < 1) continue; if(ORTE[r[i]].symbol !== 'haus') punkt(ORTE[r[i]], 0xffd23f, false); }
   // Joshis Gesicht wandert an der Spitze des Fadens mit, am Ziel bleibt es dort
   gl.gesicht.visible = !!spitze;
-  if(spitze) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(GLOBUS_R * 1.09);
+  if(spitze) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(Math.max(GLOBUS_R * 1.09, spitzeHoch + 0.03));
 }
 function kamera(k){
   const a = ORTE[gl.von], b = ORTE[gl.nach], e = k * k * (3 - 2 * k);

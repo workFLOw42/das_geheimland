@@ -506,7 +506,7 @@ function orcaNachher(){
 }
 
 // ---- Jedes Bild: Zaehler, Schiffe schieben Schwimmer und Boot beiseite --------------------------------------------
-const _sb = { x: 0, z: 0 };
+const _sb = { x: 0, y: 0, z: 0 };                       // Segelboot an der Oberflaeche (Hoehe fuer die 3D-Form der Schiffe)
 story.updateObjekte = function(dt){
   bildNr++;
   if(locale !== 'earth' || typeof pushOutOfSeaShip !== 'function') return;

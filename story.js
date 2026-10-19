@@ -1556,6 +1556,12 @@ function sprich(saetze, fertig, rolle){
         // (Spielsaetze warten auch im Inventar – nur die Erklaerungen selbst sprechen dort)
         if(sprichtGerade !== me) return;
         if(hilfeOffen() && rolle !== 'inventar'){ stelle(los, 200); return; }
+        // Von uns spricht hier niemand (sprich laeuft immer nur einmal, der vorige Satz ist fertig): was noch laeuft oder
+        // wartet, ist fremd – z. B. ein anderer Tab, der die browserweite Sprachausgabe angehalten hat (siehe
+        // stimmeFreigeben) oder eine andere Webseite mit Vorlesefunktion. Verwerfen, sonst bliebe jeder Satz stumm (wie in
+        // Reise nach Japan, 19.10.2026). OHNE Bedingung: diese Seite sieht den fremden Stau nicht (speaking, pending und
+        // paused stehen hier alle auf false – nachgemessen, C:/tmp/jfg/test/tts_var.js).
+        synth.cancel();
         synth.resume(); story.stimmePausiert = false;
         synth.speak(u); me.satzLaeuft = true;
         stelle(() => { if(sprichtGerade === me) weiter(); }, (s.length / 14 * 1000 + 1500) * 2.5);

@@ -114,6 +114,17 @@ function hookSteg(){
 story.stegBoden = (x, z) => (locale === 'earth' && eva && stegGilt(x, z, eva.group.position.y)) ? stegY(z) : null;
 
 // ---- Bauen -----------------------------------------------------------------------------------
+// Gezeichneter Meeresgrund unter (x, z): Strahl nach unten auf den Boden der Engine (seabedMesh). Er ist ein grobes Raster,
+// zwischen den Gitterpunkten liegt er anders als seabedY – am Steg gemessen 2..4 m tiefer. Ohne Treffer (Boden noch nicht
+// gebaut): seabedY.
+const PFAHL_EIN = 0.3;          // m, so tief steckt ein Pfahl im Grund
+const _pfRay = new THREE.Raycaster(), _pfAb = new THREE.Vector3(0, -1, 0), _pfVon = new THREE.Vector3();
+function pfahlGrund(x, z){
+  seabedMesh.updateMatrixWorld(true);                           // global-ok: Boden der Engine
+  _pfRay.set(_pfVon.set(x, -0.2, z), _pfAb); _pfRay.far = 400;
+  const h = _pfRay.intersectObject(seabedMesh, false)[0];       // global-ok
+  return h ? h.point.y : seabedY(x, z);                         // global-ok
+}
 function baue(){
   if(s.gruppe) return;
   const w = story.welt(1), g = new THREE.Group();
@@ -135,11 +146,18 @@ function baue(){
   for(const sx of [-1, 1]){
     const tr = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, L - 2.6), dunkel); tr.position.set(STEG.x + sx * (STEG.B / 2 - 0.15), STEG.H - 0.14, STEG.zUfer + 2.6 + (L - 2.6) / 2); g.add(tr);
   }
-  // Pfaehle (ab dem Ufer, alle 3 m) bis in den Grund, ein Stueck ueber die Planken (Geländerpfosten)
+  // Pfaehle (ab dem Ufer, alle 3 m) bis in den Grund, ein Stueck ueber die Planken (Geländerpfosten). Live-Befund 19.10.:
+  // mit fester Laenge (4,6 m, Ende bei -3,45 m) hingen sie im Wasser – der sichtbare Meeresgrund der Engine ist ein grobes
+  // Raster (125 m) und liegt am Steg bei -5,8 .. -6,6 m, tiefer als seabedY an der Stelle. Darum misst jeder Pfahl beim
+  // Aufbau senkrecht nach unten bis zum GEZEICHNETEN Grund (pfahlGrund) und steckt PFAHL_EIN darin.
+  const oben = STEG.H + 0.4;                                     // Pfahlkopf (Geländerpfosten)
   for(let z = STEG.zUfer + 2; z <= STEG.zEnde + 0.01; z += 3){
     for(const sx of [-1, 1]){
-      const pf = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 4.6, 8), dunkel);
-      pf.position.set(STEG.x + sx * (STEG.B / 2 - 0.04), STEG.H - 1.9, Math.min(z, STEG.zEnde - 0.15)); g.add(pf);
+      const px = STEG.x + sx * (STEG.B / 2 - 0.04), pz = Math.min(z, STEG.zEnde - 0.15);
+      const unten = pfahlGrund(px, pz) - PFAHL_EIN, lang = oben - unten;
+      // nach unten etwas dicker (0,11 oben -> 0,13 bei 4,6 m wie bisher, mit der Laenge mitwachsend)
+      const pf = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11 + 0.02 * lang / 4.6, lang, 8), dunkel);
+      pf.position.set(px, (oben + unten) / 2, pz); g.add(pf);
     }
   }
   // niedrige Kante an beiden Seiten des Pfahlteils (zeigt die Grenze) und vorn am Ende

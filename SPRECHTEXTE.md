@@ -214,6 +214,6 @@ Das ist das Geheimland.
 - ~~**Fall 1 – das Problem:**~~ – „Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.“ (vom Nutzer, 16.10.2026).
 - **Fall 1 – am Ziel:** was dort passiert und gesagt wird (jetzt Platzhalter „Du bist angekommen!“).
 - **Orte auf dem Globus:** Name und Symbol des zweiten Orts (jetzt „Fall 1“ mit Standardpunkt).
-- **Einsatzorte** (Müllwagen, Löschboot, Mondrover) und **Rätsel-Kette** – folgen mit den Orten.
-- **Finale am Fotobrett** und **Auflösung** – folgen, wenn der Täter feststeht (siehe Konzept.md).
+- **Der Weihnachtsfall** (Konzept.md, Abschnitt 7): Anrufer, die Etappen mit Orten und Verdächtigen, Texte der Tiere, Tipps beim Vergleichen („Zähl mal die Zehen.“), Auflösung.
+- **Werkzeug-Hinweise** in Stufen, falls Joshi das Werkzeug später selbst wählt („Vielleicht hilft dir etwas, das ganz genau hinschaut.“ → „Nimm die Lupe.“).
 - **Erwachen im Kinderzimmer** und **Trophäen** – folgen.

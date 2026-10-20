@@ -2,7 +2,7 @@
 
 Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.js – Teil von „Die Abenteuer von Joshi & Samu“.
 
-**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 16.10.2026 · Sprechtexte: [SPRECHTEXTE.md](SPRECHTEXTE.md)
+**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 20.10.2026 · Sprechtexte: [SPRECHTEXTE.md](SPRECHTEXTE.md)
 
 ## 👦 Zielgruppe & Spielfigur
 
@@ -68,66 +68,110 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 - **Funkspruch Fall 1:** erst, wenn alle vier Kreise erledigt sind. Die Funkstimme ruft („Hallo Joshi, bist du da?“, alle 15 s „Joshi, bitte kommen.“), Y am Funkgerät: „Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.“ Unten rechts erscheint dabei das wackelnde Funkgerät.
 - **Segeln zum Ziel:** im Boot oben links das Radar mit dem roten Punkt, darunter der Schubbalken. Das Ziel liegt weit draußen, damit man rund um die Insel frei fahren kann – hält man aber darauf zu, **kommt es entgegen** (direkt hingesteuert ~14 s). Schwimmend ist es nicht erreichbar. Am Ziel: Blende zum **Globus** (die Geheimland-Welt mit Joshis Insel), danach beginnt die Etappe neu (Reload).
 
-## 💡 1. Rahmenhandlung & Einstieg
+## 🕵️ 1. Das Spielprinzip: Joshi ist Detektiv
 
-- **Der Auftakt:** Der Detektiv erwacht nachts in seinem 3D-Kinderzimmer. Neben seinem Bett sitzt sein treuer Begleiter, der Fuchs. *(noch nicht gebaut)*
-- **Die Zaubertür:** Durch die Zimmertür gelangt er an einen nächtlichen Tropenstrand vor eine gemütliche Hütte mit Lagerfeuer. *(Strand, Hütte, Feuer: gebaut)*
-- **Die Ausrüstung (Auftakt in der Hütte):** Bevor das Abenteuer losgeht, holt Joshi seine Ausrüstung: **ein bestimmtes Buch aus dem Bücherregal** *(welches Buch und was darin steht: kommt noch)* und **die drei Sachen vom Tisch** – Taschenmesser, Kompass und Lupe (dafür werden sie einzeln gebraucht). Erst wenn er alles hat, geht es weiter.
-- **Der Funkspruch:** Sobald Joshi das Buch und die drei Sachen genommen hat, **kommt ein Funkspruch herein** – das Funkgerät am Lagerfeuer meldet sich über den Ton und **wiederholt das regelmäßig, bis Joshi rangeht** (wo der Fuchs gerade ist, spielt keine Rolle). Joshi geht hin und **nimmt ihn mit Y an**; damit **beginnt das Abenteuer** – und erst dann lässt sich das Segelboot am Steg besteigen.
-- **Das Mysterium:** Im Geheimland herrscht großes Chaos. Über Funk kommt die Durchsage (Hörspiel-Stimme):
-  > „Achtung, Detektiv Joshi! Im Geheimland wurde Chaos angerichtet! Schnapp dir deine Kamera, folge den Hinweisen und löse das Rätsel!“
+**Neu gefasst am 20.10.2026.** Die frühere Fall-Idee (Chaos im Geheimland, Fotobrett, der Fuchs als Täter, Täter-Generator) war nicht schlüssig und ist ersetzt.
 
-## 📸 2. Das Spuren- & Gameplay-Prinzip (Der 3-Klang)
+- **Ein Fall = eine Geschichte über mehrere Etappen.** Jede Etappe ist eine kleine Reise an einen anderen Ort (mit Segelboot, Flugzeug, U-Boot, Rakete …). Am Ende einer Etappe weiß Joshi etwas Neues, das ihn zum nächsten Ort führt.
+- **Zu Weihnachten gibt es einen Fall.** Das Spiel ist so gebaut, dass später **weitere Fälle** dazukommen können: neuer Anruf, neue Orte, neue Verdächtige. Insel, Hütte, Fuchs, Notizbuch und Werkzeuge bleiben.
+- **Detektivarbeit heißt: die Werkzeuge benutzen.** Hinweise bekommt Joshi nicht geschenkt, er erarbeitet sie mit seiner Ausrüstung (siehe Abschnitt 3).
+- **Kein Bösewicht, nie Scheitern.** Wer es war, hatte einen Grund (Hunger, Angst, etwas verloren). Joshi hilft ihm, und alles wird wieder gut. Falsche Wahl = der Fuchs schüttelt den Kopf (*Sit_No*), die Erzählerin gibt einen Tipp, man versucht es noch einmal.
 
-Jeder Einsatzort folgt einer klaren, handlungsorientierten Struktur:
+## 🏝️ 2. Der Rahmen: die Insel ist das Detektivbüro
 
-1. **Aktiv handeln & aufräumen (Action & Mini-Game):**
-   - **Müllwagen:** Umgestürzte Mülltonnen leeren, Müll einsaugen und in 3 Fächer (Papier, Plastik, Bio) sortieren.
-   - **Löschboot / Löschpumpe:** Wasserstrahl auf Brandherde richten (z. B. ein Waldfeuer löschen, das durch den Brennglas-Effekt einer von der Sonne gebündelten Glasscherbe entstanden ist).
-   - **Mondrover:** Umgekipptes Fahrzeug wieder aufrichten und säubern.
-2. **Spurensicherung (Die Polaroid-Kamera):** Mit dem Fadenkreuz der Polaroid-Kamera die Sachbeschädigung oder Bodenspur (Schrammen, Kratzer, Wühllöcher) anvisieren und ein Foto schießen. Das Bild wandert ins Ermittlungsbuch.
-3. **Die organische Rätsel-Kette (von Ort zu Ort):** An jedem Einsatzort liegt ein verloren gegangener Gegenstand, der logisch zum nächsten Ziel führt (z. B. Satellitenschrott mit Eicheln → Mond-Station mit Eichhörnchen → Seegras am Mondrover → Ozean/Boot).
+Jeder Fall läuft im selben Rahmen ab – wie in einer Kinderserie. Nach dem ersten Fall weiß das Kind, wie es geht.
 
-## 🕵️‍♂️ 3. Das Finale am Fotobrett: Die Foto-Analyse
+1. **Die Insel** (Etappe 1, gebaut) ist Joshis Zuhause und Büro: Hütte mit Ausrüstung, Lagerfeuer, **Funkgerät**, Steg mit Segelboot.
+2. **Der Anruf:** Über das Funkgerät meldet sich jemand mit einem Problem (Stimme, kein Text). Das ist der Start jedes Falls.
+3. **Die Reise:** Etappe für Etappe von Ort zu Ort. Der Globus zeigt zwischen den Etappen, wo Joshi im Geheimland ist.
+4. **An jedem Ort:** Spur sichern → Verdächtige besuchen → vergleichen → Hinweis zum nächsten Ort (Abschnitt 4).
+5. **Die Auflösung:** Joshi findet heraus, wer es war und warum – und hilft.
+6. **Die Trophäe:** Ein Andenken an den Fall kommt ins **Regal der Hütte** (Platz ist schon da). Danach ist das Funkgerät still, bis der nächste Fall kommt.
 
-> ⚠️ **Offen:** Der Fuchs ist jetzt der Begleiter des Detektivs – als Täter passt er so nicht mehr. Täter und Auflösung werden noch neu entschieden; der Text unten ist der bisherige Stand.
+- **Ausrüstung (gebaut):** Notizbuch aus dem Regal, vom Tisch Lupe, Kompass, Taschenmesser, Stift und Kamera – alles im Rucksack.
+- **Kinderzimmer (später, kein Muss):** Joshi schläft ein und wacht im Geheimland auf; am Ende eines Falls wacht er im Kinderzimmer auf, und die Trophäe steht dort im Regal.
 
-- **Das Spurenbrett:** Der Detektiv kehrt an den Strand zurück und legt alle 6 geschossenen Polaroid-Fotos nebeneinander auf das Ermittler-Brett.
-- **Die Überlagerung:** Er legt ein transparentes Pfoten-Messraster seines eigenen Fuchses über die Schrammen und Abdrücke auf den 6 Bildern. Die Maße stimmen zu 100 % überein!
-- **Die Auflösung:** Der Detektiv stellt den Fuchs zur Rede. Der Fuchs schaut verlegen, läuft hinter die Hütte und zieht stolz seinen vergrabenen Lieblingsknochen hervor. Auf der Suche nach seinem Knochen hat er versehentlich das Chaos angerichtet!
+## 🧰 3. Der Werkzeug-Baukasten
 
-## 🎲 4. Der Täter-Generator (Wiederspielwert)
+Jedes Werkzeug hat eine klare Aufgabe. Foto, Skizze, Schnitzen und Lupe gibt es schon in Etappe 1 (als 3D-Szenen bzw. Bilder ins Notizbuch).
 
-> ⚠️ **Offen:** Täter A (bisher der Hund, jetzt der Fuchs) wird noch neu entschieden – siehe Abschnitt 3.
-
-Damit das Spiel auch beim 2. oder 3. Durchlauf spannend bleibt, rotiert das System beim Neustart Täter und Motiv:
-
-| Täter | Motiv | Spuren |
+| Werkzeug | Was Joshi damit tut | Was er dadurch erfährt / erreicht |
 |---|---|---|
-| **A – Der Fuchs** (der eigene Begleiter) | sucht seinen vergrabenen Knochen | Wühl- & Scharrspuren |
-| **B – Der Blaurabe** | hat seine geliebte, glitzernde Taschenuhr verloren und sucht verzweifelt danach | Federn, gelockerte Schrauben, Lametta |
-| **C – Der Feldhamster** | sucht Vorräte für den Winter | Nagespuren an Kisten, Hamsterkäufe |
+| **Kamera** | den Tatort fotografieren | Die Spur ist festgehalten (z. B. ein Abdruck im Sand) und kommt ins Notizbuch |
+| **Lupe** | ganz genau hinschauen | Winziges wird sichtbar: ein Haar, eine Feder, Honigtropfen, eine Ameisenstraße |
+| **Stift** | etwas abzeichnen, z. B. die Pfote eines Verdächtigen | eine Skizze im Notizbuch zum Vergleichen |
+| **Notizbuch** | Spur und Skizzen nebeneinander anschauen | Welche Skizze passt zur Spur? |
+| **Taschenmesser** | Seil, Dornen oder Ranken durchschneiden | ein Weg, eine Kiste oder ein festsitzendes Tier ist frei |
+| **Taschenmesser (schnitzen)** | ein Geschenk schnitzen | ein Tier freut sich, zeigt seine Pfote oder verrät etwas |
+| **Kompass** | einer Richtung folgen | „Die Ameisen laufen nach Norden“ → dort geht es weiter |
 
-## 🏠 5. Belohnungssystem & Erwachen
+- **Später: das Werkzeug selbst wählen.** In Etappe 1 geben die farbigen Kreise das Werkzeug vor (blau = Foto, rot = Skizze, grün = Schnitzen, braun = Lupe). In späteren Fällen kann Joshi mit Y an einer Stelle den Rucksack öffnen und das passende Werkzeug **selbst wählen**; die Hinweis-Taste hilft in Stufen („Vielleicht hilft dir etwas, das ganz genau hinschaut.“ → „Nimm die Lupe.“). *(noch offen, ab wann)*
 
-- **Das Erwachen:** Der Detektiv schließt die Hüttentür mit dem Kristall-Schlüssel auf und erwacht wieder im 3D-Kinderzimmer.
-- **Trophäen-Regal:** Auf dem Schreibtisch und dem Regal (im Hütten-Innenraum schon vorhanden) liegen die gesammelten Souvenirs und Polaroid-Fotos. Je öfter das Spiel gelöst wird, desto mehr Trophäen werden freigeschaltet (z. B. Goldener Knochen im Körbchen, Plüsch-Rabe auf der Lampe, Meister-Detektiv-Mütze für Fuchs und Spieler).
+## 🐾 4. Ein Ort im Fall: eine Spur, bis zu drei Verdächtige
 
-## 🎓 6. Lerneffekte
+So läuft eine Detektiv-Etappe ab:
 
-- **Kritisches Denken & Beweisführung:** Nicht den ersten Verdächtigen beschuldigen, sondern alle Fakten per Foto-Analyse prüfen.
-- **Natur & Umwelt:** Mülltrennung begreifen, Waldbrand-Prävention (Brennglas-Effekt von Altglas verstehen) und aufräumen.
-- **Empathie:** Verstehen, dass Missgeschicke aus Missverständnissen entstehen können und Verzeihen dazugehört.
+1. **Spur sichern:** Am Tatort gibt es **eine** Spur. Joshi sichert sie mit Kamera oder Lupe; sie kommt ins Notizbuch.
+2. **Verdächtige besuchen:** In der Nähe sind **bis zu drei ähnliche Tiere**. Jedes zeigt seine Pfote (oder Feder, Haar …) erst, wenn Joshi ihm hilft – mit einem Werkzeug oder einer kleinen Herausforderung (Abschnitt 5). Dann zeichnet Joshi sie ab.
+3. **Vergleichen:** Im Notizbuch liegt die Spur neben den Skizzen; das Kind wählt die passende. Falsch → der Fuchs schüttelt den Kopf, die Erzählerin gibt einen Tipp („Zähl mal die Zehen.“).
+4. **Ergebnis:** Der Treffer bringt den Hinweis zum nächsten Ort (oder die Auflösung). Den anderen hat Joshi trotzdem geholfen.
+
+- **Ähnliche Tiere** machen das Vergleichen zum Rätsel – bei drei ganz verschiedenen Tieren könnte man raten. Der Anfang darf leichter sein (zwei Verdächtige), später sind es drei.
+- **Jede Etappe hat ihre eigene Tiergruppe und ihre eigene Art Spur** – so wird es nicht langweilig, und jedes Werkzeug kommt dran.
+- **Ein klares Merkmal pro Gruppe**, das ein knapp Sechsjähriger sofort sieht:
+
+| Tiergruppe (lieb, nicht gefährlich) | Spur | Woran man sie unterscheidet |
+|---|---|---|
+| **Puma, Tiger, Löwe** | ein Haar (Lupe) | Tiger orange mit schwarzem Streifen · Löwe langes goldenes Mähnenhaar · Puma kurz, einfarbig hellbraun |
+| **drei Vögel** | eine Feder (Lupe oder Foto) | Farbe, z. B. Elster schwarz-weiß · Blaumeise blau-gelb · Rotkehlchen orange-rot |
+| **Eichhörnchen, Hamster, Maus** | Spur im Staub (Foto) | Schwanzspur: Maus dünner Strich · Eichhörnchen buschiger Wisch · Hamster keine; oder die Pfotengröße |
+| **Wolf, Labrador, Shiba** (Modelle vorhanden) | Pfotenabdruck (Foto) | nur die Größe: groß · mittel · klein |
+| etwas Klebendes | Honig, Farbe, Schlamm (Lupe) | klebt nur an einer der Pfoten |
+
+- **Joshis Fuchs ist nie verdächtig** – er hilft schnüffeln (X) und zeigt mit *Sit_Yes* / *Sit_No*, ob es passt.
+- **Spuren und Skizzen sind gezeichnete Bilder** (wie die Steg-Skizze), nicht das 3D-Modell: Das Merkmal wird dort deutlich gezeichnet. Die Modelle brauchen keine detaillierten Pfoten.
+
+## 🚀 5. Reisen und Herausforderungen
+
+Die Etappen sollen sich verschieden anfühlen. Die Engine (Flugspiel) bringt dafür schon vieles mit: Fliegen, Weltraum, Mond mit **Mondbasis**, Mars, U-Boot, Boote, Schwimmen und Tauchen.
+
+- **Reisen:** segeln, fliegen, **ins All zum Mond und in die Mondbasis hinein** (Innenraum = eigene Welt), mit dem U-Boot in die Tiefe …
+- **Herausforderungen, die einen Hinweis bringen** (bei Erfolg; sonst einfach noch einmal):
+  - **mit einem Tier um die Wette schwimmen** (Sieg → das Tier verrät etwas oder zeigt seine Pfote)
+  - **tauchen**, um etwas vom Grund zu holen
+  - mit dem Messer jemanden befreien; etwas schnitzen und verschenken
+  - einer Spur mit dem Kompass folgen
+  - Fahrzeug-Aufgaben aus früheren Ideen: **Müllwagen** (Tonnen leeren, sortieren – Modell `garbage_truck_by_Lung_ong.glb` vorhanden), **Löschboot** (Feuer löschen), **Mondrover** (umgekippt, wieder aufrichten)
+- Alles ohne Zeitdruck und ohne Lesen (Erzählerin, Funk, Symbole, Pfeile). Wettrennen sind gegen ein Tier, nicht gegen die Uhr.
+
+## 🧸 6. Neue Tiere (Modelle)
+
+- **Vorhanden** in `3d Modelle\Spiele`: Wolf, Labrador, Shiba, Eichhörnchen, Panda, Schildkröte, Kamel, Krokodil, Möwe, Schmetterling, Fuchs (Joshis Begleiter).
+- **Weitere über Sketchfab** – darauf achten:
+  - **Animationen müssen dabei sein** (Mixamo geht nur bei menschenähnlichen Figuren): mindestens Stehen und Laufen, schön sind Sitzen / Freuen (für „zeigt seine Pfote“, „bedankt sich“).
+  - **Stil „lieb“:** Cartoon oder Low-Poly, nicht fotorealistisch – passend zu Joshi und dem Fuchs.
+  - **Größe:** möglichst unter ~30.000 Dreiecke, Texturen bis 2K, als GLB.
+  - **Lizenz:** CC-BY oder CC-BY-NC; Name und Autor für die Quellenliste notieren.
+
+## 🎄 7. Der Weihnachtsfall
+
+*(noch offen)* Anlass (was ist passiert oder verschwunden?), Anrufer, die Etappen mit Orten, Reisen, Tiergruppen und Spuren, Täter und sein Grund, die Trophäe. Der Funkspruch in Etappe 1 („Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns.“) ist der Einstieg; der Anrufer wird mit dem Fall festgelegt.
+
+## 🎓 8. Lerneffekte
+
+- **Genau hinschauen & Beweise prüfen:** nicht raten, sondern die Spur mit allen Verdächtigen vergleichen.
+- **Werkzeuge sinnvoll einsetzen:** Welches Werkzeug hilft hier?
+- **Natur & Wissen:** Tierspuren, Federn, Fell; Sterne, Kompass und Himmelsrichtungen; Umwelt (z. B. Müll trennen).
+- **Empathie:** Wer etwas angestellt hat, hatte einen Grund; helfen und verzeihen gehört dazu.
 
 ## 🗺️ Nächste Schritte
 
-1. **Kinderzimmer** als Einstieg (eigene Innenwelt) mit Bett und Zaubertür → Blende → Strand.
-2. ~~Ausrüstung und Funkspruch~~ – gebaut (16.10.2026).
-3. ~~Polaroid-Kamera, Fotos ins Ermittlungsbuch~~ – gebaut als Kamera + Notizbuch (16.10.2026).
-4. **Was am Ziel des ersten Falls passiert** (jetzt: Blende zum Globus).
-5. **Erster Einsatzort:** Müllwagen-Minispiel (Modell vorhanden: `garbage_truck_by_Lung_ong.glb`), Mülltonnen, Sortieren.
-6. **Täter neu festlegen** (der Fuchs ist Begleiter, siehe Abschnitt 3 und 4).
-7. **Fehlende Modelle:** Kinderzimmer-Möbel, Polaroid-Kamera, Mülltonnen, Blaurabe, Feldhamster, Knochen (Eichhörnchen: liegt in `3d Modelle\Spiele`).
+1. ~~Ausrüstung, Funkspruch, Kamera und Notizbuch~~ – gebaut (16.10.2026).
+2. **Den Weihnachtsfall festlegen** (Abschnitt 7): Anlass, Etappen, Tiergruppen, Spuren, Auflösung.
+3. **Fehlende Tiermodelle** für die gewählten Gruppen über Sketchfab besorgen (Abschnitt 6).
+4. **Bausteine bauen:** Spur sichern, Verdächtige mit Helfer-Aufgabe, Pfote abzeichnen, Vergleichen im Notizbuch.
+5. **Erste Detektiv-Etappe** nach dem Segeln (ersetzt die Blende zum Globus mit Neustart).
+6. Später: Werkzeug selbst wählen, Kinderzimmer als Rahmen, weitere Fälle.
 
 ## 📚 Quellen
 

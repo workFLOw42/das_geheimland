@@ -247,7 +247,7 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 
 ## 📚 Quellen
 
-Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · Gitarren-Loop von idoberg (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
+Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Gitarren-Loop von idoberg (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
 
 ---
 

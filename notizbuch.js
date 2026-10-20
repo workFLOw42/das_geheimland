@@ -589,7 +589,10 @@ function szeneStarten(s){
     // haengt" – nach Y im gruenen Kreis, waehrend die Kreise gerade neu erschienen waren und Fuchsi zum Markieren lief. Die
     // Szene begann NUR im fertig() von ausRucksack (Messer raus und aufgeklappt); kam das nicht, hing sie fuer immer. Jetzt
     // beginnt sie spaetestens nach SZENE_WARTE s auch ohne (die Ursache war hier nicht nachstellbar).
-    const los = () => { if(sz.phase || sz.s !== s) return; sz.phase = s.art === 'messer' ? 'schnitzen' : 'lupe'; sz.t = 0; sz.gruppe.visible = true; };
+    // nur EINMAL: die Lupe ist mit B schon nach 0,6 s fertig – war die Szene vor dem Timer vorbei, startete er sie ein zweites
+    // Mal (Live-Befund 20.10.2026: nach B kam das weisse Oval leer wieder, nochmal B, Text noch einmal)
+    let gestartet = false;
+    const los = () => { if(gestartet || sz.phase || sz.s !== s) return; gestartet = true; sz.phase = s.art === 'messer' ? 'schnitzen' : 'lupe'; sz.t = 0; sz.gruppe.visible = true; };
     story.ausRucksack(WERKZEUG[s.art], los);
     setTimeout(los, SZENE_WARTE * 1000);
   }).catch(e => { console.warn('Szene', s.id, e); szeneAbbrechen(s); });
@@ -830,7 +833,9 @@ const muetze = { el: null, an: 0, t: 0 };
 function muetzeBild(){
   const c = document.createElement('canvas'); c.width = 220; c.height = 160; const g = c.getContext('2d');
   g.lineJoin = 'round'; g.lineWidth = 6; g.strokeStyle = '#2e1d10';
-  g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(110, 140, 92, 12, 0, 0, 7); g.fill();          // Schatten
+  g.save(); g.translate(110, 140); g.scale(1, 13 / 96); const sg = g.createRadialGradient(0, 0, 0, 0, 0, 96);   // Schatten: weich auslaufend
+  sg.addColorStop(0, 'rgba(0,0,0,.34)'); sg.addColorStop(0.55, 'rgba(0,0,0,.18)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = sg; g.beginPath(); g.arc(0, 0, 96, 0, 7); g.fill(); g.restore();
   // Schild vorn und hinten
   for(const [x, r] of [[34, -0.35], [186, 0.35]]){ g.save(); g.translate(x, 108); g.rotate(r); g.fillStyle = '#7a5530'; g.beginPath(); g.ellipse(0, 0, 38, 13, 0, 0, 7); g.fill(); g.stroke(); g.restore(); }
   // Kappe mit Karomuster

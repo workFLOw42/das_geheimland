@@ -127,7 +127,7 @@ function hookWelt(){
     if(eva && !eva.boat && !eva.rover && ovalShadow.visible){
       const k = ovalShadow.scale.x / 0.9;                     // Engine: 0,9 m, mit Sprunghoehe groesser
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
-      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.05;   // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich
+      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.045;  // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich (150,03)
       if(story.imBoot && story.imBoot()) ovalShadow.visible = false;         // im Boot: der Schatten laege auf dem Wasser
       if(!story.gestartet) ovalShadow.visible = false;                       // Startbildschirm: Joshi ist noch nicht da
       // Auf dem Steg: die Engine kennt ihn nicht und legte den Schatten aufs Wasser darunter (live gemeldet)
@@ -733,10 +733,11 @@ function preloadFuchs(){
     fuchs.obj = wrap; fuchs.mixer = mixer; fuchs.cur = FA.stehen;
     // eigener weicher Bodenschatten (dasselbe Material wie Joshis Ovalschatten), haengt am Fuchs, liegt flach
     fuchs.schatten = new THREE.Mesh(new THREE.CircleGeometry(1, 24), ovalShadowMat.clone());   // eigene Kopie: die Engine aendert die Deckkraft des Originals mit Joshis Sprunghoehe
-    fuchs.schatten.material.opacity = 0.22;                      // etwas durchsichtiger (Live-Wunsch 15.10.)
-    fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = 0.06;
+    fuchs.schatten.material.opacity = 0.22 * (typeof SHADOW_DECK === 'number' ? SHADOW_DECK : 1);   // etwas durchsichtiger (Live-Wunsch 15.10.), insgesamt dezenter (Engine)
+    fuchs.schatten.rotation.x = -Math.PI / 2; fuchs.schatten.scale.set(0.24, 0.5, 1); fuchs.schatten.position.y = typeof SHADOW_LIFT === 'number' ? SHADOW_LIFT : 0.045;
     fuchs.schatten.rotation.z = fuchs.kopf;                      // Laengsachse zum Kopf
     wrap.add(fuchs.schatten);
+    if(typeof shadowFollowFeet === 'function') shadowFollowFeet(fuchs.schatten, wrap);   // folgt den Pfoten (Engine)
     wrap.userData.agent = true;                                       // Begleiter: eigene Grenzregeln, kein Ding
     if(fuchs.wartetAuf) fuchsAbsetzen(fuchs.wartetAuf);
   });

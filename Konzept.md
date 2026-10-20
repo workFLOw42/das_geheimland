@@ -199,13 +199,19 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
   - **Eine Wiese mit Palmen**, darauf das **Planetarium** (nicht zu riesig).
   - Daneben ein **Parkplatz mit einem X-Wing** – noch **nicht benutzbar** (vielleicht für eine spätere Etappe, z. B. zum Mond).
   - **Um die ganze Oase ein Ring aus Palmen**: Er markiert die Grenze zur Wüste mit Sand.
+- **Im Planetarium** (Innenraum = eigene Welt):
+  1. Joshi sieht den **Hamster an einem Paket nagen**. Spricht Joshi ihn an (Y), sagt der Hamster genervt, dass er die **Schnur nicht aufbekommt**, weil er gerade so dolle **Zahnschmerzen** hat.
+  2. **Taschenmesser:** Joshi schneidet die Schnur auf. Der Hamster sagt danke.
+  3. **X (umschauen) →** auf dem Boden der **braune Lupenring** mit einem **Fußabdruck**. Unter der Lupe: die **Spur des Hamsters**.
+  4. **B → Vergleichen:** Links erscheint ein **halbes Notizbuch** mit der **Spur des Eichhörnchens** (vom Tisch), rechts die **Lupe mit der frischen Spur**. Blättert Joshi nach links oder rechts, kommt im Notizbuch die **Spur des Hamsters**. Die beiden Spuren **legen sich übereinander**, passen perfekt, und ein **grüner Rahmen leuchtet kurz auf**.
+  5. **Jetzt kann Joshi den Hamster noch einmal ansprechen** und ihn mit der **Spur** und dem **roten Fell** konfrontieren.
+  6. **Der Hamster:** Das Fell ist nicht seins – sieht man doch. Er war nur am Tisch, weil die **Post sein Paket aus Versehen auf die Insel geliefert** hat. Und weil der Tisch eh schon so verwüstet war, ist er einfach drübergelaufen – wie sollte er sonst an sein Paket kommen?
 - *(weiter offen)*
 
 ### Offen
-- **Wie geht es beim Hamster weiter** – und wie wird das Eichhörnchen überführt? Warum hat es das Essen genommen?
-- **Warum ist die Spur des Hamsters am Tisch**, wenn er in der Wüste wohnt (war er zu Besuch? bringt er Joshi darauf)?
+- **Wie geht es nach dem Hamster weiter** – wie kommt Joshi zum Eichhörnchen, und warum hat es das Essen genommen?
 - **Auflösung, Weihnachtsessen am Ende, Trophäe.**
-- **Modelle:** Tiere am Tisch (Sketchfab), Bär (liegen, traurig, fröhlich), Hamster, Holzentchen (heil und zerbrochen), Honigtopf, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
+- **Modelle:** Tiere am Tisch (Sketchfab), Bär (liegen, traurig, fröhlich), Hamster (nagen, genervt), Paket mit Schnur, Holzentchen (heil und zerbrochen), Honigtopf, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
 - **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale).
 
 ## 🎓 8. Lerneffekte
@@ -218,7 +224,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 ## 🗺️ Nächste Schritte
 
 1. ~~Ausrüstung, Funkspruch, Kamera und Notizbuch~~ – gebaut (16.10.2026).
-2. **Fall 1 „Das Weihnachtsessen“ fertig planen** (Abschnitt 7): beim Hamster in der Wüste, das Eichhörnchen und sein Grund, Auflösung.
+2. **Fall 1 „Das Weihnachtsessen“ fertig planen** (Abschnitt 7): nach dem Hamster: das Eichhörnchen und sein Grund, Auflösung.
 3. **Fehlende Tiermodelle** für die gewählten Gruppen über Sketchfab besorgen (Abschnitt 6).
 4. **Bausteine bauen:** Spur sichern, Verdächtige mit Helfer-Aufgabe, Pfote abzeichnen, Vergleichen im Notizbuch.
 5. **Erste Detektiv-Etappe** nach dem Segeln (ersetzt die Blende zum Globus mit Neustart).

@@ -1576,6 +1576,8 @@ function startbildschirm(weiter){
   })();
   function start(){
     if(los || !bereit) return; los = true;
+    // Ton freischalten: Knopf und Taste fangen das Ereignis ab (stopPropagation), die Engine bekam es nie (wie in Trip to Japan)
+    if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
     el.remove();
     if(eva) eva.group.visible = true;
     removeEventListener('keydown', taste, true);

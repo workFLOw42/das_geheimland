@@ -192,7 +192,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 
 ### Etappe 4 – zum Hamster in die Wüste
 - **Warum Wüste:** Der Hamster mag es warm und kalt, und er beobachtet gerne die Sterne und den Mond. Nirgends geht das besser als in der Wüste, weil es dort nachts nie Wolken gibt. Er wohnt **mitten in der Wüste in einer Oase mit Planetarium**.
-- **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Bären, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Bären zurück**.
+- **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Bären, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Bären zurück**. Das wird nur **gesagt**, nicht gezeigt – der Rückflug wird nicht gebaut.
 - **Freier Fall** wie in *Trip to Japan* (Fuji-Sprung), der **Fallschirm geht automatisch auf**, **Landung vor dem Planetarium**. Es ist **Tag**.
 - *(weiter offen)*
 
@@ -201,7 +201,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 - **Warum ist die Spur des Hamsters am Tisch**, wenn er in der Wüste wohnt (war er zu Besuch? bringt er Joshi darauf)?
 - **Auflösung, Weihnachtsessen am Ende, Trophäe.**
 - **Modelle:** Tiere am Tisch (Sketchfab), Bär (liegen, traurig, fröhlich), Hamster, Holzentchen (heil und zerbrochen), Honigtopf, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Oase. Vorhanden: Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
-- **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale), Autopilot.
+- **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale).
 
 ## 🎓 8. Lerneffekte
 

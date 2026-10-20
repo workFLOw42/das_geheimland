@@ -17,6 +17,12 @@ const WAND_D = 0.12;               // m Wandstaerke
 const TUER_B = 1.0, TUER_H = 1.9;
 
 story.insel = { R: ISEL_R, huette: HUETTE, feuer: FEUER };
+// Seeloewen der Engine (strandleben): fester Platz am Sandstrand im Suedwesten, gut 45 m links vom Steg und von der Huette aus
+// zu sehen. Sonst suchte die Engine den naechsten Uferpunkt – das war der Strand direkt am Steg, sie robbten durch Steg und Boot.
+// x/z auf dem Sand (Radius 93 von 88..98,6), wx/wz 14 m weiter draussen im Wasser (Ziel beim Schwimmen).
+const SEELOEWEN_W = Math.PI * 0.5 + 0.55;   // Winkel von +x aus (+z = Sueden): ~31 Grad westlich der Steg-Achse
+story.seeloewenPlatz = { x: Math.cos(SEELOEWEN_W) * 93, z: Math.sin(SEELOEWEN_W) * 93,
+  wx: Math.cos(SEELOEWEN_W) * 107, wz: Math.sin(SEELOEWEN_W) * 107 };   // gesetzt im STORY_HOOK (story.js): insel.js laedt vor der Engine
 
 // ---- Die Engine auf die kleine Insel umstellen -----------------------------------------------
 function hookInsel(){

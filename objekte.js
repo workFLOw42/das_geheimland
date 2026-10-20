@@ -543,6 +543,18 @@ function hookAussen(){
     orcaNachher();
     return r;
   };
+  // Strandleben der Engine (Seeloewen am Strand, Forellen im Flachwasser): Seeloewen bekommen wie die Orcas eine Grenze, die mit
+  // ihnen wandert (Joshi laeuft nicht durch sie hindurch), Forellen sind Deko (sie schwimmen weg, wie die Moewen fliegen).
+  if(typeof updateStrandleben === 'function'){
+    const strandOrig = updateStrandleben;
+    updateStrandleben = function(dt){
+      const r = strandOrig.apply(this, arguments);
+      for(const t of strandleben.loewen) if(!t.obj.userData.ding) ding(t.obj, { welt: '*', beweglich: true, orca: true, typ: t.art });
+      for(const g of strandleben.forellen) for(const f of g.fische) f.obj.userData.deko = true;
+      for(let i = dinge.length - 1; i >= 0; i--) if(dinge[i].orca && !dinge[i].obj.parent) dinge.splice(i, 1);   // clearStrandleben
+      return r;
+    };
+  }
 }
 const startVorher = window.STORY_START;
 window.STORY_START = function(){ hookAussen(); if(startVorher) return startVorher.apply(this, arguments); };

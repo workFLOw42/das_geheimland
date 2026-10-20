@@ -1905,6 +1905,7 @@ function hookTon(){
 }
 
 window.STORY_HOOK = function(){
+  if(typeof strandleben !== 'undefined'){ strandleben.an = true; strandleben.festPlatz = story.seeloewenPlatz || null; }   // Forellen im Flachwasser, Seeloewen am Strand (Engine)
   hookTon();
   story.typ('funkgeraet', { bau: baueRadio });
   hookHudAus();

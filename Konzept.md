@@ -164,35 +164,35 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 
 ### Etappe 2 – die Waldinsel, am Festtisch (bei Tag)
 - **Ort:** ein **Nadelwald mit wenig Schnee**. Nahe am Strand eine freie Stelle (wie auf Joshis Insel) mit **Lagerfeuer** und dem **Festtisch**; an den Bäumen um Tisch und Feuer etwas **Weihnachtsschmuck**, dazu ein **geschmückter Weihnachtsbaum**. Ankunft mit dem Segelboot, es ist **Tag**.
-- **Am Tisch sitzen lauter Tiere** (Modelle sucht der Nutzer über Sketchfab). Sie sind traurig: Alles Essen für das große Weihnachtsessen ist weg. Der **Bär** sei in letzter Zeit auch immer so grummelig.
+- **Am Tisch sitzen lauter Tiere** (Modelle sucht der Nutzer über Sketchfab). Sie sind traurig: Alles Essen für das große Weihnachtsessen ist weg. Der **Gorilla** sei in letzter Zeit auch immer so grummelig.
 - **X (umschauen) → blauer Fotoring am Tisch.** Joshi fotografiert den Tisch: nur noch Reste. **Auf dem Foto sind zwei Fußspuren** – vom **Hamster** und vom **Eichhörnchen**.
-- **Ein Weg führt in den Wald.** An seinem Eingang der **braune Lupenring**: unter der Lupe eine **Ameisenstraße und etwas Honig**.
+- **Ein Weg führt in den Wald.** An seinem Eingang der **braune Lupenring**: unter der Lupe ein **Stück Bananenschale** (vielleicht mit ein paar Fruchtfliegen).
 - **Alle Hinweise gesammelt →** die Erzählerin: Das ist ein schwieriger Fall – vielleicht sollte man sich alle Hinweise noch einmal genau ansehen.
 - **Im Notizbuch (Inventar):**
   - **beim Foto:** die Erzählerin weist auf die **zwei Fußspuren** hin → die **Zeichen-Animation** (Bleistift wie bei der Steg-Skizze) macht von beiden Spuren **große Zeichnungen**, die ebenfalls ins Notizbuch kommen.
-  - **bei der Lupen-Skizze:** die Erzählerin: Das sieht aus wie **Honig**.
-- **Die Tiere** kennen die Spuren nicht. Aber der Bär mag ja gerne Honig, ist überhaupt ganz verfressen und grummelig – er wohnt in der **Höhle auf der anderen Seite des Waldes**.
+  - **bei der Lupen-Skizze:** die Erzählerin: Das ist ja eine **Bananenschale**.
+- **Die Tiere** kennen die Spuren nicht. Aber der Gorilla mag ja so gerne **Bananen**, ist überhaupt ganz verfressen und grummelig – er wohnt in der **Höhle auf der anderen Seite des Waldes**.
 - **Joshi geht in den Wald →** Blende, **Globus** (Reise auf die andere Seite der Insel), Blende.
 
-### Etappe 3 – beim Bären
+### Etappe 3 – beim Gorilla
 **Draußen:** Joshi steht **von hinten gesehen am Waldausgang**. Links weg die **Piste** (Rollfeld) mit der **Mustang**, hinter der Piste Wald. Vor Joshi der **Berg mit dem Höhleneingang**; der Berg zieht sich weit nach rechts, daneben ebenfalls Wald. Die Mustang sieht man schon, **einsteigen geht aber noch nicht**.
 
 **In der Höhle** (Innenraum = eigene Welt):
-1. Der **Bär liegt am Lagerfeuer**. Spricht Joshi ihn an (Y), sagt er immer ganz traurig: „Lass mich bitte in Ruhe.“
+1. Der **Gorilla sitzt zusammengesunken am Lagerfeuer** (`sit`; oder liegt eingerollt, `sleep`). Spricht Joshi ihn an (Y), sagt er immer ganz traurig: „Lass mich bitte in Ruhe.“
 2. **X (umschauen) →** der **braune Lupenring** und der **Holzscheit mit dem grünen Schnitzring**.
 3. **Schnitzen geht noch nicht** – erst die Lupe: Joshi entdeckt ein **zerbrochenes Holzentchen** (Skizze vom kaputten Entchen ins Notizbuch).
-4. **Jetzt kann Joshi mit dem Bären reden:** „Ist dein Entchen zerbrochen?“ – Der Bär: Ja, und seitdem ist er ganz dolle traurig, nichts kann ihn trösten – nicht mal der Honig, den er vom eh schon verwüsteten Tisch genommen hat.
+4. **Jetzt kann Joshi mit dem Gorilla reden:** „Ist dein Entchen zerbrochen?“ – Der Gorilla: Ja, und seitdem ist er ganz dolle traurig, nichts kann ihn trösten – nicht mal die Bananen, die er vom eh schon verwüsteten Tisch genommen hat.
 5. **Jetzt geht das Schnitzen:** Joshi schnitzt ein **neues Entchen** (Skizze im Notizbuch **unter** dem kaputten). Eine **Kopie** des Entchens steht danach in Joshis **Regal in seiner Hütte** (wie der Holzfuchs auf dem Bord).
-6. **Joshi schenkt dem Bären das Entchen:** Er wird fröhlich und gibt den **Honigtopf** zurück. Daran entdeckt Joshi **rotes Fell** (vom Eichhörnchen – das wird aber nicht verraten); das Fell **klebt dann im Notizbuch**.
-7. **Joshi fragt**, ob der Bär weiß, von wem das Fell ist. Nein – aber Joshi könne ja mal den **Hamster** fragen, der weiß immer alles und kennt jeden.
-8. **Aus Dankbarkeit leiht der Bär Joshi sein Flugzeug** (die Mustang).
-9. **Vor dem Ausgang** der **blaue Fotoring**: Joshi macht ein **Foto vom Bären**, wie er sein Holzentchen hält und lächelt.
+6. **Joshi schenkt dem Gorilla das Entchen:** Er wird fröhlich (trommelt sich vor Freude auf die Brust, `ChestDrum`) und gibt den **Bananenkorb** zurück. Daran entdeckt Joshi **rotes Fell** (vom Eichhörnchen – das wird aber nicht verraten); das Fell **klebt dann im Notizbuch**.
+7. **Joshi fragt**, ob der Gorilla weiß, von wem das Fell ist. Nein – aber Joshi könne ja mal den **Hamster** fragen, der weiß immer alles und kennt jeden.
+8. **Aus Dankbarkeit leiht der Gorilla Joshi sein Flugzeug** (die Mustang).
+9. **Vor dem Ausgang** der **blaue Fotoring**: Joshi macht ein **Foto vom Gorilla**, wie er sein Holzentchen hält und lächelt.
 
 **Draußen:** Jetzt kann Joshi in die **Mustang** einsteigen und von der Piste starten.
 
 ### Etappe 4 – zum Hamster in die Wüste
 - **Warum Wüste:** Der Hamster mag es warm und kalt, und er beobachtet gerne die Sterne und den Mond. Nirgends geht das besser als in der Wüste, weil es dort nachts nie Wolken gibt. Er wohnt **mitten in der Wüste in einer Oase mit Planetarium**.
-- **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Bären, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Bären zurück**. Das wird nur **gesagt**, nicht gezeigt – der Rückflug wird nicht gebaut.
+- **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Gorilla, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Gorilla zurück**. Das wird nur **gesagt**, nicht gezeigt – der Rückflug wird nicht gebaut.
 - **Freier Fall** wie in *Trip to Japan* (Fuji-Sprung), der **Fallschirm geht automatisch auf**, **Landung vor dem Planetarium**. Es ist **Tag**.
 - **Die Oase** (Blick von der Landestelle):
   - **Ein kleiner See** von der Mitte bis an den rechten Rand, mit einem **kleinen Strand** und ein paar **Palmen** drumherum.
@@ -211,8 +211,23 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 ### Offen
 - **Wie geht es nach dem Hamster weiter** – wie kommt Joshi zum Eichhörnchen, und warum hat es das Essen genommen?
 - **Auflösung, Weihnachtsessen am Ende, Trophäe.**
-- **Modelle:** Tiere am Tisch (Sketchfab), Bär (liegen, traurig, fröhlich), Hamster (nagen, genervt), Paket mit Schnur, Holzentchen (heil und zerbrochen), Honigtopf, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
+- **Modelle:** siehe **Modelle für Fall 1** unten; dazu Paket mit Schnur, Holzentchen (heil und zerbrochen), Bananenkorb, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
 - **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale).
+
+### Modelle für Fall 1
+Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen in `3d Modelle\Spiele`.
+
+| Rolle | Modell | Animationen (Auswahl) | Hinweis |
+|---|---|---|---|
+| **Gorilla** (statt Bär, wohnt in der Höhle) | `gorilla_-_animated_low_poly_by_WildPoly3D` | `sit` (zusammengesunken, traurig), `sleep` (eingerollt), `Look`, **`ChestDrum`** (vor Freude auf die Brust trommeln), `eat`, `walk`, `climb` | passt sehr gut; grau mit hellem Bauch |
+| **Hamster** | `hamster_by_josephineburns` | `Hamster_run_loop`, `Hamster_Stand_Snify_anim` (schnüffeln, fürs Nagen), 2× Stehenbleiben – je ~1 s | **ganz weiß, ohne Material** – selbst färben (Rücken braun, Bauch/Backen creme, Ohren/Pfoten rosa; UV vorhanden). Sehr schlichte Form (verformter Würfel): erst im Planetarium testen, sonst Ersatz suchen |
+| **Eichhörnchen** (Täter, rotes Fell) | `squirrel_-_animated_low_poly_by_WildPoly3D` oder das ältere `squirrel_animation_by_blam` | `Idle`, `lookaround`, `run`, `sleep`, `snow` | das WildPoly-Eichhörnchen ist **weiß-creme** → für das rote Fell **rot umfärben** |
+| **Tiere am Festtisch** (Auswahl) | Hase, Hasenbaby, Eule, Elch, Ente, Reh (Gazelle), zwei kleine Vögel (`bird_3` blau-gelb, `bird_4` Meise), Waschbär | Hase: fressen, putzen, umschauen · Eule: Kopf drehen · Elch: sitzen · Ente: 15 Clips | passen in den Nadelwald |
+| **nicht verwenden** | Tiger (leere Augen), Balu (`u_baloo`) und Simba (Disney-Figuren – das Spiel ist öffentlich) | | |
+
+- **Stil:** Die WildPoly3D-Tiere sind einfarbiges Low-Poly ohne Texturen (Farbe am Material) – einheitlich und lieb; Umfärben ist leicht.
+- **Lizenzen:** WildPoly3D und Giraffe CC-BY-NC-4.0 · Natural History Museum of Los Angeles County CC-BY-NC-SA-4.0 · Hamster (josephineburns) CC-BY-4.0. Beim Einbauen in die Quellenliste.
+- **Noch zu besorgen/bauen:** Holzentchen (heil und zerbrochen), Bananenkorb und Bananenschale, Paket mit Schnur, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Festtisch.
 
 ## 🎓 8. Lerneffekte
 

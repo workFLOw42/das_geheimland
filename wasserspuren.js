@@ -6,7 +6,8 @@
 'use strict';
 const story = window.STORY;
 const TROPFEN_MAX = 220, WELLEN_MAX = 40, SICHT = 400;
-const ORCA_RUECKEN = 1.4;                            // Ruecken ueber der Modellunterkante (ORCA_BACK der Engine)
+// Ruecken ueber der Modellunterkante (ORCA_BACK der Engine) – erst beim Rechnen gelesen: dieses Skript laedt VOR der Engine
+const orcaRuecken = () => typeof ORCA_BACK === 'number' ? ORCA_BACK : 1.4;
 const ws = { tropfen: [], wellen: [], mat: null, wMat: null, wGeo: null };
 function bauen(){
   if(ws.mat) return;
@@ -46,7 +47,7 @@ function orcaSpuren(dt){
   const cp = camera.position;
   for(const o of orcas){
     if(!o.group || !o.placed || !o.group.visible || Math.hypot(o.x - cp.x, o.z - cp.z) > SICHT){ o.spur = null; continue; }
-    const wy = seaYAt(o.x, o.z), oben = o.group.position.y + ORCA_RUECKEN - wy, unten = o.group.position.y - wy;
+    const wy = seaYAt(o.x, o.z), oben = o.group.position.y + orcaRuecken() - wy, unten = o.group.position.y - wy;
     const S = o.spur || (o.spur = { oben, unten, t: Math.random() * 0.2, gT: 0 });
     const fx = -Math.sin(o.heading), fz = -Math.cos(o.heading);
     if(S.oben < 0.9 && oben >= 0.9 && oben - S.oben > 1.5 * dt) spritzer(o.x + fx * 2, wy, o.z + fz * 2, 26, 1.6);   // schiesst heraus

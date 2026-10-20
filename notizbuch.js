@@ -191,6 +191,8 @@ function walTropfen(wal){
   if(s.wal && typeof orcaTpl !== 'undefined' && orcaTpl && typeof cloneSkinned === 'function'){
     const b = story.stegZustand || { bx: story.boot.x, bz: story.boot.z };
     wal = cloneSkinned(orcaTpl);
+    // Haltung: kommt gerade herunter (Sprung-Pose des Low-Poly-Orcas; ohne sie stuende er hochkant in der Ruhepose)
+    if(typeof orcaHaltung === 'function') orcaHaltung(wal, 'jump_pose_down');
     wal.position.set(b.bx + s.wal.dx, s.wal.hoch, b.bz + s.wal.dz);
     wal.rotation.set(s.wal.nick, s.wal.kurs, 0, 'YXZ');
     scene.add(wal); wal.updateMatrixWorld(true);                    // global-ok: nur fuer die Aufnahme, gleich wieder entfernt

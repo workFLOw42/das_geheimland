@@ -153,9 +153,55 @@ Die Etappen sollen sich verschieden anfühlen. Die Engine (Flugspiel) bringt daf
   - **Größe:** möglichst unter ~30.000 Dreiecke, Texturen bis 2K, als GLB.
   - **Lizenz:** CC-BY oder CC-BY-NC; Name und Autor für die Quellenliste notieren.
 
-## 🎄 7. Der Weihnachtsfall
+## 🎄 7. Fall 1 (Weihnachten): „Das Weihnachtsessen“
 
-*(noch offen)* Anlass (was ist passiert oder verschwunden?), Anrufer, die Etappen mit Orten, Reisen, Tiergruppen und Spuren, Täter und sein Grund, die Trophäe. Der Funkspruch in Etappe 1 („Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns.“) ist der Einstieg; der Anrufer wird mit dem Fall festgelegt.
+*Entwurf vom 20.10.2026 – Etappe 2 bis 4 vom Nutzer so beschrieben; offene Punkte stehen unten.*
+
+**Worum es geht:** Auf einer Waldinsel wollen die Tiere ein großes Weihnachtsessen feiern – aber das ganze Essen ist weg.
+
+### Etappe 1 – Joshis Insel (gebaut)
+Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. …“), Segeln zum Ziel. Der Anrufer sind die Tiere der Waldinsel.
+
+### Etappe 2 – die Waldinsel, am Festtisch (bei Tag)
+- **Ort:** ein **Nadelwald mit wenig Schnee**. Nahe am Strand eine freie Stelle (wie auf Joshis Insel) mit **Lagerfeuer** und dem **Festtisch**; an den Bäumen um Tisch und Feuer etwas **Weihnachtsschmuck**, dazu ein **geschmückter Weihnachtsbaum**. Ankunft mit dem Segelboot, es ist **Tag**.
+- **Am Tisch sitzen lauter Tiere** (Modelle sucht der Nutzer über Sketchfab). Sie sind traurig: Alles Essen für das große Weihnachtsessen ist weg. Der **Bär** sei in letzter Zeit auch immer so grummelig.
+- **X (umschauen) → blauer Fotoring am Tisch.** Joshi fotografiert den Tisch: nur noch Reste. **Auf dem Foto sind zwei Fußspuren** – vom **Hamster** und vom **Eichhörnchen**.
+- **Ein Weg führt in den Wald.** An seinem Eingang der **braune Lupenring**: unter der Lupe eine **Ameisenstraße und etwas Honig**.
+- **Alle Hinweise gesammelt →** die Erzählerin: Das ist ein schwieriger Fall – vielleicht sollte man sich alle Hinweise noch einmal genau ansehen.
+- **Im Notizbuch (Inventar):**
+  - **beim Foto:** die Erzählerin weist auf die **zwei Fußspuren** hin → die **Zeichen-Animation** (Bleistift wie bei der Steg-Skizze) macht von beiden Spuren **große Zeichnungen**, die ebenfalls ins Notizbuch kommen.
+  - **bei der Lupen-Skizze:** die Erzählerin: Das sieht aus wie **Honig**.
+- **Die Tiere** kennen die Spuren nicht. Aber der Bär mag ja gerne Honig, ist überhaupt ganz verfressen und grummelig – er wohnt in der **Höhle auf der anderen Seite des Waldes**.
+- **Joshi geht in den Wald →** Blende, **Globus** (Reise auf die andere Seite der Insel), Blende.
+
+### Etappe 3 – beim Bären
+**Draußen:** Joshi steht **von hinten gesehen am Waldausgang**. Links weg die **Piste** (Rollfeld) mit der **Mustang**, hinter der Piste Wald. Vor Joshi der **Berg mit dem Höhleneingang**; der Berg zieht sich weit nach rechts, daneben ebenfalls Wald. Die Mustang sieht man schon, **einsteigen geht aber noch nicht**.
+
+**In der Höhle** (Innenraum = eigene Welt):
+1. Der **Bär liegt am Lagerfeuer**. Spricht Joshi ihn an (Y), sagt er immer ganz traurig: „Lass mich bitte in Ruhe.“
+2. **X (umschauen) →** der **braune Lupenring** und der **Holzscheit mit dem grünen Schnitzring**.
+3. **Schnitzen geht noch nicht** – erst die Lupe: Joshi entdeckt ein **zerbrochenes Holzentchen** (Skizze vom kaputten Entchen ins Notizbuch).
+4. **Jetzt kann Joshi mit dem Bären reden:** „Ist dein Entchen zerbrochen?“ – Der Bär: Ja, und seitdem ist er ganz dolle traurig, nichts kann ihn trösten – nicht mal der Honig, den er vom eh schon verwüsteten Tisch genommen hat.
+5. **Jetzt geht das Schnitzen:** Joshi schnitzt ein **neues Entchen** (Skizze im Notizbuch **unter** dem kaputten). Eine **Kopie** des Entchens steht danach in Joshis **Regal in seiner Hütte** (wie der Holzfuchs auf dem Bord).
+6. **Joshi schenkt dem Bären das Entchen:** Er wird fröhlich und gibt den **Honigtopf** zurück. Daran entdeckt Joshi **rotes Fell** (vom Eichhörnchen – das wird aber nicht verraten); das Fell **klebt dann im Notizbuch**.
+7. **Joshi fragt**, ob der Bär weiß, von wem das Fell ist. Nein – aber Joshi könne ja mal den **Hamster** fragen, der weiß immer alles und kennt jeden.
+8. **Aus Dankbarkeit leiht der Bär Joshi sein Flugzeug** (die Mustang).
+9. **Vor dem Ausgang** der **blaue Fotoring**: Joshi macht ein **Foto vom Bären**, wie er sein Holzentchen hält und lächelt.
+
+**Draußen:** Jetzt kann Joshi in die **Mustang** einsteigen und von der Piste starten.
+
+### Etappe 4 – zum Hamster in die Wüste
+- **Warum Wüste:** Der Hamster mag es warm und kalt, und er beobachtet gerne die Sterne und den Mond. Nirgends geht das besser als in der Wüste, weil es dort nachts nie Wolken gibt. Er wohnt **mitten in der Wüste in einer Oase mit Planetarium**.
+- **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Bären, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Bären zurück**.
+- **Freier Fall** wie in *Trip to Japan* (Fuji-Sprung), der **Fallschirm geht automatisch auf**, **Landung vor dem Planetarium**. Es ist **Tag**.
+- *(weiter offen)*
+
+### Offen
+- **Wie geht es beim Hamster weiter** – und wie wird das Eichhörnchen überführt? Warum hat es das Essen genommen?
+- **Warum ist die Spur des Hamsters am Tisch**, wenn er in der Wüste wohnt (war er zu Besuch? bringt er Joshi darauf)?
+- **Auflösung, Weihnachtsessen am Ende, Trophäe.**
+- **Modelle:** Tiere am Tisch (Sketchfab), Bär (liegen, traurig, fröhlich), Hamster, Holzentchen (heil und zerbrochen), Honigtopf, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Oase. Vorhanden: Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
+- **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale), Autopilot.
 
 ## 🎓 8. Lerneffekte
 
@@ -167,7 +213,7 @@ Die Etappen sollen sich verschieden anfühlen. Die Engine (Flugspiel) bringt daf
 ## 🗺️ Nächste Schritte
 
 1. ~~Ausrüstung, Funkspruch, Kamera und Notizbuch~~ – gebaut (16.10.2026).
-2. **Den Weihnachtsfall festlegen** (Abschnitt 7): Anlass, Etappen, Tiergruppen, Spuren, Auflösung.
+2. **Fall 1 „Das Weihnachtsessen“ fertig planen** (Abschnitt 7): beim Hamster in der Wüste, das Eichhörnchen und sein Grund, Auflösung.
 3. **Fehlende Tiermodelle** für die gewählten Gruppen über Sketchfab besorgen (Abschnitt 6).
 4. **Bausteine bauen:** Spur sichern, Verdächtige mit Helfer-Aufgabe, Pfote abzeichnen, Vergleichen im Notizbuch.
 5. **Erste Detektiv-Etappe** nach dem Segeln (ersetzt die Blende zum Globus mit Neustart).

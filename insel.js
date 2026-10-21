@@ -30,7 +30,8 @@ function hookInsel(){
   // hookWelt (story.js) laesst nur Zelle 0,0 zu – hier nur noch den Radius verkleinern
   _islandInfoCalc = function(cx, cz){
     const i = infoOrig.apply(this, arguments);
-    if(i && cx === 0 && cz === 0) i.radius = ISEL_R;
+    // Radius je Etappe (hoehle.js: Etappe 3 ist die grosse andere Seite der Waldinsel), sonst die kleine Insel
+    if(i && cx === 0 && cz === 0) i.radius = (story.etappeR && story.etappeR[story.etappe]) || ISEL_R;
     return i;
   };
   // Keine Bauten der Engine auf der Insel: Haeuser, Hafen, Rakete, Vorfeld, geparkter X-Wing
@@ -47,7 +48,7 @@ function hookInsel(){
     const geo = new THREE.CircleGeometry(info.radius, 48);
     const uv = geo.attributes.uv, p = geo.attributes.position;
     // Waldinsel (Etappe 2, waldinsel.js): Winterwiese ohne Blumen statt der Gras-Kachel der Engine
-    const winter = story.etappe === 2 && story.winterGras, kachel = winter ? story.winterGrasKachel : GRASS_TILE_M;
+    const winter = story.etappe >= 2 && story.winterGras, kachel = winter ? story.winterGrasKachel : GRASS_TILE_M;   // Waldinsel und Hoehle
     for(let i = 0; i < uv.count; i++) uv.setXY(i, (p.getX(i) + info.wx) / kachel, (p.getY(i) + info.wz) / kachel);
     // Die Gras-Kachel der Engine hat Blumen – nur im Inneren; zum Rand hin wird es sandig (Vertex-Farben)
     const gras = new THREE.Mesh(geo, winter ? story.winterGras() : grassMat);

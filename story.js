@@ -52,7 +52,7 @@ story.etappeWechsel = function(n){
   for(const h of story.etappeWechselHooks) h(n);
 };
 // Welche Etappen es schon gibt (globus.js: zu einer, die fehlt, wird nicht neu geladen)
-story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene);
+story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene);
 story.spielstandMerken = function(naechste){
   const A = story.ausruestung || {}, rucksack = {};
   for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera']) rucksack[n] = !!A[n];
@@ -1402,6 +1402,7 @@ function hinweisGeben(){
   if(story.imBoot && story.imBoot()){ if(!story.ziel) return; satz = HINWEIS.boot; }   // im Segelboot: zum roten Punkt (ohne Ziel kein Satz)
   else if(story.detektivPhase && story.detektivPhase()) satz = HINWEIS.detektiv;      // Markierungen offen (notizbuch.js)
   else if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
+  else if(story.etappe === 3 && story.e3Hinweis) satz = story.e3Hinweis();   // vor der Hoehle (hoehle.js)
   else if(story.etappe === 2){                                      // Waldinsel: eine Welt, keine Huette
     const hier = interListe.filter(o => o.welt === 2), e2 = story.e2Hinweis && story.e2Hinweis();
     if(e2){ satz = e2; if(story.e2HinweisFuchs) story.e2HinweisFuchs(); }   // Spur am Tisch (waldinsel.js); der Fuchs zeigt den Ring
@@ -1735,6 +1736,7 @@ const TEST_ZUGANG = [
   { t: 'E2', info: 'Waldinsel, Ankunft', etappe: 2, stufe: 'start' },
   { t: 'E2 Spuren', info: 'Tiere gehört, Foto- und Lupenring', etappe: 2, stufe: 'spuren' },
   { t: 'E2 Waldweg', info: 'Foto und Lupe fertig, Weg frei', etappe: 2, stufe: 'weg' },
+  { t: 'E3', info: 'vor der Höhle des Gorillas', etappe: 3, stufe: 'start' },
 ];
 story.testZugang = TEST_ZUGANG;
 // E1: alles vor der Detektiv-Phase (Rucksack, alle Objekte draussen und in der Huette entdeckt und benutzt)
@@ -1772,7 +1774,11 @@ function testStarten(z){
   (story.testE1 ? story.testE1('fertig') : Promise.resolve()).then(() => {
     testFunkAngenommen();
     if(story.etappe === 1){ if(story.reise) story.reise.push(1); if(story.e2Wechsel) story.e2Wechsel(); }   // nach einem Neuladen schon in E2
-    if(story.testE2) story.testE2(z.stufe);
+    if(z.etappe === 2){ if(story.testE2) story.testE2(z.stufe); return; }
+    // E3: Etappe 2 komplett (Foto, Lupe, Gespraeche), dann wie nach dem Globus vom Waldweg
+    if(story.testE2) story.testE2('weg');
+    story.spaeter(0.5, () => { const warte = () => { if(!(story.e2Hinweis && story.e2Hinweis() && /Folge dem Weg/.test(story.e2Hinweis()[0]))){ story.spaeter(0.3, warte); return; }
+      if(story.reise) story.reise.push(2); if(story.e3Wechsel) story.e3Wechsel(); }; warte(); });
   });
 }
 // Laufen, springen, knien, umschauen: erst nach dem Start – und nicht, waehrend etwas in den Rucksack gesteckt wird
@@ -1867,6 +1873,7 @@ function updateRadio(dt){
 }
 function startSzene(){
   if(story.etappe === 2 && story.e2StartSzene){ story.e2StartSzene(); return; }   // Waldinsel: im Boot am Steg (waldinsel.js)
+  if(story.etappe === 3 && story.e3StartSzene){ story.e3StartSzene(); return; }   // vor der Hoehle (hoehle.js)
   const I = story.insel, H = I.huette, F = I.feuer;
   story.baueInsel();
   // Funkgeraet auf einer Kiste rechts neben dem Feuer, Lautsprecher zum Startplatz
@@ -2018,6 +2025,7 @@ function hookLoop(){
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
     if(story.updateE2) story.updateE2(dt);         // waldinsel.js: Tiere, Lichterketten
+    if(story.updateE3) story.updateE3(dt);         // hoehle.js: vor der Hoehle des Gorillas
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.updateSteg) story.updateSteg(dt);     // steg.js: Steg, Segelboot, einsteigen
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js
@@ -2091,6 +2099,7 @@ window.STORY_START = function(){
   // Durchsage vorerst aus (Live-Wunsch 14.10.: Text erstmal weglassen) – Funkgeraet bleibt stehen
   // startbildschirm(() => spaeter(2.0, durchsage));
   // Waldinsel: nach dem Start steigen Joshi und der Fuchs aus dem Boot, dann die Erzaehlerin (waldinsel.js)
-  startbildschirm(() => { if(story.etappe === 2){ if(story.stegAussteigen) spaeter(0.6, story.stegAussteigen); if(story.e2Los) story.e2Los(); } });
+  startbildschirm(() => { if(story.etappe === 2){ if(story.stegAussteigen) spaeter(0.6, story.stegAussteigen); if(story.e2Los) story.e2Los(); }
+    if(story.etappe === 3 && story.e3Los) story.e3Los(); });
 };
 })();

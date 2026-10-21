@@ -229,6 +229,19 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 
 ---
 
+## Etappe 3 – Vor der Höhle des Gorillas *(im Code, alles **Entwurf**)*
+
+| Wann / wer | Stimme | Text |
+|---|---|---|
+| Ankunft (nach dem Globus) | Erzählerin | Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle. · Dort wohnt bestimmt der Gorilla. Hörst du ihn? |
+| Y an der Mustang | Erzählerin | Ein Flugzeug! Das gehört bestimmt dem Gorilla. Ohne ihn kannst du damit nicht fliegen. |
+| Y am Höhleneingang (Platzhalter) | Erzählerin | Hier wohnt der Gorilla. In die Höhle geht es bald. |
+| Hinweis-Taste | Erzählerin | Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla. |
+
+Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme).
+
+---
+
 ## Sternbilder *(Entwurf – Wissens-Thema, z. B. wenn man lange in den Himmel schaut)*
 
 **Stimme:** Erzählerin – das jeweilige Sternbild leuchtet dabei kurz heller.

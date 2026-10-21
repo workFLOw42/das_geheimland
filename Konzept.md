@@ -24,7 +24,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 | D-Pad ↓ | N | **Inventar:** der Rucksack mit allen Dingen; Stick wählt, A erklärt (das Notizbuch schlägt sich auf), B schließt |
 | B (bei großem Bild) | B | Foto, Skizze, Holzfuchs, Lupe stehen groß im Bild, bis B gedrückt wird |
 | rechter Stick | I J K L | Kamera umsehen |
-| X 3 s halten (im Startbildschirm) | X | **Testzugang:** E1 Detektiv, E1 Segeln, E2, E2 Spuren, E2 Waldweg – jeweils mit allem freigeschaltet, was davor im Spiel passiert wäre |
+| X 3 s halten (im Startbildschirm) | X | **Testzugang:** E1 Detektiv, E1 Segeln, E2, E2 Spuren, E2 Waldweg, E3 – jeweils mit allem freigeschaltet, was davor im Spiel passiert wäre |
 | rechter Stick vor / zurück | E / Q | im Wasser abtauchen / auftauchen (wie das U-Boot im Flugspiel) |
 | linker Stick | Pfeiltasten | **im Segelboot:** vor = Fahrt voraus, zurück = langsam rückwärts, seitlich = lenken (nur mit Fahrt) |
 
@@ -178,6 +178,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 - **Joshi geht in den Wald →** Blende, **Globus** (Reise auf die andere Seite der Insel), Blende.
 
 ### Etappe 3 – beim Gorilla
+**Gebaut am 21.10.2026 (draußen, `hoehle.js`):** Nach dem Globus vom Waldweg steht Joshi direkt hier (ohne Neuladen). Später Nachmittag, warmes tiefes Licht. Joshi steht am Ende des Waldwegs – dieselbe dunkle Gasse wie auf der Lichtung, ohne Schnee, sie läuft vor ihm sanft in die Wiese aus. Vor ihm ein richtig hoher Felsberg (Gipfel ~110 m) aus Low-Poly-Brocken mit wenig Schnee und etwas Moos, er zieht sich weit nach rechts; im Fuß der Höhleneingang mit Felsbogen und zwei Tannen. Links die **Wald-Schotterpiste** (Fahrspuren, Pfützen, dichter Wald zu beiden Seiten) mit der geparkten **Mustang** (Y: „Ohne den Gorilla kannst du nicht fliegen“). Aus der Höhle brummt der Gorilla ab und zu (Ton von Pixabay). Am Eingang vorerst ein Satz – *der Innenraum folgt*. Testzugang „E3“. *Idee (Live-Wunsch):* ist der Gorilla wieder fröhlich, wird der Waldweg hell und freundlich (kein Schatten, Licht durch die Äste, ein Vogel statt der Eule). *Für das Fliegen später:* die Mustang darf auf der ganzen Insel rollen (Engine `canLandHere`), aber `hitsBuilding` kennt alle Grenzen der Welt – beim Einsteigen muss die geparkte Mustang samt Grenze weg, sonst steht das Flugzeug „im Gebäude“.
 **Draußen:** Joshi steht **von hinten gesehen am Waldausgang**. Links weg die **Piste** (Rollfeld) mit der **Mustang**, hinter der Piste Wald. Vor Joshi der **Berg mit dem Höhleneingang**; der Berg zieht sich weit nach rechts, daneben ebenfalls Wald. Die Mustang sieht man schon, **einsteigen geht aber noch nicht**.
 
 **In der Höhle** (Innenraum = eigene Welt):
@@ -250,7 +251,7 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 
 ## 📚 Quellen
 
-Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Hase, Hasenbaby, Eule, Elch, Gazelle (als Reh) und zwei kleine Vögel (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Gitarren-Loop von idoberg (Pixabay) · Eulenruf („owl“) von freesound_community und Holzknacken („breaking wood“) von Dragon Studio (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
+Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Hase, Hasenbaby, Eule, Elch, Gazelle (als Reh) und zwei kleine Vögel (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Gitarren-Loop von idoberg (Pixabay) · Gorilla („silverback gorilla roar“) von flutie8211 · Eulenruf („owl“) von freesound_community und Holzknacken („breaking wood“) von Dragon Studio (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
 
 ---
 

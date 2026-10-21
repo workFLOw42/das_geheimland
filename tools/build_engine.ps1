@@ -63,7 +63,7 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              notizbuch = 'NOTIZBUCH_GLB'; stift = 'STIFT_GLB'; kompass = 'KOMPASS_GLB'; messer = 'MESSER_GLB'; lupe = 'LUPE_GLB'; kamera = 'KAMERA_GLB'; rucksack = 'RUCKSACK_GLB';
              holzfuchs = 'HOLZFUCHS_GLB'; schmetterling = 'SCHMETTERLING_GLB';
              # Waldinsel (Etappe 2): Tiere am Festtisch (WildPoly3D, nur die gebrauchten Clips - C:\tmp\gt\tiere.mjs)
-             hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB' }
+             gorilla = 'GORILLA_GLB'; hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
@@ -75,7 +75,8 @@ foreach($n in $modelle.Keys){
 }
 # Toene: sounds/<name>.mp3 -> <name>_snd.js (window.<NAME>_SND)
 # eule, holz: Waldgeraeusche der Waldinsel (Pixabay: freesound_community 'owl', Dragon Studio 'breaking wood')
-foreach($n in @('gitarre', 'funk', 'eule', 'holz')){
+# gorilla: Brummen aus der Hoehle (Pixabay: flutie8211 'silverback gorilla roar')
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)
@@ -100,6 +101,7 @@ $skripte += 'wasserspuren.js'
 $skripte += 'globus.js'
 $skripte += 'notizbuch.js'
 $skripte += 'waldinsel.js'
+$skripte += 'hoehle.js'
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
 $ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()

@@ -395,7 +395,8 @@ story.e2Bananenschale = () => { const g = baueSchale(), bb = new THREE.Box3().se
 story.e2SchaleAnimieren = schaleAnimieren;
 story.typ('bananenschale', { bau: () => baueSchale(), form: 'quader' });
 // Festgetretener Weg: flache, leicht graubraune Streifen ueber der Schneedecke (begehbar)
-function baueWeg(){
+function baueWeg(o){
+  o = o || {}; const LIN = o.linie || WEG_LINIE, AUS = o.aus || WEG_AUS;
   const g = new THREE.Group(); g.userData.begehbar = true;
   // Erdweg (braun, mit Schneerest am Rand): auf dem weissen Schnee gut zu sehen (Live-Pruefung: grau ging unter). Weiche
   // Raender per Textur, in Segmenten entlang der Linie; an den Knicken ueberlappen sie.
@@ -411,24 +412,25 @@ function baueWeg(){
   // EIN Verlauf fuer beide Enden (destination-in loescht alles ausserhalb des gemalten Rechtecks – zwei getrennte Verlaeufe
   // machten den Weg ganz unsichtbar, gemessen). Weich (Smoothstep in Stufen): oben (Waldende) 0 -> 1, unten (Lichtung) 1 -> 0
   const weich = (k) => k * k * (3 - 2 * k);
-  for(const k of [0, 0.25, 0.5, 0.75, 1]) lg.addColorStop(WEG_AUS.ende * k, 'rgba(0,0,0,' + weich(k).toFixed(3) + ')');
-  for(const k of [0, 0.25, 0.5, 0.75, 1]) lg.addColorStop(1 - WEG_AUS.anfang * (1 - k), 'rgba(0,0,0,' + (1 - weich(k)).toFixed(3) + ')');
+  for(const k of [0, 0.25, 0.5, 0.75, 1]) lg.addColorStop(AUS.ende * k, 'rgba(0,0,0,' + weich(k).toFixed(3) + ')');
+  for(const k of [0, 0.25, 0.5, 0.75, 1]) lg.addColorStop(1 - AUS.anfang * (1 - k), 'rgba(0,0,0,' + (1 - weich(k)).toFixed(3) + ')');
   cg.fillStyle = lg; cg.fillRect(0, 0, 64, 1024);
   // unbeleuchtet (Basic): ein flaches Band am Boden bekam mit Lambert je nach Seite fast kein Licht (wurde schwarz)
   const mat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), color: 0xd8c4a8, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
   // EIN Band entlang der Linie (Catmull-Rom, weich gebogen) – einzelne Stuecke zeigten an den Knicken Kanten
-  const kurve = new THREE.CatmullRomCurve3(WEG_LINIE.map(p => new THREE.Vector3(p.x, 0, p.z))), N = 120, B = 1.1, pos = [], uv = [], idx = [];
+  const kurve = new THREE.CatmullRomCurve3(LIN.map(p => new THREE.Vector3(p.x, 0, p.z))), N = 120, B = 1.1, pos = [], uv = [], idx = [];
   // Wicklung: (links, rechts) je Punkt; Dreiecke so, dass die Vorderseite nach oben zeigt (sonst nur von unten sichtbar).
   // getPointAt: gleichmaessig nach Laenge (die Ausblendung soll in Metern gleich verlaufen)
   for(let i = 0; i <= N; i++){ const u = i / N, p = kurve.getPointAt(u), t = kurve.getTangentAt(u);
     // vorn aus der Wiese heraus: schmal anfangen und auf volle Breite wachsen
-    const k = Math.min(1, u / WEG_AUS.anfang), b = B * (0.35 + 0.65 * k * k * (3 - 2 * k));
+    const k = Math.min(1, u / AUS.anfang), b = B * (0.35 + 0.65 * k * k * (3 - 2 * k));
     pos.push(p.x - t.z * b, ISLAND_Y + 0.02, p.z + t.x * b, p.x + t.z * b, ISLAND_Y + 0.02, p.z - t.x * b); uv.push(0, u, 1, u);
     if(i < N){ const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.setIndex(idx); geo.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((v, i) => i % 3 === 1 ? 1 : 0), 3));   // flach, nach oben
   mat.side = THREE.DoubleSide;
   const band = new THREE.Mesh(geo, mat); band.renderOrder = 2; g.add(band);       // nach der Schneedecke (renderOrder 1) zeichnen
+  if(o.ohneWegweiser) return { boden: g, wegweiser: null };
   // Wegweiser am Eingang: Pfosten mit Pfeilschild (zeigt in den Wald) – das Kind sieht, wo es hingeht
   const holz = new THREE.MeshLambertMaterial({ color: 0x7a5530 });
   const pfosten = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.6, 8), holz); pfosten.position.set(WEG.x + 1.6, ISLAND_Y + 0.8, WEG.z + 0.8);
@@ -441,7 +443,8 @@ function baueWeg(){
   const wegweiser = new THREE.Group(); wegweiser.add(pfosten, sm);
   return { boden: g, wegweiser };
 }
-function aesteUeberWeg(kurve){
+function aesteUeberWeg(kurve, gasse, von, bis){
+  gasse = gasse || WEG_GASSE; von = von === undefined ? 0.1 : von; bis = bis === undefined ? 0.62 : bis;
   // Jeder Ast in Weltkoordinaten (Live-Pruefung: gedreht + verschoben zeigten die Spitzen nicht zur Wegmitte, darueber blieb
   // ein Streifen Himmel): vom Stamm am Wegrand (4,5..6,5 m hoch) schraeg ueber den Weg bis knapp ueber die andere Haelfte
   // (3,0..3,8 m hoch). Ein flacher Kegel, Basis am Stamm, Spitze am Ende – von beiden Seiten, sie greifen ineinander.
@@ -450,10 +453,10 @@ function aesteUeberWeg(kurve){
   const q = new THREE.Quaternion(), m4 = new THREE.Matrix4(), sc = new THREE.Vector3(1, 1, 1);
   const farben = [new THREE.Color(0x143022), new THREE.Color(0x1a3a28), new THREE.Color(0x10281c)];
   for(let i = 0; i < 90; i++){
-    const u = 0.1 + i / 90 * 0.52, p = kurve.getPointAt(u), t = kurve.getTangentAt(u), nx = -t.z, nz = t.x;   // quer zum Weg
+    const u = von + i / 90 * (bis - von), p = kurve.getPointAt(u), t = kurve.getTangentAt(u), nx = -t.z, nz = t.x;   // quer zum Weg
     for(const seite of [-1, 1]){
       if(rnd() < 0.1) continue;
-      const ab = WEG_GASSE + 0.2, ueber = 0.4 + rnd() * 0.9;      // wie weit der Ast ueber die Wegmitte hinaus reicht
+      const ab = gasse + 0.2, ueber = 0.4 + rnd() * 0.9;          // wie weit der Ast ueber die Wegmitte hinaus reicht
       start.set(p.x + nx * seite * ab, ISLAND_Y + 4.5 + rnd() * 2.0, p.z + nz * seite * ab);
       ende.set(p.x - nx * seite * ueber + t.x * (rnd() - 0.5) * 1.2, ISLAND_Y + 3.0 + rnd() * 0.8, p.z - nz * seite * ueber + t.z * (rnd() - 0.5) * 1.2);
       dir.subVectors(ende, start); const L = dir.length(); dir.normalize();
@@ -497,6 +500,24 @@ function wegSchatten(kurve){
     polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
   m.renderOrder = 3; m.userData.deko = true; return m;
 }
+// Waldweg als Baustein (hoehle.js: das Ende desselben Wegs auf der anderen Seite – ohne Schnee in der Gasse):
+// o = { welt, linie, aus, gasse (m Wegmitte bis Stamm), von, bis (Anteil der Laenge mit Gasse und Aesten), rnd, frei(x, z) }
+// Baut Band, dunkle Tannengasse (drei Reihen), Aeste und Schatten. Rueckgabe: Liste der gesetzten Baeume { x, z }.
+story.waldweg = function(o){
+  const w = story.welt(o.welt), weg = baueWeg({ linie: o.linie, aus: o.aus, ohneWegweiser: true }); w.add(weg.boden);
+  const kurve = new THREE.CatmullRomCurve3(o.linie.map(p => new THREE.Vector3(p.x, 0, p.z))), rnd = o.rnd || Math.random, gasse = o.gasse || WEG_GASSE;
+  const baeume = [], n = Math.round((o.bis - o.von) * 70);
+  for(let i = 0; i < n; i++){ const u = o.von + i / n * (o.bis - o.von), p = kurve.getPointAt(u), t = kurve.getTangentAt(u);
+    for(const seite of [-1, 1]) for(const reihe of [0, 1, 2]){
+      if(reihe === 1 && i % 2) continue; if(reihe === 2 && i % 3) continue;
+      const ab = gasse + (o.weit ? o.weit(u) : 0) + reihe * 2.4 + rnd() * 0.5, x = p.x - t.z * seite * ab, z = p.z + t.x * seite * ab;
+      if(o.frei && !o.frei(x, z)) continue;
+      story.setze('tanne', o.welt, { x, z, h: 9 + rnd() * 5, dunkel: true, schmal: true, schnee: false, dreh: rnd() * 6.3, fest: true }); baeume.push({ x, z });
+    } }
+  w.add(aesteUeberWeg(kurve, gasse, o.astVon === undefined ? o.von : o.astVon, o.bis));
+  const sch = wegSchatten(kurve); w.add(sch);
+  return { kurve, baeume };
+};
 function abstandZumWeg(x, z){
   let d = Infinity;
   for(let i = 0; i + 1 < WEG_LINIE.length; i++){ const a = WEG_LINIE[i], b = WEG_LINIE[i + 1], dx = b.x - a.x, dz = b.z - a.z;
@@ -676,7 +697,7 @@ function updateWeg(){
   if(!eva || wi.reise || (story.imBoot && story.imBoot())) return;
   const p = eva.group.position, drin = Math.hypot(p.x - WEG_REIN.x, p.z - WEG_REIN.z) < WEG_REIN.r;
   if(!drin){ wi.amWeg = false; return; }
-  if(wi.wegFrei){ wi.reise = true; story.globusReise(2); return; }
+  if(wi.wegFrei){ wi.reise = true; story.globusReise(2, story.e3Wechsel ? () => story.e3Wechsel() : null); return; }   // hoehle.js: Etappe 3
   if(!wi.amWeg){ wi.amWeg = true; story.sprich(wi.gorillaGesagt ? TEXT_ERST_FOTO : TEXT_WEG_NOCH_NICHT); }
 }
 // Tatortfoto (notizbuch.js 'tisch_foto'): nur der Tisch mit Resten und Spuren – die Tiere sind fuer das Bild weg
@@ -780,11 +801,13 @@ function baue(){
 // Material zu EINEM Mesh, alle Laempchen je Farbe in ein InstancedMesh. Die Original-Meshes bleiben unsichtbar stehen – sie
 // sind die Grenzen (objekte.js braucht nur Geometrie und Matrix, nicht die Sichtbarkeit).
 const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
-function zusammenfassen(w){
+story.tannenZusammen = (n) => zusammenfassen(story.welt(n), n);
+function zusammenfassen(w, weltN){
+  weltN = weltN || 2;
   w.updateMatrixWorld(true);
   const proMat = new Map();
   for(const d of story.dinge){
-    if(d.welt !== 2 || d.typ !== 'tanne' || !d.obj) continue;
+    if(d.welt !== weltN || (d.typ !== 'tanne' && d.typ !== 'felsbrocken') || !d.obj) continue;
     let istBaum = false; d.obj.traverse(o => { if(o.userData.lichterkette) istBaum = true; }); if(istBaum) continue;   // der Weihnachtsbaum leuchtet beim Suchblick
     d.obj.traverse(o => { if(!o.isMesh || !o.visible) return;
       if(!proMat.has(o.material)) proMat.set(o.material, []); proMat.get(o.material).push(o); });
@@ -800,6 +823,7 @@ function zusammenfassen(w){
     if(C) geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
     const m = new THREE.Mesh(geo, mat); m.userData.deko = true; m.castShadow = true; w.add(m);
   }
+  if(weltN !== 2) return;
   // Laempchen: je Material (Farbe) ein InstancedMesh; wi.lichter wird zur Liste { im, i, p, s } fuer das Funkeln
   const proL = new Map();
   for(const l of wi.lichter){ if(!proL.has(l.material)) proL.set(l.material, []); proL.get(l.material).push(l); }

@@ -68,7 +68,8 @@ Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixam
 - Ausrüstung (Sketchfab, CC-BY-4.0, fürs Spiel verkleinert): „Book – RealityScan“ von teddygbg, „Pencil“ von farooq.smurf, „Compass“ von EwanLejkowski, „Pocket Knife“ von Riccardo Daniello, „Magnifying Glass“ von Laura.Clarke, „Canon AT-1 Retro Camera“ von AleixoAlonso, „Backpack low-poly“ von dimaponomar2019
 - „Wooden Fox Kit Figure“ von Yogensia (Sketchfab) – CC-BY-NC-SA-4.0 (der geschnitzte Holzfuchs)
 - „Ulysses Butterfly“ von eb78 (Sketchfab) – CC-BY-SA-4.0 (Schmetterlinge, Lupe)
-- Töne im Wald (Pixabay): „owl“ von freesound_community, „breaking wood“ von Dragon Studio
+- Töne im Wald (Pixabay): „owl“ von freesound_community, „breaking wood“ von Dragon Studio, „silverback gorilla roar“ von flutie8211
+- „Gorilla – Animated Low Poly“ von WildPoly3D (Sketchfab) – CC-BY-NC-4.0 (nur die gebrauchten Clips)
 - Tiere am Festtisch der Waldinsel (Etappe 2): „Rabbit“, „Rabbit Baby“, „Owl“, „Moose“, „Gazelle“ (als Reh), „Bird 3“ und „Bird 4“ – Animated Low Poly von WildPoly3D (Sketchfab) – CC-BY-NC-4.0 (nur die gebrauchten Clips)
 - Gitarren-Loop „Punk Rock Guitar Loop“ von idoberg ([Pixabay](https://pixabay.com)) – Pixabay-Lizenz
 - Funkrauschen „Searching the Radio Noise“ von freesound_community (Pixabay) – Pixabay-Lizenz

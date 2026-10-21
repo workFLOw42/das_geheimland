@@ -461,6 +461,9 @@ story.imBoot = () => s.imBoot;
 // (gleiche Lage – die Inseln liegen beide bei 0, 0), die Grenzen gelten dort. Das Boot liegt angelegt am Steg; sass Joshi
 // darin, steigt er sofort aus (die neue Etappe setzt ihn danach auf seinen Startplatz).
 story.etappeWechselHooks.push(function(n){
+  // Steg und Boot gibt es auf Joshis Insel und am Strand der Waldinsel – nicht vor der Hoehle (Etappe 3, andere Seite der
+  // Insel): dort bleiben sie, wo sie sind (Welt 2, unsichtbar), sonst stuenden sie mitten im Wald
+  if(n > 2){ s.wechsel = null; blende(0); if(s.imBoot && eva) setzeUm('steg'); return; }
   const w = story.welt(n);
   for(const o of [s.gruppe, s.boot, s.schatten, s.gischt, s.zeichen]) if(o) w.add(o);
   for(const d of story.dinge) if(d.obj === s.gruppe || d.obj === s.boot) d.welt = n;

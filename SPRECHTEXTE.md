@@ -234,11 +234,41 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | Wann / wer | Stimme | Text |
 |---|---|---|
 | Ankunft (nach dem Globus) | Erzählerin | Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle. · Dort wohnt bestimmt der Gorilla. Hörst du ihn? |
-| Y an der Mustang | Erzählerin | Ein Flugzeug! Das gehört bestimmt dem Gorilla. Ohne ihn kannst du damit nicht fliegen. |
-| Y am Höhleneingang (Platzhalter) | Erzählerin | Hier wohnt der Gorilla. In die Höhle geht es bald. |
 | Hinweis-Taste | Erzählerin | Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla. |
 
-Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme).
+Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme). Die Mustang hat vor dem Gorilla kein Y.
+
+### In der Höhle *(im Code, alles **Entwurf**)*
+
+| Wann / wer | Stimme | Text |
+|---|---|---|
+| hinein | Erzählerin | Hier ist es ganz schön dunkel. Und da sitzt der Gorilla am Feuer. |
+| Y beim Gorilla, vor der Lupe | `tierM` | Lass mich bitte in Ruhe. |
+| Y am Schnitzring zu früh | Erzählerin | Vielleicht siehst du dir vorher noch etwas anderes ganz genau an. |
+| Lupe | Erzählerin | Oh, ein Holzentchen. Es ist zerbrochen. |
+| Y beim Gorilla – Joshi | `joshi` | Ist dein Entchen zerbrochen? |
+| … Gorilla | `tierM` | Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig. · Nichts kann mich trösten. Nicht mal die Bananen, die ich vom Festtisch genommen habe. Der war ja eh schon ganz durcheinander. |
+| … Erzählerin | Erzählerin | Vielleicht kannst du ihm ein neues Entchen schnitzen. Am grünen Kreis liegt ein Stück Holz. |
+| Schnitzen | Erzählerin | Toll! Ein neues Holzentchen. |
+| Y beim Gorilla – Joshi | `joshi` | Schau mal, ich habe dir ein neues Entchen geschnitzt. |
+| … Gorilla (trommelt vor Freude) | `tierM` | Für mich? Oh, danke! Das ist ja wunderschön! · Hier, die Bananen gehören euch. Es tut mir leid, dass ich sie genommen habe. |
+| … Erzählerin | Erzählerin | Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch. |
+| … Joshi | `joshi` | Weißt du, von wem das rote Fell ist? |
+| … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
+| … Erzählerin | Erzählerin | Mach doch noch ein Foto von deinem neuen Freund. Am Ausgang ist ein blauer Kreis. |
+| Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. · Geh hinaus zum Flugzeug. Der Gorilla hat es dir geliehen. |
+| Y beim Gorilla danach | `tierM` | Danke, Joshi! Viel Glück beim Hamster. |
+| Hinweis-Taste | Erzählerin | je nach Stand: X drücken · brauner Kreis · mit dem Gorilla sprechen · schnitzen · Foto · zum Flugzeug |
+
+### Abflug
+
+| Wann | Stimme | Text |
+|---|---|---|
+| wieder draußen | Erzählerin | Schau mal, der Wald ist gar nicht mehr dunkel. Jetzt geh zum Flugzeug. |
+| einsteigen | Erzählerin | Steig ein. Mit dem rechten Stick gibst du Gas, mit dem linken lenkst du. |
+| in der Luft | Erzählerin | Super, du fliegst! Flieg zum roten Punkt auf dem Radar. |
+| nach einem Absturz | Erzählerin | Hoppla! Versuch es gleich noch einmal. |
+| nach dem Globus | Erzählerin | Joshi fliegt zum Hamster in die Wüste. Wie es weitergeht, erfährst du bald. |
 
 ---
 

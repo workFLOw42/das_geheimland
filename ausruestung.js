@@ -29,6 +29,8 @@ const SACHEN = {
   // (Ulysses Butterfly, eb78, CC-BY-SA-4.0) – keine Ausruestung, aber dieselben Vorlagen
   holzfuchs: { glb: 'HOLZFUCHS_GLB', L: 0.16, zeigen: 0.2, keinRucksack: true },
   schmetterling: { glb: 'SCHMETTERLING_GLB', L: 0.09, zeigen: 0, keinRucksack: true },
+  // Holzentchen (Etappe 3, Hoehle des Gorillas): "Wooden Duck Toy" von Ujjwal Chauhan (Sketchfab), verkleinert
+  entchen: { glb: 'ENTCHEN_GLB', L: 0.3, zeigen: 0.15, keinRucksack: true },
 };
 const TEXT = {
   notizbuch: ['Ah... ein Notizbuch. Das kann man immer gebrauchen.'],

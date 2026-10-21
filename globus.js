@@ -18,11 +18,13 @@ const ORTE = [
   // Waldinsel (Live-Wunsch 21.10.2026): der Punkt am Strand (dort kommt Joshi an – auf der Seite zu seiner Insel hin), die
   // Hoehle des Gorillas im hinteren Drittel der Insel, noch klar im Wald. Die Insel selbst: WALDINSEL (groesser, mit Wald).
   { name: 'Die Waldinsel', lat: 32.0, lon: 16.0 },                   // Fall 1, Etappe 2 (waldinsel.js)
-  { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (folgt)
+  { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (hoehle.js)
+  { name: 'Die Wüste', lat: 8, lon: 58, folgt: '🐹', satz: 'Joshi fliegt zum Hamster in die Wüste. Wie es weitergeht, erfährst du bald.' },   // Etappe 4 (folgt)
 ];
 // Inseln der Geheimland-Welt (lat, lon, Groesse in Grad) – Joshis Insel ist die erste
 const WALDINSEL = [36, 24, 9];
-const INSELN = [[18, -12, 7], WALDINSEL, [-8, 30, 9], [52, -40, 6], [-30, -20, 11], [5, 70, 8], [-45, 60, 7], [40, 110, 10], [-15, 140, 6], [62, 160, 5], [10, -90, 9], [-55, -120, 8]];
+const WUESTE = [6, 66, 11];                                         // gross, gelb, ohne Gruen (Etappe 4)
+const INSELN = [[18, -12, 7], WALDINSEL, [-8, 30, 9], [52, -40, 6], [-30, -20, 11], WUESTE, [-45, 60, 7], [40, 110, 10], [-15, 140, 6], [62, 160, 5], [10, -90, 9], [-55, -120, 8]];
 const GLOBUS_R = 1, GLOBUS_FAHRT = 4.5, GLOBUS_HALT = 2.5;
 const gl = { szene: null, kam: null, erde: null, faden: null, punkte: null, aktiv: false, t: 0, von: 0, nach: 0, fertig: null, ende: false, textEl: null };
 story.reise = (story.spielstand && story.spielstand.reise) || [0];
@@ -72,10 +74,10 @@ function weltTextur(){
   let s = 5; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const xy = (lat, lon) => [((lon + 180) / 360) * W, ((90 - lat) / 180) * H];
   for(const insel of INSELN){
-    const [lat, lon, r] = insel, wald = insel === WALDINSEL;
+    const [lat, lon, r] = insel, wald = insel === WALDINSEL, wueste = insel === WUESTE;
     const [x, y] = xy(lat, lon), rx = r / 360 * W, ry = r / 180 * H;
     // unregelmaessiger Umriss: Flachwasser, Sand, Gras (die Waldinsel: Nadelwald, dunkler)
-    for(const [k, farbe] of [[1.55, 'rgba(120,200,220,0.55)'], [1.15, '#e8d49a'], [0.85, wald ? '#2f6a3c' : '#4f9a4a']]){
+    for(const [k, farbe] of [[1.55, 'rgba(120,200,220,0.55)'], [1.15, '#e8d49a'], [0.85, wald ? '#2f6a3c' : wueste ? '#e2bf72' : '#4f9a4a']]){
       g.fillStyle = farbe; g.beginPath();
       for(let i = 0; i <= 24; i++){ const a = i / 24 * Math.PI * 2, w = 1 + (rnd() - 0.5) * 0.35;
         const px = x + Math.cos(a) * rx * k * w, py = y + Math.sin(a) * ry * k * w; i ? g.lineTo(px, py) : g.moveTo(px, py); }
@@ -254,10 +256,11 @@ function fortsetzungFolgt(){
   gl.aktiv = false; gl.unterwegs = false; gl.textEl.style.opacity = '0';
   const el = document.createElement('div');
   el.style.cssText = 'position:absolute;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font:700 34px system-ui,sans-serif;';
-  el.innerHTML = '<div style="font-size:64px">🦍</div><div style="margin-top:12px">Fortsetzung folgt …</div>';
+  const ort = ORTE[gl.nach] || {};
+  el.innerHTML = '<div style="font-size:64px">' + (ort.folgt || '🦍') + '</div><div style="margin-top:12px">Fortsetzung folgt …</div>';
   document.body.appendChild(el);
   tonBlende(1, 0.5);
-  setTimeout(() => story.sprich(TEXT_FOLGT), 600);
+  setTimeout(() => story.sprich(ort.satz ? [ort.satz] : TEXT_FOLGT), 600);
 }
 // Am Ziel des ersten Falls (segeln.js ruft story.zielErreicht): kurzer Satz, dann der Globus
 // Sofort die Blende (Live-Befund: vorher erst der Satz, und waehrenddessen segelte man weiter); der Satz kommt im Globus

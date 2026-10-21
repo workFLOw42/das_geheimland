@@ -1737,6 +1737,7 @@ const TEST_ZUGANG = [
   { t: 'E2 Spuren', info: 'Tiere gehört, Foto- und Lupenring', etappe: 2, stufe: 'spuren' },
   { t: 'E2 Waldweg', info: 'Foto und Lupe fertig, Weg frei', etappe: 2, stufe: 'weg' },
   { t: 'E3', info: 'vor der Höhle des Gorillas', etappe: 3, stufe: 'start' },
+  { t: 'E3 Abflug', info: 'Gorilla froh, alle Bilder, Mustang frei', etappe: 3, stufe: 'abflug' },
 ];
 story.testZugang = TEST_ZUGANG;
 // E1: alles vor der Detektiv-Phase (Rucksack, alle Objekte draussen und in der Huette entdeckt und benutzt)
@@ -1778,7 +1779,7 @@ function testStarten(z){
     // E3: Etappe 2 komplett (Foto, Lupe, Gespraeche), dann wie nach dem Globus vom Waldweg
     if(story.testE2) story.testE2('weg');
     story.spaeter(0.5, () => { const warte = () => { if(!(story.e2Hinweis && story.e2Hinweis() && /Folge dem Weg/.test(story.e2Hinweis()[0]))){ story.spaeter(0.3, warte); return; }
-      if(story.reise) story.reise.push(2); if(story.e3Wechsel) story.e3Wechsel(); }; warte(); });
+      if(story.reise) story.reise.push(2); if(story.e3Wechsel) story.e3Wechsel(); if(z.stufe === 'abflug' && story.testE3) story.testE3(); }; warte(); });
   });
 }
 // Laufen, springen, knien, umschauen: erst nach dem Start – und nicht, waehrend etwas in den Rucksack gesteckt wird
@@ -2020,12 +2021,14 @@ function hookLoop(){
     updateFigur(dt);
     figurWache(dt);
     updateStaub(dt);
-    planeGroup.visible = !eva;                // X-Wing nur sichtbar, wenn man drin sitzt
+    // X-Wing nur sichtbar, wenn man drin sitzt; vor der Hoehle (Etappe 3) steht die Mustang des Gorillas immer da
+    planeGroup.visible = !eva || (story.etappe === 3 && !(story.innen && story.innen.drin));
     updateFuchs(dt);
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
     if(story.updateE2) story.updateE2(dt);         // waldinsel.js: Tiere, Lichterketten
     if(story.updateE3) story.updateE3(dt);         // hoehle.js: vor der Hoehle des Gorillas
+    if(story.updateHoehleInnen) story.updateHoehleInnen(dt);   // hoehle_innen.js: in der Hoehle
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.updateSteg) story.updateSteg(dt);     // steg.js: Steg, Segelboot, einsteigen
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js

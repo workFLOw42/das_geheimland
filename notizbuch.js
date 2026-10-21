@@ -58,6 +58,21 @@ const STELLEN = [
     bedingung: () => !!(story.e2SpurFrei && story.e2SpurFrei()), modell: 'bananenschale',
     bau: () => story.e2Bananenschale(), animiere: (g, t) => story.e2SchaleAnimieren && story.e2SchaleAnimieren(g, t), liegt: true,
     text: ['Schau mal! Ein Stück Bananenschale. Und viele kleine Ameisen krabbeln darüber.'] },
+  // ---- Etappe 3, in der Hoehle des Gorillas (hoehle_innen.js; innen: nur in der Hoehle) ----
+  // Lupe: das zerbrochene Holzentchen neben dem Gorilla (erst nach dem Suchblick in der Hoehle)
+  { id: 'entchen_lupe', art: 'lupe', name: 'Das kaputte Entchen', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 636.3, z: -619.0, r: 0.95 }, nachX: true,
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_lupe')), modell: 'entchen_kaputt', liegt: true,
+    bau: () => story.kaputtesEntchen(), text: ['Oh, ein Holzentchen. Es ist zerbrochen.'] },
+  // Schnitzen: der Holzscheit rechts vorn am Feuer – ein neues Entchen (erst nach dem Gespraech mit dem Gorilla)
+  { id: 'entchen_schnitzen', art: 'messer', name: 'Das neue Entchen', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 643.6, z: -617.8, r: 0.95 }, nachX: true,
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_schnitzen')), darf: () => !story.e3Darf || story.e3Darf('entchen_schnitzen'),
+    modell: 'entchen', scheitHoehle: true, arbeitsplatz: { x: 641.6, z: -618.6 }, feuer: { x: 640, z: -620.5 }, regal: 'entchen',
+    text: ['Toll! Ein neues Holzentchen.'] },
+  // Foto: der Gorilla mit seinem Entchen, vor dem Ausgang (ganz am Schluss)
+  { id: 'gorilla_foto', art: 'foto', name: 'Der Gorilla', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 640, z: -613.6, r: 0.95 },
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('gorilla_foto')), vorher: () => story.e3FotoVorbereiten && story.e3FotoVorbereiten(),
+    blick: { x: 640, y: 151.6, z: -613.4, yaw: Math.atan2(640 - 637.7, -613.4 + 622.4), pitch: -0.08, fov: 48 }, fuchs: { x: 639.2, z: -620.0 }, fuchsVon: { x: 643, z: -617 }, ohneJoshi: true,
+    text: ['Klasse! Der Gorilla lacht wieder.'] },
 ];
 // Stellen je Etappe: etappe fehlt = 1 (Joshis Insel). Frei ist eine Stelle der Heimatinsel mit der Detektiv-Phase
 // (zustand.frei), eine spaetere, sobald ihre bedingung gilt; nachX: dazu noch mit dem Suchblick entdecken (kreiseFreischalten)
@@ -91,6 +106,7 @@ const WERKZEUG = { foto: 'kamera', skizze: 'stift', messer: 'messer', lupe: 'lup
 const KREIS_FARBE = { foto: 'rgba(70,150,255,A)', skizze: 'rgba(235,60,60,A)', messer: 'rgba(60,190,90,A)', lupe: 'rgba(150,100,55,A)' };
 const zustand = story.notiz = { frei: false, gemacht: {}, seiten: [], aktiv: null };
 story.notizSeiten = () => zustand.seiten;
+story.notizSeiteDazu = (s) => { s.dreh = s.dreh || (zustand.seiten.length % 2 ? 0.03 : -0.025); zustand.seiten.push(s); };
 // Nach dem Neuladen (story.js spielstand): die Seiten aus der letzten Etappe wieder einkleben (PNG -> Bild). Das Notizbuch
 // malt mit drawImage und liest width/height – ein Image tut das wie das Canvas, sobald es geladen ist.
 if(story.spielstand && story.spielstand.seiten) for(const s of story.spielstand.seiten){
@@ -130,8 +146,10 @@ function gelbY(){
     yTex = new THREE.CanvasTexture(c); }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: yTex, depthTest: false, transparent: true })); sp.scale.setScalar(0.6); sp.renderOrder = 999; sp.userData.deko = true; return sp;
 }
+const drinnen = () => !!(story.innen && story.innen.drin);
+const passtOrt = (s, drin) => !!s.innen === !!drin;          // Stellen mit innen gelten nur drinnen (Hoehle), sonst nur draussen
 function aufKreis(s){
-  if(!eva || story.etappe !== etappeVon(s) || (story.innen && story.innen.drin) || (story.imBoot && story.imBoot()) || (story.schwimm && story.schwimm.aktiv)) return false;
+  if(!eva || story.etappe !== etappeVon(s) || !passtOrt(s, drinnen()) || (story.imBoot && story.imBoot()) || (story.schwimm && story.schwimm.aktiv)) return false;
   const p = eva.group.position; return Math.hypot(p.x - s.kreis.x, p.z - s.kreis.z) < s.kreis.r;
 }
 function updateMarken(dt){
@@ -160,18 +178,18 @@ function kreisZiel(s){
     blinken(){ const m = marken.find(q => q.s === s); if(m) m.blink = 1.6; } });
 }
 story.kreiseFreischalten = function(x, z, r, drin){
-  if(drin) return;
-  for(const s of STELLEN) if(stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
+  if(story.e3Gesucht) story.e3Gesucht();                       // hoehle_innen.js: der Suchblick in der Hoehle zaehlt
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
 };
 story.sucheKreise = function(drin){
-  if(drin) return [];
-  return STELLEN.filter(s => stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
+  return STELLEN.filter(s => passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
 };
 // Y (story.js buttonY fragt hier zuerst): steht Joshi auf einem offenen Kreis -> los
 story.fotoY = function(){
   if(zustand.aktiv) return false;
   const k = marken.find(q => stelleSichtbar(q.s) && aufKreis(q.s));
   if(!k) return false;
+  if(k.s.darf && !k.s.darf()) return true;                      // Y gehoert dem Kreis, es passiert aber noch nichts (ein Satz)
   starte(k.s);
   return true;
 };
@@ -491,6 +509,7 @@ function starte(s){
   ab.s = s;
   if(s.modell){ szeneStarten(s); return; }                         // Schnitzen, Lupe: 3D-Szene statt Bild
   // Foto: das Bild entsteht erst beim KLICK (vorher sucht die Kamera, und der Fuchs laeuft ins Bild); Skizze: gleich
+  if(s.vorher) s.vorher();
   if(s.art === 'foto'){ ab.bild = null; fotoVorbereiten(s); } else ab.bild = aufnehmen(s);
   story.ausRucksack(WERKZEUG[s.art], () => { ab.phase = 'zeigen'; ab.t = 0; });
 }
@@ -630,17 +649,19 @@ story.bildEbene = function(dt, szene, pause){
 const sz = { phase: null, t: 0, s: null, gruppe: null, modell: null, L: 1, klotz: null, spaene: [], mx: null, skizze: null };
 const T_SCHNITZ = 7.0;          // Live-Wunsch 16.10.: etwas laenger (vorher 4 s)
 // Holzscheit: Schwarzblende, Joshi sitzt am Lagerfeuer (Arbeitsplatz), aufblenden – dann beginnt das Schnitzen
+const feuerVon = (s) => s.feuer || story.insel.feuer;
 function blendeZumArbeitsplatz(s, weiter){
   const el = document.createElement('div');
   el.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;transition:opacity .4s;pointer-events:none;z-index:44;';
   document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; });
   setTimeout(() => {
-    const a = s.arbeitsplatz, F = story.insel.feuer;
+    const a = s.arbeitsplatz, F = feuerVon(s);
     if(eva){ eva.group.position.set(a.x, evaFootY(a.x, a.z), a.z); eva.yaw = Math.atan2(a.x - F.x, a.z - F.z); eva.group.rotation.y = eva.yaw;
       if(typeof evaOrbit !== 'undefined') evaOrbit = 0;
       // Kamera gleich hinter Joshi (sonst fliegt sie im Hellwerden quer ueber die Insel)
       camera.position.set(a.x + Math.sin(eva.yaw) * 4.5, evaFootY(a.x, a.z) + 2.2, a.z + Math.cos(eva.yaw) * 4.5); }
-    if(scheit.d && story.entferne){ story.entferne(scheit.d); scheit.d = { weg: true }; }   // der Scheit ist jetzt in Joshis Haenden
+    const sd = s.scheitHoehle ? story.hoehleInnen && story.hoehleInnen.scheit : scheit.d;
+    if(sd && sd.obj && story.entferne){ story.entferne(sd); if(s.scheitHoehle) story.hoehleInnen.scheit = null; else scheit.d = { weg: true }; }   // der Scheit ist jetzt in Joshis Haenden
     if(story.arbeiten) story.arbeiten(true, F);                    // hockt schon am Feuer, wenn es hell wird
     el.style.opacity = '0';
     // erst wenn die Blende ganz durch ist, beginnt das Schnitzen (Live-Wunsch 16.10.)
@@ -648,7 +669,7 @@ function blendeZumArbeitsplatz(s, weiter){
   }, 450);
 }
 function szeneStarten(s){
-  if(s.scheit && !s.geblendet){ s.geblendet = true; blendeZumArbeitsplatz(s, () => szeneStarten(s)); return; }
+  if((s.scheit || s.scheitHoehle) && !s.geblendet){ s.geblendet = true; blendeZumArbeitsplatz(s, () => szeneStarten(s)); return; }
   const E = story.ebene();
   (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => {
     sz.s = s; sz.modell = g; sz.L = L; sz.t = 0;
@@ -682,7 +703,7 @@ function szeneStarten(s){
     // Draufsicht mit offenen Fluegeln (Live-Wunsch 16.10.): der Fluegelschlag steht bei t = 0 (ganz offen), nur ein ganz
     // leichtes Atmen (updateSzene setzt die Zeit selbst) – im Schlag sah man ihn sonst von der Kante
     if(s.art === 'lupe' && g.userData.clips && g.userData.clips.length){ sz.falterMx = new THREE.AnimationMixer(g.userData.inner || g); sz.falterMx.clipAction(g.userData.clips[0]).play(); sz.falterMx.setTime(0); }
-    if(s.art === 'messer' && story.arbeiten && !story.figur.arbeitet) story.arbeiten(true, story.insel.feuer);   // hockt (falls noch nicht), Blick zum Feuer
+    if(s.art === 'messer' && story.arbeiten && !story.figur.arbeitet) story.arbeiten(true, feuerVon(s));   // hockt (falls noch nicht), Blick zum Feuer
     // Live-Befund 19.10.2026: "die ganze Schnitz-Animation ist nicht mehr zu sehen, Joshi bleibt am Feuer hocken, das Spiel
     // haengt" – nach Y im gruenen Kreis, waehrend die Kreise gerade neu erschienen waren und Fuchsi zum Markieren lief. Die
     // Szene begann NUR im fertig() von ausRucksack (Messer raus und aufgeklappt); kam das nicht, hing sie fuer immer. Jetzt
@@ -816,7 +837,8 @@ story.szeneAktiv = () => !!sz.phase;
 // (Raum-Koordinaten wie huette_innen.js: Bett an der linken Wand x -4,5, Kopfteil zur Rueckwand). Der Raum wird erst beim
 // Betreten gebaut – darum werden die Dinge gemerkt und gesetzt, sobald er steht.
 const huette = { fuchs: false, schmetterling: false, gesetzt: {}, falter: null, mixer: null };
-function fertigInHuette(s){ if(s.art === 'messer') huette.fuchs = true; if(s.art === 'lupe') huette.schmetterling = true; huetteSetzen(); }
+function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.art === 'messer') huette.fuchs = true;
+  if(s.art === 'lupe' && etappeVon(s) === 1) huette.schmetterling = true; huetteSetzen(); }
 function huetteSetzen(){
   const I = story.innen; if(!I || !I.gruppe) return;               // Raum noch nicht gebaut: beim Betreten (updateHuette)
   const R = I.gruppe;
@@ -833,6 +855,12 @@ function huetteSetzen(){
       bord.add(g);
     });
     if(story.ding) story.ding(bord, { welt: 1, typ: 'bord_holzfuchs' });
+  }
+  // das geschnitzte Entchen (Etappe 3): als Kopie ins Regal, mittleres Fach rechts (Live-Wunsch: Trophaeen-Platz)
+  if(huette.entchen && !huette.gesetzt.entchen && I.regalBretter){
+    huette.gesetzt.entchen = true;
+    story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.22 / L); const b = I.regalBretter[1];
+      g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(-0.6, 0.025 - bb.min.y, 0.02); g.rotation.y = -0.4; b.add(g); });
   }
   if(huette.schmetterling && !huette.gesetzt.schmetterling){
     huette.gesetzt.schmetterling = true;
@@ -999,12 +1027,13 @@ function etwasInDerNaehe(){
     // noch mit X zu entdecken – oder entdeckt, aber noch ohne Y (einheitliche Logik, story.js objektOffen)
     if((!o.entdeckt || (story.objektOffen && story.objektOffen(o))) && Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
   }
-  if(!drin) for(const s of STELLEN) if(stelleSichtbar(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleSichtbar(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
   return false;
 }
 // Alle vier Markierungen erledigt -> Funkspruch (nach einer kurzen Pause, damit er nicht in die letzte Ansage faellt)
 function pruefeFall1(){
   if(story.etappe === 2 && story.e2StelleFertig) story.e2StelleFertig();   // waldinsel.js: Foto + Lupe fertig -> Gorilla
+  if(story.etappe === 3 && story.e3StelleFertig){ for(const s of STELLEN) if(etappeVon(s) === 3 && zustand.gemacht[s.id] && !s.gemeldet){ s.gemeldet = true; story.e3StelleFertig(s.id); } }
   if(story.etappe !== 1 || !detektiv.erklaert || !E1.every(s => zustand.gemacht[s.id]) || !story.fall1Funk) return;
   story.spaeter(2.0, () => story.fall1Funk());
 }

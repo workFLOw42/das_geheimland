@@ -17,8 +17,12 @@ const INSEL_R = 230;                                  // m Grasflaeche (Engine-S
 const START = { x: 0, z: 62, blick: { x: 0, z: 0 } };  // Waldausgang, Blick nach Norden (-z) auf den Berg
 const HOEHLE = { x: 0, z: -18, B: 4.2, H: 3.4 };      // Eingang im Fuss des Bergs, Joshi gegenueber
 const BERG = { z: -40, links: -22, rechts: 170, hoch: 72, gipfel: 112 };   // links endet er vor der Piste; Gipfel ueber der Hoehle   // Bergruecken: Fuss bei z -10..-25, zieht weit nach rechts (+x)
-const PISTE = { x: -42, z: 10, L: 260, B: 12 };        // Wald-Schotterpiste (die Mustang darf auf der ganzen Insel rollen)        // Schotterbahn links, laengs z (von Sueden nach Norden)
-const MUSTANG = { x: -42, z: 52, dreh: Math.PI };     // auf Hoehe des Waldausgangs, vom Start aus links zu sehen     // am Suedende der Piste geparkt, Nase nach Norden (die Bahn hinauf)
+const PISTE = { x: -42, z: 45, L: 290, B: 12 };        // Wald-Schotterpiste (die Mustang darf auf der ganzen Insel rollen)        // Schotterbahn links, laengs z (von Sueden nach Norden)
+// Mustang am Nordende der Piste, Nase nach Sueden: gestartet wird WEG vom Berg (110 m hoch), ueber den Wald zum Meer.
+// Vom Waldausgang aus links zu sehen (Sichtlinie durch die Luecke im Waldsaum).
+const MUSTANG = { x: -42, z: 30 };                     // vom Waldausgang aus links zu sehen; ~160 m Startstrecke nach Sueden
+// Das Ziel (roter Punkt): Richtung Wueste, weit im Suedwesten; kommt entgegen, wenn man darauf zuhaelt (wie beim Segeln)
+const FLUGZIEL = { x: -1400, z: 2600, r: 160 };     // am Suedende der Piste geparkt, Nase nach Norden (die Bahn hinauf)
 const WALDRAND = { z: 66 };                           // der Wald hinter Joshi (aus ihm kommt er)
 // Das Ende des Waldwegs (Live-Wunsch 21.10.2026): derselbe Weg wie auf der Lichtung – dunkle Gasse, Aeste, Schatten, ohne
 // Schnee –, hier von Sueden (tief im Wald) bis vor Joshi; vorn laeuft er sanft in die Wiese aus
@@ -33,8 +37,6 @@ story.etappeR = Object.assign(story.etappeR || {}, { 3: INSEL_R });   // insel.j
 
 const TEXT_ANKUNFT = ['Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle.',
   'Dort wohnt bestimmt der Gorilla. Hörst du ihn?'];
-const TEXT_MUSTANG = ['Ein Flugzeug! Das gehört bestimmt dem Gorilla. Ohne ihn kannst du damit nicht fliegen.'];
-const TEXT_HOEHLE_ZU = ['Hier wohnt der Gorilla. In die Höhle geht es bald.'];   // Platzhalter, bis der Innenraum steht
 const TEXT_HINWEIS = ['Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla.'];
 
 // ---- Licht: spaeter Nachmittag (Live-Wunsch 21.10.2026) -----------------------------------------
@@ -165,11 +167,8 @@ function baue(){
   if(story.waldweg) story.waldweg({ welt: 3, linie: WEG3, aus: WEG3_AUS, von: WEG3_GASSE.von, bis: WEG3_GASSE.bis, rnd,
     weit: (u) => Math.max(0, 1 - (u - WEG3_GASSE.von) / 0.12) * 1.6 });   // am Ausgang etwas weiter (Kamera)
   for(const [x, z] of [[HOEHLE.x - 7.5, HOEHLE.z + 5], [HOEHLE.x + 8, HOEHLE.z + 4.5]]) story.setze('tanne', 3, { x, z, h: 6.5, farbe: 1, fest: true });
-  mustangSetzen(w);
   if(story.tannenZusammen) story.tannenZusammen(3);
-  // Interaktion: Hoehleneingang (vorerst ein Satz – der Innenraum folgt)
-  const eingangObj = story.dinge.find(d => d.typ === 'hoehleneingang' && d.welt === 3);
-  story.interaktion(eingangObj ? eingangObj.obj : new THREE.Group(), { name: 'Höhle', welt: 3, x: HOEHLE.x, z: HOEHLE.z + 2.5, r: 2.4, yHoehe: HOEHLE.H + 1.2, text: TEXT_HOEHLE_ZU });
+  // (Hoehleneingang: kein Y – Joshi geht durch das schwarze Loch hinein, hoehle_innen.js)
 }
 function bauePiste(){
   const g = new THREE.Group(); g.userData.begehbar = true;
@@ -189,18 +188,21 @@ function bauePiste(){
   m.rotation.x = -Math.PI / 2; m.position.set(PISTE.x, ISLAND_Y + 0.03, PISTE.z); m.renderOrder = 2; g.add(m);
   return g;
 }
-// Mustang: Klon der Engine-Vorlage (glbTemplates.Mustang, 11 m Spannweite, Nase -z), auf dem Fahrwerk am Pistenende.
-// Grenze in ihrer Form (objekte.js). Ist die Vorlage noch nicht geladen, wird es spaeter nachgeholt (updateE3).
-function mustangSetzen(w){
-  if(hw.mustang || typeof glbTemplates === 'undefined' || !glbTemplates.Mustang) return;
-  const m = glbTemplates.Mustang.clone(true); m.rotation.y = -Math.PI;      // wie GLB_ROT in buildModel
-  const g = new THREE.Group(); g.add(m); g.updateMatrixWorld(true);
-  const bb = new THREE.Box3().setFromObject(g);
-  g.position.set(MUSTANG.x, ISLAND_Y - bb.min.y, MUSTANG.z); g.rotation.y = MUSTANG.dreh;
-  w.add(g); hw.mustang = g;
-  story.ding(g, { welt: 3, typ: 'mustang' });
-  story.interaktion(g, { name: 'Flugzeug', welt: 3, x: MUSTANG.x, z: MUSTANG.z, r: 6, yHoehe: 4.4, text: TEXT_MUSTANG });
+// Mustang = das Flugzeug der Engine (wie in Trip to Japan): aktuelles Modell, geparkt am Nordende der Piste, Joshi steht
+// als Figur daneben (eva.planeAt). Einsteigen mit Y erst, wenn der Gorilla sie geliehen hat (e3MustangFrei) – vorher kein Y
+// (Live-Wunsch 21.10.2026). Keine eigene Grenze: die Engine selbst haelt Joshi am Flugzeug nicht auf (wie den X-Wing).
+function mustangParken(){
+  if(typeof MODEL_NAMES === 'undefined') return;
+  const idx = MODEL_NAMES.indexOf('Mustang'); if(idx < 0) return;
+  currentModel = idx; buildModel('Mustang'); spec = PLANE_SPECS.Mustang || DEFAULT_SPEC;
+  state.pos.set(MUSTANG.x, ISLAND_Y, MUSTANG.z);
+  state.quat.setFromEuler(new THREE.Euler(0, Math.PI, 0, 'YXZ'));   // Nase der Engine bei yaw 0 = -z; nach Sueden (+z) = yaw PI
+  state.vel.set(0, 0, 0); state.throttle = 0; state.onGround = true; state.crashed = false; state.falling = false;
+  planeGroup.position.copy(state.pos); planeGroup.quaternion.copy(state.quat);
+  if(eva) eva.planeAt = new THREE.Vector3(state.pos.x, state.pos.y, state.pos.z);
+  hw.mustang = planeGroup;
 }
+function mustangSetzen(){}
 
 // ---- Brummen aus der Hoehle -------------------------------------------------------------------------------------
 // Joshi naeher als BRUMM_R: alle 7-12 s. Der Ton: "silverback gorilla roar" von flutie8211 (Pixabay, gorilla_snd.js) –
@@ -243,28 +245,100 @@ function setzeStart(){
   eva.group.position.set(x, evaFootY(x, z), z); eva.vy = 0;
   eva.yaw = Math.atan2(x - START.blick.x, z - START.blick.z); eva.group.rotation.y = eva.yaw;
   if(typeof evaOrbit !== 'undefined'){ evaOrbit = 0; evaPitch = 0; }
+  eva.planeAt = new THREE.Vector3(MUSTANG.x, ISLAND_Y, MUSTANG.z);
   const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));
   camera.position.copy(eva.group.position).addScaledVector(back, 5).add(new THREE.Vector3(0, 2, 0));
   if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: x + 1.3, z: z - 0.6, blick: eva.yaw + Math.PI, modus: 'streifen', sitzt: false, warte: 1 });
 }
 function los(){ if(hw.angekommen) return; hw.angekommen = true;
   story.spaeter(1.2, () => story.sprich(TEXT_ANKUNFT)); story.spaeter(4, () => brummen()); brummTakt(); }
-story.e3StartSzene = function(){ baue(); setzeStart(); };
+story.e3StartSzene = function(){ baue(); mustangParken(); setzeStart(); };
 story.e3Los = los;
 // Vom Waldweg der Waldinsel (globus.js, im Schwarzen): umschalten ohne Neuladen
 story.e3Wechsel = function(){
   story.etappe = 3; story.ziel = null;
   if(story.etappeWechsel) story.etappeWechsel(3);
-  hookTag(); baue(); setzeStart(); los();
+  hookTag(); baue(); mustangParken(); setzeStart(); los();
 };
-story.e3Hinweis = () => TEXT_HINWEIS;
+story.e3Hinweis = () => TEXT_HINWEIS;                     // hoehle_innen.js ersetzt das (drinnen/draussen, je nach Stand)
+
+// ---- Abflug mit der Mustang (Live-Wunsch: Etappe 3 endet mit dem Flug zum roten Punkt) ---------------------------------
+// Ist sie geliehen: Y daneben = einsteigen (Engine evaBoard). Joshi startet selbst (Schub: rechter Stick / W wie im
+// Flugspiel). Oben links das Radar mit dem roten Punkt (das Ziel kommt entgegen, wenn er darauf zuhaelt). Am Ziel: Globus
+// Richtung Wueste (Etappe 4, folgt). Kein Scheitern: kracht er (Baum, Boden), steht er nach der Loeschsequenz der Engine
+// wieder in der Mustang am Pistenanfang.
+const TEXT_EINSTEIGEN = ['Steig ein. Mit dem rechten Stick gibst du Gas, mit dem linken lenkst du.'];
+const TEXT_FLIEGEN = ['Super, du fliegst! Flieg zum roten Punkt auf dem Radar.'];
+const TEXT_NOCHMAL = ['Hoppla! Versuch es gleich noch einmal.'];
+const flug = { an: false, gesagt: false, radar: null, ctx: null, ziel: null, ende: false };
+story.e3Fliegt = () => !eva && e3();
+story.hoehleFlugZiel = () => flug.ziel;                     // Test
+function radarBauen(){
+  if(flug.radar) return;
+  const c = document.createElement('canvas'); c.width = c.height = 260; c.dataset.etappeHud = '1';
+  c.style.cssText = 'position:absolute;left:18px;top:18px;width:130px;height:130px;pointer-events:none;z-index:14;display:none;';
+  document.body.appendChild(c); flug.radar = c; flug.ctx = c.getContext('2d');
+}
+function radarMalen(){
+  const g = flug.ctx, W = 260, R = 120, s = state.pos, z = flug.ziel; g.clearRect(0, 0, W, W);
+  g.fillStyle = 'rgba(10,30,20,.72)'; g.beginPath(); g.arc(W / 2, W / 2, R, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(120,255,160,.45)'; g.lineWidth = 3; for(const r of [R, R * 0.66, R * 0.33]){ g.beginPath(); g.arc(W / 2, W / 2, r, 0, 7); g.stroke(); }
+  // Flugrichtung nach oben: Ziel relativ zur Nase
+  const e = new THREE.Euler().setFromQuaternion(state.quat, 'YXZ'), yaw = e.y;   // Nase -z bei yaw 0
+  const dx = z.x - s.x, dz = z.z - s.z, d = Math.hypot(dx, dz);
+  const lx = dx * Math.cos(yaw) - dz * Math.sin(yaw), lz = dx * Math.sin(yaw) + dz * Math.cos(yaw);   // in Nasenkoordinaten (-z vorn)
+  const k = Math.min(1, d / 3000) * (R - 14) / Math.max(1, d);
+  g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(W / 2 + lx * k, W / 2 + lz * k, 13, 0, 7); g.fill();
+  g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(W / 2, W / 2 - 16); g.lineTo(W / 2 - 11, W / 2 + 12); g.lineTo(W / 2 + 11, W / 2 + 12); g.fill();   // das Flugzeug
+}
+function updateFlug(dt){
+  radarBauen();
+  const fliegt = !eva && locale === 'earth' && !flug.ende;
+  flug.radar.style.display = fliegt && story.e3MustangFrei ? 'block' : 'none';
+  if(!fliegt) return;
+  if(!flug.ziel) flug.ziel = Object.assign({}, FLUGZIEL);
+  if(!flug.gesagt && !state.onGround){ flug.gesagt = true; story.sprich(TEXT_FLIEGEN); }
+  // Ziel kommt entgegen (wie das Segelziel): nur wenn die Nase darauf zeigt
+  const z = flug.ziel, dx = z.x - state.pos.x, dz = z.z - state.pos.z, d = Math.hypot(dx, dz);
+  const vor = new THREE.Vector3(0, 0, -1).applyQuaternion(state.quat), cos = (vor.x * dx + vor.z * dz) / Math.max(1, d) / Math.max(0.01, Math.hypot(vor.x, vor.z));
+  const v = state.vel.length();
+  if(!state.onGround && cos > 0.75 && d > z.r * 1.5){ const w = Math.min(v * 1.2 * dt, d - z.r); z.x -= dx / d * w; z.z -= dz / d * w; }
+  radarMalen();
+  if(d < z.r && !state.onGround){ flug.ende = true; flug.radar.style.display = 'none'; state.throttle = 0; if(story.globusReise) story.globusReise(3); }   // Ort 3 = die Wueste (globus.js)
+}
+function hookFlug(){
+  // Einsteigen: erst, wenn der Gorilla die Mustang geliehen hat (vorher passiert bei Y nichts)
+  const boardOrig = evaCanBoard;
+  evaCanBoard = function(){ if(e3() && !story.e3MustangFrei) return false; return boardOrig.apply(this, arguments); };
+  const einOrig = evaBoard;
+  evaBoard = function(){ const r = einOrig.apply(this, arguments); if(e3()){ story.sprich(TEXT_EINSTEIGEN); state.throttle = 0; } return r; };
+  // in E3 ist die Mustang immer zu sehen (story.js blendet das Flugzeug sonst aus, solange man laeuft – der X-Wing-Anker)
+  // Absturz: nach der Loeschsequenz zurueck in die Mustang am Pistenanfang (nicht an den Engine-Startplatz)
+  const resetOrig = resetPlane;
+  resetPlane = function(){
+    if(!e3()) return resetOrig.apply(this, arguments);
+    state.crashed = false; state.falling = false; mustangParken(); story.sprich(TEXT_NOCHMAL); snapCamera();
+  };
+  // Aussteigen geht nur auf der Piste am Boden (sonst saesse Joshi mitten im Wald); im Flug nie
+  const exitOrig = evaExit;
+  evaExit = function(){ if(e3() && (!state.onGround || abstandPiste(state.pos.x, state.pos.z) > PISTE.B)) return; return exitOrig.apply(this, arguments); };
+}
+const abstandPiste = (x, z) => Math.max(0, Math.abs(x - PISTE.x) - PISTE.B / 2) + Math.max(0, Math.abs(z - PISTE.z) - PISTE.L / 2);
+
+// ---- Der Waldweg wird hell, wenn der Gorilla wieder froh ist (Live-Idee 21.10.2026) ----------------------------------------
+// Draussen nach dem Gorilla: Schatten weg, Licht wie auf der Wiese; die Gasse bleibt, ist aber freundlich
+story.e3Draussen = function(){
+  if(!story.e3MustangFrei || hw.hell) return; hw.hell = true;
+  story.welt(3).traverse(o => { if(o.isMesh && o.renderOrder === 3 && o.material && o.material.map && o.material.transparent) o.visible = false; });   // der Wegschatten
+  story.spaeter(1.0, () => story.sprich(['Schau mal, der Wald ist gar nicht mehr dunkel. Jetzt geh zum Flugzeug.']));
+};
 
 // ---- Jedes Bild ------------------------------------------------------------------------------------------------
 story.updateE3 = function(dt){
   if(!e3()) return;
   baue(); hw.t += dt;
   if(story.gestartet) gorillaLaden();
-  if(!hw.mustang) mustangSetzen(story.welt(3));
+  updateFlug(dt);
 };
 
 // ---- Hooks -------------------------------------------------------------------------------------------------------
@@ -282,5 +356,5 @@ function hookLicht(){
   };
 }
 const hookVorher = window.STORY_HOOK;
-window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookTag(); hookLicht(); };
+window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookTag(); hookLicht(); hookFlug(); };
 })();

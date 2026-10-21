@@ -263,7 +263,7 @@ function hookInnen(){
   updateCamera = function(){
     // Innen ersetzt diese Kamera die der Engine ganz (vorher liefen beide, und jede zog in ihre Richtung –
     // das ruckelte massiv)
-    if(!(innen.drin && eva)) return camOrig.apply(this, arguments);
+    if(!(innen.drin && eva) || innen.wo === 'hoehle') return camOrig.apply(this, arguments);   // die Hoehle hat ihre eigene Kamera
     {
       // Umsehen mit dem rechten Stick (I/J/K/L) wie draussen, ohne Eingabe zurueck hinter die Figur
       if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;

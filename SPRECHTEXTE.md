@@ -1,6 +1,6 @@
 # Das Geheimland – Alle gesprochenen Sprechtexte
 
-Stand: 16.10.2026 – alles mit **im Code** ist so im Spiel; **Entwurf** = Vorschlag, noch nicht im Spiel; **Platzhalter** = steht im Code, wird ersetzt, sobald der echte Text da ist.
+Stand: 21.10.2026 – alles mit **im Code** ist so im Spiel; **Entwurf** = Vorschlag, noch nicht im Spiel; **Platzhalter** = steht im Code, wird ersetzt, sobald der echte Text da ist.
 
 - Gesprochen wird über die Sprachausgabe des Browsers. **Keine Untertitel** (der Spieler kann noch nicht lesen), der Ton ist immer an. „Joshi“ wird als **„Joschi“** ausgesprochen (geschrieben bleibt Joshi).
 - „…“ macht in der Sprachausgabe eine kurze Pause. `{Name}` wird zur Laufzeit eingesetzt (Name der Figur: **Joshi** – im Code die Konstante `NAME`).
@@ -17,6 +17,9 @@ Stand: 16.10.2026 – alles mit **im Code** ist so im Spiel; **Entwurf** = Vorsc
 | *(keine)* | **weiblich** | Erzählerin | – |
 | `funkRahmen` | **weiblich** | Erzählerin, am Funkgerät | 1 s davor und danach |
 | `radio` | **männlich** (Chrome: Microsoft Stefan) | Stimme über Funk | 1 s davor und danach |
+| `tierM` | männlich, tief | Elch, Eule (Waldinsel) | – |
+| `tierW` | weiblich, etwas höher | Hase, Reh | – |
+| `tierK` | weiblich, hoch und etwas schneller | Hasenbaby, Meise, blauer Vogel | – |
 
 Kommt ein Funkspruch (`radio`), erscheint unten rechts (dort, wo sonst der Rucksack steht) das **Funkgerät** und wackelt und blinkt wie das echte am Lagerfeuer. Im Funk wird **nie „over“** gesagt.
 
@@ -179,6 +182,53 @@ Das ist das Geheimland.
 
 ---
 
+## Etappe 2 – Die Waldinsel, am Festtisch *(im Code, alles **Entwurf** – bitte prüfen)*
+
+Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Waldinsel (kein Neuladen), das Segelboot liegt am Steg. Es ist Tag, ein verschneiter Nadelwald; auf der Lichtung stehen Festtisch, Lagerfeuer (ohne Y) und Weihnachtsbaum. Die Tiere sitzen am Tisch und sind traurig. Erst **X** (alle Tiere leuchten auf einmal), dann **Y beim Elch** und **ein Y für alle anderen** – die erzählen dann schnell nacheinander, jedes in seiner Stimme.
+
+| Wann / wer | Stimme | Text |
+|---|---|---|
+| Ankunft (nach dem Aussteigen) | Erzählerin | Du bist auf der Waldinsel angekommen. Schau mal, da vorne am Tisch sitzen die Tiere. · Sie sehen ganz traurig aus. Geh doch mal hin und hör dir an, was passiert ist. |
+| Elch (Kopfende) | `tierM` | Oh, hallo Joshi. Schön, dass du da bist. · Wir wollten heute ein großes Weihnachtsessen feiern. Alle zusammen, hier am Tisch. · Aber als wir kamen, war alles weg. Das ganze Essen! |
+| Hase | `tierW` | Ich hatte so viele Möhren mitgebracht. Und jetzt ist keine einzige mehr da. |
+| Hasenbaby | `tierK` | Ich hab so großen Hunger. |
+| Reh | `tierW` | Wer macht denn so etwas? Der ganze Tisch ist durcheinander. |
+| Eule | `tierM` | Hu-huu. Ich habe die ganze Nacht aufgepasst. Aber gesehen habe ich niemanden. |
+| Meise | `tierK` | Piep, piep! Kannst du uns helfen? Du bist doch ein Detektiv. |
+| blauer Vogel | `tierK` | Piep! Nicht mal ein Krümel ist übrig geblieben. |
+| Weihnachtsbaum | Erzählerin | Ein wunderschön geschmückter Weihnachtsbaum. |
+| Hinweis-Taste (D-Pad ←) | Erzählerin | Geh doch mal zum Tisch. Dort sitzen die Tiere. Mit X kannst du sie entdecken. |
+| alle Tiere gehört | Erzählerin | Hm... Wer das Essen genommen hat, hat vielleicht eine Spur hinterlassen. · Schau dich am Tisch doch noch einmal ganz genau um. |
+| Hinweis-Taste, Ring noch nicht da | Erzählerin | Schau dich am Tisch noch einmal ganz genau um. Drück dafür X. |
+| Hinweis-Taste, Ring zu sehen (der Fuchs zeigt den blauen Ring) | Erzählerin | Stell dich in den blauen Kreis vor dem Tisch und drück Y. Dann machst du ein Foto. |
+| Foto vom Tisch (blauer Ring) | Erzählerin | Klasse. Jetzt hast du den Tisch auf deinem Foto. Das schauen wir uns später noch ganz genau an. |
+| nach dem Foto – Joshi fragt | `joshi` | Da sind ja Spuren auf dem Tisch! Wem gehören die denn? |
+| … der Hase | `tierW` | Meine sind das nicht. Meine Pfoten sind viel größer. |
+| … die Eule | `tierM` | Und ich habe Krallen, keine Pfoten. Hu-huu. |
+| … der Elch | `tierM` | Solche Spuren habe ich hier im Wald noch nie gesehen. |
+| … die Erzählerin | Erzählerin | Merk dir die Spuren gut. Vielleicht findest du später heraus, wem sie gehören. |
+| … falls die Lupe noch offen ist (der Fuchs läuft von selbst zum braunen Ring und zeigt ihn) | Erzählerin | Schau mal, dein Fuchs hat noch etwas gefunden. |
+| Hinweis-Taste, nur noch die Lupe offen (der Fuchs zeigt den braunen Ring) | Erzählerin | Am Weg in den Wald ist ein brauner Kreis. Stell dich hinein und drück Y. Dann schaust du ganz genau hin. |
+| Lupe am Waldweg (brauner Ring) | Erzählerin | Schau mal! Ein Stück Bananenschale. Und viele kleine Ameisen krabbeln darüber. |
+| nach der Lupe – Joshi fragt | `joshi` (helle Kinderstimme) | Von wem die Bananenschale wohl ist? |
+| … die Eule | `tierM` | Hu-huu! Bestimmt vom Gorilla. Der mag doch so gerne Bananen. · Und überhaupt ist er in letzter Zeit so schlecht gelaunt. |
+| … der Elch | `tierM` | Der Gorilla wohnt in einer Höhle am Ende von diesem Weg. Auf der anderen Seite des Waldes. |
+| … die Erzählerin (Foto schon gemacht) | Erzählerin | Vielleicht weiß der Gorilla etwas. Folge doch dem Weg in den Wald. |
+| … die Erzählerin (Foto fehlt noch) | Erzählerin | Vorher machst du aber noch ein Foto vom Tisch. Stell dich in den blauen Kreis. |
+| Hinweis-Taste danach | Erzählerin | Folge dem Weg in den Wald. Dort wohnt der Gorilla. |
+| zu früh im Wald | Erzählerin | Hier geht ein Weg in den Wald. Schau dich vorher noch genau auf der Lichtung um. |
+| nach dem Globus (Ende des bisher Gebauten) | Erzählerin | Joshi ist auf dem Weg zum Gorilla. Wie es weitergeht, erfährst du bald. |
+
+**Tatortfoto:** Erst wenn alle Tiere erzählt haben **und** Joshi sich danach noch einmal mit X umschaut, zeigt der Fuchs den blauen Ring vor dem Tisch. Das Foto zeigt den Tisch senkrecht von oben in voller Länge – ohne Tiere und Fuchs, nur die Reste und zwei Fußspuren: links klein und rund im Wechselschritt (Hamster), rechts groß mit langen Zehen in Sprüngen (Eichhörnchen). Wem sie gehören, sagt noch niemand.
+
+**Lupe am Waldweg:** Der braune Ring liegt am Eingang des Waldwegs (Wegweiser) und erscheint mit demselben X wie der Fotoring. Unter der Lupe: die Bananenschale von oben, Ameisen krabbeln in einer Reihe darüber; als Skizze ins Notizbuch.
+
+**Ende von Etappe 2:** Nach dem Foto fragt Joshi nach den Spuren – keiner am Tisch war es, verraten wird nichts. Der Gorilla wird erst nach der Lupe erwähnt (Joshi fragt, Eule und Elch antworten). Der Weg ist frei, wenn beide Gespräche vorbei sind (Reihenfolge egal). Ist auch das Foto gemacht, ist der Weg frei (nach dem Foto läuft der Fuchs noch einmal zum braunen Ring, falls der offen ist). Geht Joshi in den Waldweg hinein, kommt der Globus („Die Höhle des Gorillas“) und danach ein schwarzes Bild „Fortsetzung folgt …“ – Etappe 3 ist noch nicht gebaut.
+
+*Noch nicht im Spiel:* Hinweise im Notizbuch (die zwei Spuren werden groß abgezeichnet, „Das ist ja eine Bananenschale“).
+
+---
+
 ## Sternbilder *(Entwurf – Wissens-Thema, z. B. wenn man lange in den Himmel schaut)*
 
 **Stimme:** Erzählerin – das jeweilige Sternbild leuchtet dabei kurz heller.
@@ -212,8 +262,8 @@ Das ist das Geheimland.
 - ~~**Taschenmesser, Kompass, Lupe**~~ – Sätze stehen als *Entwurf* im Code (dazu Stift und Kamera) – bitte bestätigen oder ändern.
 - ~~**Funkspruch kommt herein**~~ – „Hallo Joshi, bist du da?“ / „Joshi, bitte kommen.“ (vom Nutzer, 16.10.2026).
 - ~~**Fall 1 – das Problem:**~~ – „Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.“ (vom Nutzer, 16.10.2026).
-- **Fall 1 – am Ziel:** was dort passiert und gesagt wird (jetzt Platzhalter „Du bist angekommen!“).
-- **Orte auf dem Globus:** Name und Symbol des zweiten Orts (jetzt „Fall 1“ mit Standardpunkt).
+- **Fall 1 – am Ziel:** im Globus noch „Du bist angekommen!“, danach die Waldinsel (Etappe 2, Texte oben als Entwurf).
+- **Orte auf dem Globus:** der zweite Ort heißt jetzt „Die Waldinsel“ (noch mit Standardpunkt statt eines Symbols).
 - **Der Weihnachtsfall** (Konzept.md, Abschnitt 7): Anrufer, die Etappen mit Orten und Verdächtigen, Texte der Tiere, Tipps beim Vergleichen („Zähl mal die Zehen.“), Auflösung.
 - **Werkzeug-Hinweise** in Stufen, falls Joshi das Werkzeug später selbst wählt („Vielleicht hilft dir etwas, das ganz genau hinschaut.“ → „Nimm die Lupe.“).
 - **Erwachen im Kinderzimmer** und **Trophäen** – folgen.

@@ -1,4 +1,6 @@
-// Das Geheimland – Steg und Segelboot am Strand (Etappe 1). Laedt nach insel.js, vor der Engine.
+// Das Geheimland – Steg und Segelboot am Strand (Etappe 1 und 2). Laedt nach insel.js, vor der Engine.
+// Live-Wunsch 21.10.2026: auf der Waldinsel (Etappe 2) liegt das Boot an einem Steg, der genauso gebaut ist wie zu Hause –
+// darum baut diese Datei Steg und Boot in der Welt der aktuellen Etappe (gleiche Insel-Lage bei 0, 0, gleiche Masse).
 // Der Steg liegt genau vor der Huette (in einer Linie mit Huette, Lagerfeuer und Funkgeraet): kurz vor dem Wasser
 // zuerst flache Planken auf dem Sand, ab dem Ufer ein Steg auf Pfaehlen aufs Meer hinaus. Er hat Grenzen (man faellt
 // nicht seitlich oder vorn hinunter; vom Strand aus kommt man drauf und wieder runter). Daran liegt links (vom Strand
@@ -127,7 +129,7 @@ function pfahlGrund(x, z){
 }
 function baue(){
   if(s.gruppe) return;
-  const w = story.welt(1), g = new THREE.Group();
+  const w = story.welt(story.etappe), g = new THREE.Group();
   const planke = new THREE.MeshLambertMaterial({ color: 0x9a7348 }), planke2 = new THREE.MeshLambertMaterial({ color: 0x8a6640 });
   const dunkel = new THREE.MeshLambertMaterial({ color: 0x5b3e24 });
   // Planken quer, leicht unregelmaessig; auf dem Sand flach, dann die Rampe hinauf
@@ -170,7 +172,7 @@ function baue(){
   g.traverse(o => { if(o.isMesh) o.castShadow = true; });
   w.add(g); s.gruppe = g;
   // Pfaehle, Traeger, Kanten (0,14 m: man steigt drueber und kann seitlich ins Wasser), Poller: Grenzen in ihrer Form
-  story.ding(g, { welt: 1, typ: 'steg' });
+  story.ding(g, { welt: story.etappe, typ: 'steg' });
   ladeBoot(w);
 }
 function ladeBoot(w){
@@ -235,7 +237,7 @@ function ladeBoot(w){
     s.deckY = (0.62 - WASSERLINIE) * k;                            // Bootsboden innen (zwischen Innenwand 0,46 und Holz 0,96)
     // Grenze: Rumpf, Mast, Segel in ihrer Form (frei geformt -> in Scheiben), haengt am Boot und faehrt mit. Hinein nur mit Y.
     g.position.y = seaYAt(BOOT.x, BOOT.z);
-    s.koerper = story.ding(g, { welt: 1, typ: 'segelboot', beweglich: true });
+    s.koerper = story.ding(g, { welt: story.etappe, typ: 'segelboot', beweglich: true });
     meerImBootAus();
   });
 }
@@ -392,7 +394,7 @@ function updateFahrt(dt){
 }
 story.bootFrei = bootFrei;
 story.updateSteg = function(dt){
-  if(story.etappe !== 1) return;
+  if(story.etappe !== 1 && story.etappe !== 2) return;
   baue();
   s.t += dt;
   // Boot schaukelt mit der Duenung
@@ -445,7 +447,7 @@ story.updateSteg = function(dt){
   if(s.sperre > 0) s.sperre -= dt;
   // Y am Einstieg (bzw. im Boot zum Aussteigen)
   const zeigen = !s.wechsel && (amEinstieg() || s.imBoot);
-  if(zeigen && !s.zeichen){ s.zeichen = yZeichen(); story.welt(1).add(s.zeichen); }
+  if(zeigen && !s.zeichen){ s.zeichen = yZeichen(); story.welt(story.etappe).add(s.zeichen); }
   if(s.zeichen){
     s.zeichen.visible = zeigen;
     // im Boot: das Y zum Aussteigen nur, wenn das Boot am Steg liegt UND (fast) steht – beim Fahren kein Y (Live-Wunsch)
@@ -455,6 +457,21 @@ story.updateSteg = function(dt){
   }
 };
 story.imBoot = () => s.imBoot;
+// Etappenwechsel ohne Neuladen (story.js etappeWechsel): Steg, Boot, Schatten, Gischt und Y in die Welt der neuen Etappe
+// (gleiche Lage – die Inseln liegen beide bei 0, 0), die Grenzen gelten dort. Das Boot liegt angelegt am Steg; sass Joshi
+// darin, steigt er sofort aus (die neue Etappe setzt ihn danach auf seinen Startplatz).
+story.etappeWechselHooks.push(function(n){
+  const w = story.welt(n);
+  for(const o of [s.gruppe, s.boot, s.schatten, s.gischt, s.zeichen]) if(o) w.add(o);
+  for(const d of story.dinge) if(d.obj === s.gruppe || d.obj === s.boot) d.welt = n;
+  s.wechsel = null; blende(0); state.throttle = 0;
+  if(s.imBoot && eva) setzeUm('steg');
+  s.bx = BOOT.x; s.bz = BOOT.z; s.yaw = 0; s.v = 0;
+});
+// Etappe 2 (waldinsel.js): Joshi und der Fuchs sitzen nach der Ankunft noch im Boot am Steg – vor dem Start dorthin setzen,
+// mit "Los geht's" steigen sie aus (wie Y am Steg). Das Boot steht dabei schon an seinem Liegeplatz.
+story.imBootStarten = function(){ baue(); if(!eva || s.imBoot) return; setzeUm('boot'); s.sperre = 0; };
+story.stegAussteigen = function(){ if(s.imBoot && !s.wechsel) wechsle('steg'); };
 // Bordwand an der Laengsstelle vor (m, Heck -L/2 .. Bug +L/2): x links (seite -1) bzw. rechts (+1). Live-Befund 17.10.:
 // der Rumpf ist unsymmetrisch (links -0,97, rechts +0,78 m) – die Gischt startete rechts bei +0,8 m fest und lag damit IM
 // Boot (segeln.js nimmt jetzt diese Wand). Ohne oben: auf der Wasserlinie, aus der Vermessung der Engine (measureOpenHull,

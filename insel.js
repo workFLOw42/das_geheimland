@@ -46,9 +46,11 @@ function hookInsel(){
     sand.rotation.x = -Math.PI / 2; sand.position.y = ISLAND_Y - 0.05; g.add(sand);
     const geo = new THREE.CircleGeometry(info.radius, 48);
     const uv = geo.attributes.uv, p = geo.attributes.position;
-    for(let i = 0; i < uv.count; i++) uv.setXY(i, (p.getX(i) + info.wx) / GRASS_TILE_M, (p.getY(i) + info.wz) / GRASS_TILE_M);
+    // Waldinsel (Etappe 2, waldinsel.js): Winterwiese ohne Blumen statt der Gras-Kachel der Engine
+    const winter = story.etappe === 2 && story.winterGras, kachel = winter ? story.winterGrasKachel : GRASS_TILE_M;
+    for(let i = 0; i < uv.count; i++) uv.setXY(i, (p.getX(i) + info.wx) / kachel, (p.getY(i) + info.wz) / kachel);
     // Die Gras-Kachel der Engine hat Blumen – nur im Inneren; zum Rand hin wird es sandig (Vertex-Farben)
-    const gras = new THREE.Mesh(geo, grassMat);
+    const gras = new THREE.Mesh(geo, winter ? story.winterGras() : grassMat);
     gras.rotation.x = -Math.PI / 2; gras.position.y = ISLAND_Y; g.add(gras);
     g.position.set(info.wx, 0, info.wz);
     return g;
@@ -317,7 +319,7 @@ function ladeFeuer(){
 }
 function feuerDanach(d){
   const m = d.obj, p = m.position, w = m.parent;
-  story.interaktion(m, { name: 'Lagerfeuer', x: p.x, z: p.z, r: 0.7, yHoehe: 1.5, einmal: true,   // Info
+  story.interaktion(m, { name: 'Lagerfeuer', welt: d.welt, x: p.x, z: p.z, r: 0.7, yHoehe: 1.5, einmal: true,   // Info
     text: ['Das Lagerfeuer sorgt für Gemütlichkeit, Wärme und Licht.'] });
   const clips = m.userData.clips || [];
   if(clips.length){ insel.feuerMixer = new THREE.AnimationMixer(m); for(const a of clips) insel.feuerMixer.clipAction(a).play(); }
@@ -457,13 +459,14 @@ function updateMoewen(dt){
 
 // ---- Etappe 1 im Bild -------------------------------------------------------------------------
 story.updateE1 = function(dt){
-  if(story.etappe !== 1) return;
   insel.t += dt;
+  // das Lagerfeuer flackert in jeder Etappe, in der es gesetzt ist (Waldinsel, Etappe 2: dort etwas schwaecher – es ist Tag)
   if(insel.feuerMixer) insel.feuerMixer.update(dt);
-  if(insel.licht) insel.licht.intensity = 1.2 + Math.sin(insel.t * 13) * 0.18 + Math.sin(insel.t * 7.3) * 0.12;
+  if(insel.licht) insel.licht.intensity = (story.etappe === 1 ? 1.2 : 0.8) + Math.sin(insel.t * 13) * 0.18 + Math.sin(insel.t * 7.3) * 0.12;
+  if(story.etappe !== 1) return;
   updateMoewen(dt);
 };
-story.baueInsel = function(){ baueInsel(); ladeMoewen(story.welt(1)); };
+story.baueInsel = function(){ if(story.etappe !== 1) return; baueInsel(); ladeMoewen(story.welt(1)); };
 
 const hookVorher = window.STORY_HOOK;
 window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookInsel(); };

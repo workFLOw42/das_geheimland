@@ -118,6 +118,8 @@ function stoppe(mx){ if(!mx) return; mx.stopAllAction(); const i = mixer.indexOf
 
 // ---- Einbauen, sobald der Raum steht (huette_innen.js ruft story.raumGebaut) --------------------------------------
 const zustand = story.ausruestung = { notizbuch: false, lupe: false, kompass: false, messer: false, stift: false, kamera: false, buch: null, tisch: [] };
+// Nach einer Etappe (Neuladen, story.js spielstand): alles, was schon im Rucksack war, ist wieder drin
+if(story.spielstand && story.spielstand.rucksack){ Object.assign(zustand, story.spielstand.rucksack); zustand.komplett = Object.keys(TEXT).every(n => zustand[n]); }
 const _v = new THREE.Vector3();
 story.raumGebaut = function(innen){
   // Notizbuch im mittleren Fach (dort ist eine Luecke zwischen den Buechern), Ruecken zum Raum
@@ -713,6 +715,18 @@ story.inselIcon = function(c, cx, cy, g, art){
 // (x, y) = Mitte, g = Groesse
 function ortSymbol(c, ort, x, y, g){
   if(ort === 'insel') story.inselIcon(c, x, y, g, 'stift');
+  if(ort === 'waldinsel') tannenIcon(c, x, y, g);
+}
+// Waldinsel: zwei Tannen auf einem Inselbogen, wie mit dem Bleistift (Linien, kein Fuellen)
+function tannenIcon(c, x, y, g){
+  c.save(); c.translate(x, y); const s = g / 100; c.strokeStyle = 'rgba(70,55,40,.8)'; c.lineWidth = 3.2 * s; c.lineJoin = 'round'; c.lineCap = 'round';
+  c.beginPath(); c.ellipse(0, 32 * s, 46 * s, 11 * s, 0, Math.PI, 0, true); c.stroke();            // Insel
+  for(const [bx, h] of [[-14, 62], [16, 48]]){ const b = bx * s, top = 30 * s - h * s;
+    c.beginPath();
+    for(let i = 0; i < 3; i++){ const y0 = top + i * h * s * 0.28, w = (8 + i * 7) * s;
+      c.moveTo(b, y0); c.lineTo(b - w, y0 + h * s * 0.32); c.lineTo(b + w, y0 + h * s * 0.32); c.closePath(); }
+    c.moveTo(b, 30 * s - h * s * 0.06); c.lineTo(b, 30 * s); c.stroke(); }
+  c.restore();
 }
 function updateBuch(dt){
   if(!buch.mesh) return;

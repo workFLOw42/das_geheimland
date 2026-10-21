@@ -2,7 +2,7 @@
 
 Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.js – Teil von „Die Abenteuer von Joshi & Samu“.
 
-**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 20.10.2026 · Sprechtexte: [SPRECHTEXTE.md](SPRECHTEXTE.md)
+**Spielen:** https://workflow42.github.io/das_geheimland/ · Repo: `workFLOw42/das_geheimland` · Stand: 21.10.2026 · Sprechtexte: [SPRECHTEXTE.md](SPRECHTEXTE.md)
 
 ## 👦 Zielgruppe & Spielfigur
 
@@ -24,6 +24,7 @@ Ein interaktives 3D-Detektiv- und Aufräum-Abenteuer auf Basis von WebGL/Three.j
 | D-Pad ↓ | N | **Inventar:** der Rucksack mit allen Dingen; Stick wählt, A erklärt (das Notizbuch schlägt sich auf), B schließt |
 | B (bei großem Bild) | B | Foto, Skizze, Holzfuchs, Lupe stehen groß im Bild, bis B gedrückt wird |
 | rechter Stick | I J K L | Kamera umsehen |
+| X 3 s halten (im Startbildschirm) | X | **Testzugang:** E1 Detektiv, E1 Segeln, E2, E2 Spuren, E2 Waldweg – jeweils mit allem freigeschaltet, was davor im Spiel passiert wäre |
 | rechter Stick vor / zurück | E / Q | im Wasser abtauchen / auftauchen (wie das U-Boot im Flugspiel) |
 | linker Stick | Pfeiltasten | **im Segelboot:** vor = Fahrt voraus, zurück = langsam rückwärts, seitlich = lenken (nur mit Fahrt) |
 
@@ -163,6 +164,8 @@ Die Etappen sollen sich verschieden anfühlen. Die Engine (Flugspiel) bringt daf
 Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir haben ein großes Problem. …“), Segeln zum Ziel. Der Anrufer sind die Tiere der Waldinsel.
 
 ### Etappe 2 – die Waldinsel, am Festtisch (bei Tag)
+**Gebaut am 21.10.2026 (erster Teil, `waldinsel.js`):** Nach dem Globus steht Joshi gleich auf der Waldinsel – wie in *Trip to Japan* ohne Neuladen und ohne Startbildschirm (`story.e2Wechsel`, `story.etappeWechsel`): auf der Wiese zwischen Steg und Lichtung, Blick zum Tisch, der Fuchs neben ihm; das Segelboot liegt an einem Steg, der genauso gebaut ist wie zu Hause. Lädt man die Seite neu, geht es dort weiter (Spielstand: Etappe, Rucksack, Notizbuch-Seiten; zum Testen `index.html?etappe=2`). Licht gedämpft (Streulicht 0,62, Sonne 0,58, blasserer Winterhimmel, leichter Dunst), Schnee mit Struktur (Mulden, Windrippel, getaute Stellen). Tag (Tageshimmel der Engine mit Wolken, keine Sternbilder), Winterwiese mit Schneeflecken, rundherum ein verschneiter Nadelwald (gut 150 Tannen, einige mit Kugeln, Lichterketten zwischen den vorderen Bäumen). Auf der Lichtung: **Festtisch** mit zwei Bänken, karierter Decke, leeren Tellern, umgefallenen Bechern und Krümeln; rechts vorn das **Lagerfeuer**; links hinten der **Weihnachtsbaum** (Kugeln, Lichterkette, Stern, Geschenke). **Am Tisch:** Elch (steht am Kopfende), Hase und Eule auf der hinteren Bank, Reh dahinter, Hasenbaby, Meise und blauer Vogel auf dem Tisch – alle zum Strand gewandt, damit Joshi die Gesichter sieht; kommt er näher, drehen sie sich zu ihm. Mit X leuchten alle Tiere auf einmal; **Y beim Elch** (eigener Text) und **ein Y für alle anderen** – sie erzählen schnell nacheinander, jedes in seiner Stimme (Texte als Entwurf in SPRECHTEXTE.md). Das Lagerfeuer hat kein Y. Der Elch liegt am Kopfende im Schnee (sein Sitz-Clip hebt das Modell an – gemessen und allgemein ausgeglichen: Größe aus dem Stehen, Höhe aus der Haltung). **Tatortfoto (blauer Ring):** Haben alle Tiere erzählt, sagt die Erzählerin, Joshi solle sich am Tisch noch einmal umschauen; erst nach diesem X zeigt der Fuchs den Ring. Das Foto zeigt den Tisch senkrecht von oben in voller Länge, ohne Tiere und Fuchs, mit zwei deutlich verschiedenen Fußspuren auf der Decke (Hamster klein und rund, Eichhörnchen groß in Sprüngen) und kommt ins Notizbuch (Ortssymbol: zwei Tannen). **Lupe (brauner Ring)** am Eingang des Waldwegs (ein brauner Erdweg mit Wegweiser wächst sanft aus der Schneewiese, führt zwischen hohen, dunklen Tannen eng und düster in den Wald und verschwindet dort im Schatten), freigeschaltet mit demselben X: unter der Lupe die Bananenschale mit einer Ameisenstraße, als Skizze ins Notizbuch. **Nach dem Foto** fragt Joshi nach den Spuren (Hase: „Meine Pfoten sind viel größer“, Eule: Krallen, Elch: nie gesehen – keiner war es, verraten wird nichts). **Nach der Lupe** fragt Joshi, von wem die Schale ist – die Eule tippt auf den Gorilla (mag Bananen, ist so schlecht gelaunt), der Elch sagt, er wohne am Ende des Weges; nach dem Foto läuft der Fuchs noch einmal zum braunen Ring; geht Joshi in den Waldweg, kommt der Globus („Die Höhle des Gorillas“) und vorerst „Fortsetzung folgt …“ (Etappe 3 ist noch nicht gebaut). **Skizze vom Steg (Etappe 1):** das Meer ist von Anfang an da (vorher sah man in den ersten Schichten unter Wasser), mit Bleistift-Wellen; die Spritzer des Wals fliegen hinter ihm her (er springt von links nach rechts). **Der Wald:** hinter dem Lagerplatz locker (die verschneiten Tannen bleiben zu sehen), links und rechts im Hintergrund dicht. Am Waldweg drei Reihen hoher, dunkler Tannen; ab der dritten Reihe wachsen Äste über den Weg und bilden ein Dach. Geht Joshi hinein, wird es langsam dunkler (Licht und Dunst), eine Eule ruft ab und zu, ganz leise knackt Holz – man muss mutig sein. Auf dem Globus ist die Waldinsel größer und bewaldet; der Punkt der Ankunft liegt am Strand, die Höhle des Gorillas im hinteren Drittel im Wald. *Noch offen:* Notizbuch-Hinweise (Spuren groß abzeichnen, „Das ist ja eine Bananenschale“).
+
 - **Ort:** ein **Nadelwald mit wenig Schnee**. Nahe am Strand eine freie Stelle (wie auf Joshis Insel) mit **Lagerfeuer** und dem **Festtisch**; an den Bäumen um Tisch und Feuer etwas **Weihnachtsschmuck**, dazu ein **geschmückter Weihnachtsbaum**. Ankunft mit dem Segelboot, es ist **Tag**.
 - **Am Tisch sitzen lauter Tiere** (Modelle sucht der Nutzer über Sketchfab). Sie sind traurig: Alles Essen für das große Weihnachtsessen ist weg. Der **Gorilla** sei in letzter Zeit auch immer so grummelig.
 - **X (umschauen) → blauer Fotoring am Tisch.** Joshi fotografiert den Tisch: nur noch Reste. **Auf dem Foto sind zwei Fußspuren** – vom **Hamster** und vom **Eichhörnchen**.
@@ -211,7 +214,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 ### Offen
 - **Wie geht es nach dem Hamster weiter** – wie kommt Joshi zum Eichhörnchen, und warum hat es das Essen genommen?
 - **Auflösung, Weihnachtsessen am Ende, Trophäe.**
-- **Modelle:** siehe **Modelle für Fall 1** unten; dazu Paket mit Schnur, Holzentchen (heil und zerbrochen), Bananenkorb, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer.
+- **Modelle:** siehe **Modelle für Fall 1** unten; dazu Paket mit Schnur, Holzentchen (heil und zerbrochen), Bananenkorb, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer. Gebaut (aus Grundformen): Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck.
 - **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale).
 
 ### Modelle für Fall 1
@@ -227,7 +230,7 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 
 - **Stil:** Die WildPoly3D-Tiere sind einfarbiges Low-Poly ohne Texturen (Farbe am Material) – einheitlich und lieb; Umfärben ist leicht.
 - **Lizenzen:** WildPoly3D und Giraffe CC-BY-NC-4.0 · Natural History Museum of Los Angeles County CC-BY-NC-SA-4.0 · Hamster (josephineburns) CC-BY-4.0. Beim Einbauen in die Quellenliste.
-- **Noch zu besorgen/bauen:** Holzentchen (heil und zerbrochen), Bananenkorb und Bananenschale, Paket mit Schnur, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Festtisch.
+- **Noch zu besorgen/bauen:** Holzentchen (heil und zerbrochen), Bananenkorb und Bananenschale, Paket mit Schnur, Planetarium. *(Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck: gebaut am 21.10.2026 in `waldinsel.js`.)*
 
 ## 🎓 8. Lerneffekte
 
@@ -242,12 +245,12 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 2. **Fall 1 „Das Weihnachtsessen“ fertig planen** (Abschnitt 7): nach dem Hamster: das Eichhörnchen und sein Grund, Auflösung.
 3. **Fehlende Tiermodelle** für die gewählten Gruppen über Sketchfab besorgen (Abschnitt 6).
 4. **Bausteine bauen:** Spur sichern, Verdächtige mit Helfer-Aufgabe, Pfote abzeichnen, Vergleichen im Notizbuch.
-5. **Erste Detektiv-Etappe** nach dem Segeln (ersetzt die Blende zum Globus mit Neustart).
+5. ~~**Erste Detektiv-Etappe** nach dem Segeln~~ – begonnen am 21.10.2026: Waldinsel mit Festtisch und Tieren; als Nächstes Foto- und Lupenring, Notizbuch-Hinweise, Waldweg.
 6. Später: Werkzeug selbst wählen, Kinderzimmer als Rahmen, weitere Fälle.
 
 ## 📚 Quellen
 
-Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Gitarren-Loop von idoberg (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
+Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Hase, Hasenbaby, Eule, Elch, Gazelle (als Reh) und zwei kleine Vögel (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Gitarren-Loop von idoberg (Pixabay) · Eulenruf („owl“) von freesound_community und Holzknacken („breaking wood“) von Dragon Studio (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
 
 ---
 

@@ -42,7 +42,32 @@ const STELLEN = [
   // fliegt einer in der Huette herum; im Notizbuch eine Skizze von ihm.
   { id: 'schmetterling_lupe', art: 'lupe', name: 'Der Schmetterling', kreis: { x: 4.4, z: 74.0, r: 1.0 }, modell: 'schmetterling', ort: 'insel',
     text: ['Wie schön der Schmetterling ist! Seine Flügel leuchten ganz blau.'] },
+  // ---- Etappe 2, Waldinsel (waldinsel.js; Live-Wunsch 21.10.2026) ----
+  // Blauer Fotoring vor dem Festtisch: erst da, wenn alle Tiere erzaehlt haben (bedingung) UND Joshi sich danach noch einmal
+  // umgeschaut hat (nachX – der Fuchs zeigt ihn dann). Das Foto ist das Tatortfoto (Live-Wunsch 21.10.2026): der Tisch fast
+  // senkrecht von oben in voller Laenge, nur die Reste und die zwei Fussspuren auf der Decke (Hamster und Eichhoernchen –
+  // noch ohne es zu sagen, das kommt im Notizbuch). Tiere und Fuchs sind fuer das Bild weg (ausblenden), der Wald oben.
+  { id: 'tisch_foto', art: 'foto', name: 'Der Festtisch', etappe: 2, ort: 'waldinsel', kreis: { x: 0, z: 71.3, r: 1.0 }, nachX: true,
+    bedingung: () => !!(story.e2SpurFrei && story.e2SpurFrei()),
+    blick: { x: 0, y: 4.0, z: 68.3, yaw: 0, pitch: -Math.PI / 2 + 0.08, fov: 58 }, fuchs: null, ohneJoshi: true, ohneFuchs: true,
+    ausblenden: () => (story.e2FotoAusblenden ? story.e2FotoAusblenden() : []),
+    text: ['Klasse. Jetzt hast du den Tisch auf deinem Foto. Das schauen wir uns später noch ganz genau an.'] },
+  // Brauner Lupenring am Eingang des Waldwegs (gleiche Freischaltung wie das Foto): dort liegt eine Bananenschale, unter der
+  // Lupe krabbeln Ameisen darueber (Live-Wunsch 21.10.2026). Modell aus waldinsel.js (bau: selbst gebaut, animiere: Ameisen).
+  { id: 'weg_lupe', art: 'lupe', name: 'Die Bananenschale', etappe: 2, ort: 'waldinsel', kreis: { x: 6.7, z: 56.9, r: 1.0 }, nachX: true,
+    bedingung: () => !!(story.e2SpurFrei && story.e2SpurFrei()), modell: 'bananenschale',
+    bau: () => story.e2Bananenschale(), animiere: (g, t) => story.e2SchaleAnimieren && story.e2SchaleAnimieren(g, t), liegt: true,
+    text: ['Schau mal! Ein Stück Bananenschale. Und viele kleine Ameisen krabbeln darüber.'] },
 ];
+// Stellen je Etappe: etappe fehlt = 1 (Joshis Insel). Frei ist eine Stelle der Heimatinsel mit der Detektiv-Phase
+// (zustand.frei), eine spaetere, sobald ihre bedingung gilt; nachX: dazu noch mit dem Suchblick entdecken (kreiseFreischalten)
+const etappeVon = (s) => s.etappe || 1;
+const E1 = STELLEN.filter(s => etappeVon(s) === 1);
+function stelleFrei(s){ return etappeVon(s) === story.etappe && (s.bedingung ? s.bedingung() : zustand.frei); }
+function stelleSichtbar(s){ return stelleFrei(s) && !zustand.gemacht[s.id] && (!s.nachX || kreisZiel(s).frei); }
+// waldinsel.js (Hinweis-Taste): 'zu' = noch nicht da, 'offen' = Ring zu sehen, 'fertig' = Foto gemacht
+story.stelleZustand = function(id){ const s = STELLEN.find(q => q.id === id); if(!s) return null;
+  return zustand.gemacht[id] ? 'fertig' : stelleSichtbar(s) ? 'offen' : 'zu'; };
 // ---- Holzscheit: liegt von Anfang an links neben der Huette (Objekt mit Grenze) -----------------------------------------
 function baueScheit(){
   const g = new THREE.Group();
@@ -56,7 +81,7 @@ function baueScheit(){
 story.typ('holzscheit', { bau: baueScheit });
 const scheit = { d: null };
 function scheitSetzen(){
-  if(scheit.d || !story.setze || !story.welt) return;
+  if(scheit.d || !story.setze || !story.welt || story.etappe !== 1) return;
   const s = STELLEN.find(q => q.scheit); if(!s) return;
   scheit.d = story.setze('holzscheit', 1, { x: s.kreis.x, z: s.kreis.z, dreh: 0.6, fest: true });
 }
@@ -66,6 +91,12 @@ const WERKZEUG = { foto: 'kamera', skizze: 'stift', messer: 'messer', lupe: 'lup
 const KREIS_FARBE = { foto: 'rgba(70,150,255,A)', skizze: 'rgba(235,60,60,A)', messer: 'rgba(60,190,90,A)', lupe: 'rgba(150,100,55,A)' };
 const zustand = story.notiz = { frei: false, gemacht: {}, seiten: [], aktiv: null };
 story.notizSeiten = () => zustand.seiten;
+// Nach dem Neuladen (story.js spielstand): die Seiten aus der letzten Etappe wieder einkleben (PNG -> Bild). Das Notizbuch
+// malt mit drawImage und liest width/height – ein Image tut das wie das Canvas, sobald es geladen ist.
+if(story.spielstand && story.spielstand.seiten) for(const s of story.spielstand.seiten){
+  if(!s.bild) continue; const im = new Image(); im.src = s.bild;
+  zustand.seiten.push({ art: s.art, name: s.name, ort: s.ort, dreh: s.dreh, bild: im });
+}
 story.notizFreischalten = () => { zustand.frei = true; if(typeof preloadOrca === 'function') preloadOrca(); };   // Wal fuer die Skizze
 
 // ---- Kreise am Boden und das Y ------------------------------------------------------------------------------------
@@ -85,8 +116,8 @@ function markenBauen(){
     const m = new THREE.Mesh(new THREE.CircleGeometry(s.kreis.r, 40), new THREE.MeshBasicMaterial({ map: kreisTextur(farbe), transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     m.rotation.x = -Math.PI / 2; m.renderOrder = 2; m.userData.deko = true; m.visible = false;
-    story.welt(1).add(m);
-    const y = gelbY(); y.visible = false; story.welt(1).add(y);
+    story.welt(etappeVon(s)).add(m);
+    const y = gelbY(); y.visible = false; story.welt(etappeVon(s)).add(y);
     marken.push({ s, m, y, t: Math.random() * 6 });
   }
 }
@@ -100,13 +131,13 @@ function gelbY(){
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: yTex, depthTest: false, transparent: true })); sp.scale.setScalar(0.6); sp.renderOrder = 999; sp.userData.deko = true; return sp;
 }
 function aufKreis(s){
-  if(!eva || story.etappe !== 1 || (story.innen && story.innen.drin) || (story.imBoot && story.imBoot()) || (story.schwimm && story.schwimm.aktiv)) return false;
+  if(!eva || story.etappe !== etappeVon(s) || (story.innen && story.innen.drin) || (story.imBoot && story.imBoot()) || (story.schwimm && story.schwimm.aktiv)) return false;
   const p = eva.group.position; return Math.hypot(p.x - s.kreis.x, p.z - s.kreis.z) < s.kreis.r;
 }
 function updateMarken(dt){
   markenBauen();
   for(const k of marken){
-    const offen = zustand.frei && !zustand.gemacht[k.s.id] && story.etappe === 1;
+    const offen = stelleSichtbar(k.s);
     k.m.visible = offen;
     if(!offen){ k.y.visible = false; continue; }
     k.t += dt;
@@ -129,17 +160,17 @@ function kreisZiel(s){
     blinken(){ const m = marken.find(q => q.s === s); if(m) m.blink = 1.6; } });
 }
 story.kreiseFreischalten = function(x, z, r, drin){
-  if(drin || !zustand.frei) return;
-  for(const s of STELLEN) if(!zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
+  if(drin) return;
+  for(const s of STELLEN) if(stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
 };
 story.sucheKreise = function(drin){
-  if(drin || !zustand.frei) return [];
-  return STELLEN.filter(s => !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
+  if(drin) return [];
+  return STELLEN.filter(s => stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
 };
 // Y (story.js buttonY fragt hier zuerst): steht Joshi auf einem offenen Kreis -> los
 story.fotoY = function(){
-  if(zustand.aktiv || !zustand.frei) return false;
-  const k = marken.find(q => !zustand.gemacht[q.s.id] && aufKreis(q.s));
+  if(zustand.aktiv) return false;
+  const k = marken.find(q => stelleSichtbar(q.s) && aufKreis(q.s));
   if(!k) return false;
   starte(k.s);
   return true;
@@ -161,17 +192,27 @@ function walTropfen(wal){
   const L = Math.max(gr.x, gr.z), H = gr.y;
   const kopf = new THREE.Vector3(0, 0, 1).applyQuaternion(wal.quaternion); kopf.y = 0; kopf.normalize();
   const quer = new THREE.Vector3(-kopf.z, 0, kopf.x);
-  for(let i = 0; i < 30; i++){
-    // laengs ueber den Koerper verteilt, hinten (Fluke) dichter; senkrecht meist unter der Mitte, wenige darueber
-    const l = Math.pow(rnd(), 0.7) * 2 - 1, laengs = -l * L * 0.55;       // + vorn, - hinten
-    const seit = (rnd() - 0.5) * L * 0.5, hoch = (rnd() < 0.8 ? -1 : 0.4) * (0.2 + rnd() * 0.9) * H;
-    const r = 0.09 + rnd() * 0.1;
-    const m = new THREE.Mesh(geo, mat); m.scale.setScalar(r);
-    m.position.set(c.x + kopf.x * laengs + quer.x * seit, c.y + hoch, c.z + kopf.z * laengs + quer.z * seit); g.add(m);
+  // Live-Wunsch 21.10.2026: die Spritzer HINTER dem Wal – er hat sie beim Sprung aus dem Wasser mitgerissen: entlang seiner
+  // Bahn hinter der Fluke, die zum Wasser hin abfaellt (der Wal kommt gerade wieder herunter). Dicht an der Fluke viele
+  // kleine, weiter hinten weniger und groessere, die schon fallen.
+  // Wo ist der Kopf? (Live-Pruefung: aus der Modellachse lag er falsch herum – die Spritzer standen VOR dem Wal.) Der Wal kommt
+  // herunter (nick < 0): der Kopf ist das TIEFERE Ende. Beide Enden entlang 'kopf' messen und notfalls umdrehen.
+  { let vorne = -Infinity, hinten = -Infinity; const v = new THREE.Vector3();
+    wal.traverse(o => { if(!o.isSkinnedMesh) return; const n = o.geometry.attributes.position.count;
+      for(let i = 0; i < n; i += 9){ o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); const d = (v.x - c.x) * kopf.x + (v.z - c.z) * kopf.z;
+        if(d > L * 0.35) vorne = Math.max(vorne, -v.y); if(d < -L * 0.35) hinten = Math.max(hinten, -v.y); } });
+    if(hinten > vorne){ kopf.negate(); quer.negate(); } }       // -y am groessten = am tiefsten: das ist der Kopf
+  const fluke = new THREE.Vector3(c.x - kopf.x * L * 0.5, c.y + H * 0.15, c.z - kopf.z * L * 0.5);
+  for(let i = 0; i < 34; i++){
+    const k = Math.pow(rnd(), 0.8), hinten = 0.15 + k * 2.2;        // m hinter der Fluke (Vielfaches von L)
+    const bahn = -hinten * hinten * 0.35 * H;                       // die Bahn faellt nach hinten ab (Parabel)
+    const streu = 0.15 + k * 0.6, seit = (rnd() - 0.5) * L * 0.35 * streu, hoch = (rnd() - 0.5) * H * 0.9 * streu;
+    const m = new THREE.Mesh(geo, mat); m.scale.setScalar(0.07 + rnd() * 0.08 + k * 0.05);
+    m.position.set(fluke.x - kopf.x * hinten * L * 0.45 + quer.x * seit, fluke.y + bahn + hoch, fluke.z - kopf.z * hinten * L * 0.45 + quer.z * seit); g.add(m);
   }
-  for(let i = 0; i < 7; i++){                                     // ein paar fallen schon (tiefer, nahe der Fluke)
-    const m = new THREE.Mesh(geo, mat); m.scale.setScalar(0.1 + rnd() * 0.07);
-    m.position.set(c.x - kopf.x * L * (0.3 + rnd() * 0.3) + quer.x * (rnd() - 0.5) * L * 0.3, c.y - H * (1.3 + rnd() * 1.4), c.z - kopf.z * L * (0.3 + rnd() * 0.3) + quer.z * (rnd() - 0.5) * L * 0.3); g.add(m);
+  for(let i = 0; i < 8; i++){                                     // ein paar fallen schon herunter (unter der Bahn)
+    const hinten = 0.6 + rnd() * 1.6, m = new THREE.Mesh(geo, mat); m.scale.setScalar(0.09 + rnd() * 0.07);
+    m.position.set(fluke.x - kopf.x * hinten * L * 0.45 + quer.x * (rnd() - 0.5) * L * 0.3, fluke.y - H * (0.6 + hinten * 0.9 + rnd() * 0.8), fluke.z - kopf.z * hinten * L * 0.45 + quer.z * (rnd() - 0.5) * L * 0.3); g.add(m);
   }
   scene.add(g); g.updateMatrixWorld(true); wal.userData.tropfen = g;   // global-ok: nur fuer die Aufnahme
 }function aufnehmen(s){
@@ -185,7 +226,8 @@ function walTropfen(wal){
   if(s.ohneJoshi && eva){ eva.group.visible = false; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = false; }
   if(s.fuchs && f.obj){ f.obj.position.set(s.fuchs.x, evaFootY(s.fuchs.x, s.fuchs.z), s.fuchs.z);
     const w = Math.atan2(s.blick.x - s.fuchs.x, s.blick.z - s.fuchs.z); f.obj.rotation.y = w; }
-  else if(f.obj && s.art === 'skizze'){ f.obj.visible = false; }
+  else if(f.obj && (s.art === 'skizze' || s.ohneFuchs)){ f.obj.visible = false; }
+  const wegFuerBild = ausblendenFuer(s);
   // Wal fuer die Skizze: ein Klon der Orca-Vorlage der Engine, kurz ueber das Boot gestellt (danach wieder weg)
   let wal = null;
   if(s.wal && typeof orcaTpl !== 'undefined' && orcaTpl && typeof cloneSkinned === 'function'){
@@ -218,14 +260,22 @@ function walTropfen(wal){
     const teile = [St.boot, St.schatten, St.gischt, meer, wal, wal && wal.userData.tropfen].filter(Boolean);
     const sichtbar = (an) => { for(const o of teile) o.visible = an.includes(o); };
     schichten = [];
-    sichtbar([]);                     schichten.push(bleistift(rendern(kam), false, 'nur'));   // Strand und Steg
-    sichtbar([St.boot]);              schichten.push(bleistift(rendern(kam), false, 'nur'));   // + Boot
-    sichtbar([St.boot, meer]);        schichten.push(bleistift(rendern(kam), false, 'nur'));   // + Meer
-    sichtbar([St.boot, meer]);        schichten.push(bleistift(rendern(kam), false));          // + Sterne
-    sichtbar(teile);                  schichten.push(bleistift(rendern(kam), false));          // + Wal (alles)
+    // Das Meer ist in JEDER Schicht da (Live-Befund 21.10.2026: ohne Meer sah man in den ersten Schichten unter Wasser –
+    // Pfaehle bis zum Grund, Fische, Kanten am Meeresboden –, und die Meer-Schicht danach machte das Wasser wieder leer)
+    // Wo ist Meer im Bild? Einmal ohne, einmal mit Meer (sonst alles gleich) – wo sich das Bild unterscheidet, liegt Wasser.
+    // Dorthin kommen von Hand gezeichnete Wellen (Live-Wunsch 21.10.2026: "das Wasser ist so blank" – der Bleistift-Filter
+    // sieht die flachen Wellen nicht)
+    sichtbar([]); const ohneMeer = rendern(kam);
+    sichtbar([meer]); const mitMeer = rendern(kam);
+    const wellen = meerMaske(ohneMeer, mitMeer);
+    schichten.push(wellenZeichnen(bleistift(mitMeer, false, 'nur'), wellen));                 // Strand, Steg, Meer
+    sichtbar([St.boot, meer]);        schichten.push(wellenZeichnen(bleistift(rendern(kam), false, 'nur'), wellen, true));   // + Boot
+    sichtbar([St.boot, meer]);        schichten.push(wellenZeichnen(bleistift(rendern(kam), false), wellen, true));          // + Sterne
+    sichtbar(teile);                  schichten.push(wellenZeichnen(bleistift(rendern(kam), false), wellen, true));          // + Wal (alles)
     for(const o of teile) o.visible = true;
   }
   for(const o of versteckt) o.visible = true;
+  wegFuerBild();
   mondZu(camera);
   if(eva){ eva.group.visible = joshiSichtbar; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = schatten; }
   if(f.obj){ if(fp) f.obj.position.copy(fp); f.yaw = fyaw; f.obj.rotation.y = frot; f.obj.visible = true; }
@@ -284,10 +334,14 @@ function sucherLive(s, kam){
   const joshi = eva ? eva.group.visible : false, sch = typeof ovalShadow !== 'undefined' ? ovalShadow.visible : false;
   if(eva){ eva.group.visible = false; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = false; }
   const versteckt = []; for(const k of marken) for(const o of [k.m, k.y]) if(o.visible){ o.visible = false; versteckt.push(o); }
+  if(story.interListe) for(const o of story.interListe) if(o.zeichen && o.zeichen.visible){ o.zeichen.visible = false; versteckt.push(o.zeichen); }
+  const f = story.fuchs, fuchsWar = f.obj ? f.obj.visible : false; if(s.ohneFuchs && f.obj) f.obj.visible = false;
+  const wegFuerBild = ausblendenFuer(s);
   mondZu(kam);
   const W = BILD_W / 2, H = BILD_H / 2, alt = renderer.getRenderTarget();
   renderer.setRenderTarget(foto.live); renderer.clear(); renderer.render(scene, kam); renderer.setRenderTarget(alt);
   for(const o of versteckt) o.visible = true;
+  wegFuerBild(); if(s.ohneFuchs && f.obj) f.obj.visible = fuchsWar;
   if(eva){ eva.group.visible = joshi; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = sch; }
   mondZu(camera);
   const px = new Uint8Array(W * H * 4); renderer.readRenderTargetPixels(foto.live, 0, 0, W, H, px);
@@ -296,6 +350,11 @@ function sucherLive(s, kam){
   for(let i = 3; i < id.data.length; i += 4) id.data[i] = 255;
   g.putImageData(id, 0, 0);
   sucherMalen(foto.lc);
+}
+// Was fuer das Bild weg soll (s.ausblenden: Liste von Objekten, z. B. die Tiere am Tatort) – Rueckgabe: wieder zeigen
+function ausblendenFuer(s){
+  const weg = []; for(const o of (s.ausblenden ? s.ausblenden() : [])) if(o && o.visible){ o.visible = false; weg.push(o); }
+  return () => { for(const o of weg) o.visible = true; };
 }
 // Der Mond steht unendlich weit weg und wird in story.js jedes Bild relativ zur Spielkamera gesetzt – fuer eine andere
 // Kamera kurz dorthin (sonst stuende er im Foto an der falschen Stelle)
@@ -350,6 +409,43 @@ function bleistift(c, frei, ohneSterne){
   o.strokeStyle = 'rgba(60,55,50,.55)'; o.lineWidth = 1.5;
   if(!frei && !ohneSterne) for(let n = 0; n < 26; n++){ const x = rnd() * W, y = rnd() * H * 0.35; o.beginPath(); o.moveTo(x - 4, y); o.lineTo(x + 4, y); o.moveTo(x, y - 4); o.lineTo(x, y + 4); o.stroke(); }
   return out;                                                      // die Signatur kommt beim Kritzeln zuletzt dazu (mitSignatur)
+}
+// Meer-Maske: 1 dort, wo das Bild mit Meer anders aussieht als ohne (also Wasser zu sehen ist und nichts davor steht)
+function meerMaske(ohne, mit){
+  const W = ohne.width, H = ohne.height, a = ohne.getContext('2d').getImageData(0, 0, W, H).data, b = mit.getContext('2d').getImageData(0, 0, W, H).data;
+  const m = new Uint8Array(W * H);
+  for(let i = 0; i < W * H; i++){ const k = i * 4; if(Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]) > 30) m[i] = 1; }
+  // obere Kante des Wassers je Spalte (Horizont): fuer die Groesse der Wellen
+  let oben = H; for(let y = 0; y < H && oben === H; y++) for(let x = 0; x < W; x += 8) if(m[y * W + x]){ oben = y; break; }
+  return { m, W, H, oben };
+}
+// Wellen wie mit dem Bleistift: kleine Boegen (zwei, drei Haekchen), zum Horizont hin kleiner, flacher und dichter, vorn
+// groesser und lockerer; dazu ein paar lange, feine Glanzlinien. Fester Zufall: die Skizze sieht immer gleich aus. Nur in
+// der Maske. gleich: dieselben Wellen auf die naechste Schicht (sie wurden schon gezeichnet, bleiben stehen)
+function wellenZeichnen(c, w, gleich){
+  if(!w) return c;
+  const g = c.getContext('2d'), { m, W, H, oben } = w;
+  let s = 77; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const drin = (x, y) => { x = Math.round(x); y = Math.round(y); return x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1; };
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  // Glanzlinien: lang, sehr fein, waagerecht
+  for(let i = 0; i < 40; i++){ const y = oben + Math.pow(rnd(), 1.6) * (H - oben), x = rnd() * W, tief = (y - oben) / Math.max(1, H - oben);
+    const len = 30 + tief * 120; if(!drin(x, y) || !drin(x + len, y)) continue;
+    g.strokeStyle = 'rgba(70,64,58,' + (0.18 + tief * 0.12) + ')'; g.lineWidth = 0.8 + tief * 0.6;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + len / 2, y - 1.5, x + len, y + 0.5); g.stroke(); }
+  // Wellenboegen: in Reihen, vorn groesser
+  for(let i = 0; i < 520; i++){
+    const tief = Math.pow(rnd(), 1.25), y = oben + 4 + tief * (H - oben - 8), x = rnd() * W;
+    if(!drin(x, y)) continue;
+    const b = 5 + tief * 22, h = 1.2 + tief * 4, n = 1 + Math.floor(rnd() * 3);     // Breite, Hoehe, Anzahl Haekchen
+    if(!drin(x + b * n, y)) continue;
+    g.strokeStyle = 'rgba(60,55,50,' + (0.32 + tief * 0.28) + ')'; g.lineWidth = 0.9 + tief * 1.0;
+    g.beginPath(); g.moveTo(x, y);
+    for(let k = 0; k < n; k++){ const x0 = x + k * b; g.quadraticCurveTo(x0 + b * 0.5, y - h * (0.8 + rnd() * 0.4), x0 + b, y); }
+    g.stroke();
+  }
+  void gleich;
+  return c;
 }
 // Kopie mit dem J (fuer das Notizbuch und das Ende des Kritzelns)
 function mitSignatur(c){
@@ -434,9 +530,9 @@ function kritzelMalen(k, unter, ueber, y0, y1){
   ab.spitze = { x: (ganz % 2 ? W - W * rest : W * rest) / W, y: (oben + (Math.min(ganz, baender - 1) + 0.5) * bh) / H };
   ab.tex.needsUpdate = true;
 }
-// Fahrplan der Skizze in Schichten (Live-Wunsch 16.10.): Strand und Steg, Boot, Meer, Sterne – kurze Pause – Wal – kurze
+// Fahrplan der Skizze in Schichten (Live-Wunsch 16.10.): Strand, Steg und Meer, Boot, Sterne – kurze Pause – Wal – kurze
 // Pause – das J. [Dauer s, Pause danach s, Bereich y0..y1]
-const SKIZZE_PLAN = [[1.6, 0.2, 0.42, 1.0], [1.0, 0.2, 0.3, 0.75], [1.0, 0.2, 0.35, 0.8], [0.8, 0.8, 0.0, 0.42], [1.2, 0.8, 0.12, 0.62]];
+const SKIZZE_PLAN = [[2.0, 0.2, 0.35, 1.0], [1.2, 0.2, 0.3, 0.8], [0.8, 0.8, 0.0, 0.42], [1.2, 0.8, 0.12, 0.62]];
 const T_SKIZZE = SKIZZE_PLAN.reduce((a, p) => a + p[0] + p[1], 0);
 function skizzeMalen(t){
   const S = ab.schichten;
@@ -554,7 +650,7 @@ function blendeZumArbeitsplatz(s, weiter){
 function szeneStarten(s){
   if(s.scheit && !s.geblendet){ s.geblendet = true; blendeZumArbeitsplatz(s, () => szeneStarten(s)); return; }
   const E = story.ebene();
-  story.modellKlon(s.modell).then(({ g, L }) => {
+  (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => {
     sz.s = s; sz.modell = g; sz.L = L; sz.t = 0;
     sz.gruppe = new THREE.Group(); sz.gruppe.add(g); E.szene.add(sz.gruppe);
     // helle Flaeche dahinter (wie das Inventar), damit Holz, Fuchs und Schmetterling sich vom Spielbild abheben
@@ -624,7 +720,7 @@ function modellSkizze(s){
   const kopie = story.klonSkin(sz.modell); kopie.scale.setScalar(1 / sz.L); szn.add(kopie); kopie.updateMatrixWorld(true);
   // Fuchs schraeg von vorn, Schmetterling von oben (wie unter der Lupe)
   // Holzfuchs: um 180 Grad gedreht (Live-Befund 16.10.: die Schnauze zeigte nach hinten)
-  if(s.art === 'lupe') kopie.rotation.set(Math.PI / 2, 0, 0); else kopie.rotation.set(0.15, -0.6 + Math.PI, 0);
+  if(s.art === 'lupe') kopie.rotation.set(s.liegt ? Math.PI / 2 - 0.25 : Math.PI / 2, 0, 0); else kopie.rotation.set(0.15, -0.6 + Math.PI, 0);
   const kam = new THREE.PerspectiveCamera(30, W / H, 0.01, 10); kam.position.set(0, 0, 2.2); kam.lookAt(0, 0, 0);
   const rt = new THREE.WebGLRenderTarget(W, H), alt = renderer.getRenderTarget();
   renderer.setRenderTarget(rt); renderer.clear(); renderer.render(szn, kam); renderer.setRenderTarget(alt);
@@ -665,10 +761,12 @@ function updateSzene(dt, pause){
     // von oben gesehen und stark vergroessert, mit schlagenden Fluegeln
     const gl = story.lupeGlas ? story.lupeGlas() : null;            // Mitte und Groesse des Glases in der Ebene
     if(gl) grp.position.set(gl.x, gl.y, gl.z - 0.5); else grp.position.set(0, 0.05, 0.2);
-    g.scale.setScalar((gl ? gl.r * 1.5 : gross) / sz.L);         // ganz im Glas
+    g.scale.setScalar((gl ? gl.r * (sz.s.liegt ? 1.85 : 1.5) : gross) / sz.L);   // ganz im Glas (die flache Schale darf es fast fuellen)
     // von oben (Oberseite zur Kamera, Kopf nach oben), dreht sich nur ganz leicht
-    g.rotation.set(Math.PI / 2, 0, Math.sin(sz.t * 0.5) * 0.12);
+    // liegt (Bananenschale): Oberseite +y zur Kamera (+z) kippen, sonst wie der Schmetterling
+    if(sz.s.liegt) g.rotation.set(Math.PI / 2 - 0.25, Math.sin(sz.t * 0.5) * 0.12, 0); else g.rotation.set(Math.PI / 2, 0, Math.sin(sz.t * 0.5) * 0.12);
     if(sz.falterMx) sz.falterMx.setTime(0.03 * (1 - Math.cos(sz.t * 1.6)));
+    if(sz.s.animiere) sz.s.animiere(g, sz.t);                      // eigene Bewegung (Ameisen auf der Bananenschale)
     if(story.lupeAn) story.lupeAn();
     if(sz.t > 0.6) bZeigen(true);
     if(sz.t > 0.6 && bGedrueckt()){ bZeigen(false); werkzeugBeiB(); sz.phase = 'weg'; sz.t = 0; }
@@ -779,7 +877,7 @@ function updateSchwarm(dt){
   if(!schwarm.gebaut){
     if(!story.gestartet || !story.welt) return;
     schwarm.gebaut = true;
-    const s = STELLEN.find(q => q.art === 'lupe');
+    const s = STELLEN.find(q => q.art === 'lupe' && etappeVon(q) === 1);
     for(let i = 0; i < 7; i++) story.modellKlon('schmetterling').then(({ g, L }) => {
       g.scale.setScalar(FALTER_L / L); g.userData.deko = true; story.welt(1).add(g);
       let mx = null; if(g.userData.clips && g.userData.clips.length){ mx = new THREE.AnimationMixer(g.userData.inner || g); mx.clipAction(g.userData.clips[0]).play(); mx.setTime(Math.random()); }
@@ -813,18 +911,44 @@ const DETEKTIV_TEXT = ['Super! Jetzt bist du ein richtiger Detektiv. Wenn du dic
   'Probier es doch gleich mal aus!'];
 const detektiv = { wartet: false, erklaert: false };
 story.detektivStart = function(){ if(detektiv.erklaert || detektiv.wartet) return; detektiv.wartet = true; };
-story.detektivPhase = () => detektiv.erklaert && !STELLEN.every(s => zustand.gemacht[s.id]);
+story.detektivPhase = () => story.etappe === 1 && detektiv.erklaert && !E1.every(s => zustand.gemacht[s.id]);
 function updateDetektiv(){
   if(!detektiv.wartet || detektiv.erklaert) return;
   if(!eva || (story.innen && (story.innen.drin || story.innen.wechsel)) || story.figur.aktion) return;   // erst wieder draussen
   if(story.stimmeFrei && !story.stimmeFrei()) return;              // keine laufende Ansage unterbrechen
   detektiv.erklaert = true;
   story.notizFreischalten();
-  for(const s of STELLEN) kreisZiel(s).frei = true;               // alle vier sind jetzt frei ...
+  for(const s of E1) kreisZiel(s).frei = true;                    // alle vier sind jetzt frei ...
   story.sprich(DETEKTIV_TEXT);
   // ... und der Fuchs laeuft sie gleich ab und markiert sie (Live-Wunsch 16.10.) – ohne dass Joshi X druecken muss
   story.spaeter(1.2, () => { if(story.fuchsRundgang && eva) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0); });
 }
+// ---- Testzugaenge (story.js Startbildschirm, 3 s X) -----------------------------------------------------------------
+// detektiv: die Detektiv-Phase laeuft (Markierungen erklaert, alle vier frei – ohne Ansage). fertig: zusaetzlich alle vier
+// Bilder gemacht – echt aufgenommen wie im Spiel (Huettenfoto, Steg-Skizze) bzw. die Modellskizze (Holzfuchs,
+// Schmetterling), im Notizbuch, die Dinge in der Huette. Rueckgabe: Promise, wenn alles fertig ist.
+story.testE1 = function(stufe){
+  detektiv.wartet = true; detektiv.erklaert = true;
+  story.notizFreischalten();
+  for(const s of E1) kreisZiel(s).frei = true;
+  if(stufe !== 'fertig') return Promise.resolve();
+  let kette = Promise.resolve();
+  for(const s of E1) kette = kette.then(() => stelleErledigen(s));
+  return kette.then(() => { if(scheit.d && scheit.d.obj && story.entferne){ story.entferne(scheit.d); scheit.d = { weg: true }; } });
+};
+// Eine Stelle wie im Spiel erledigen, ohne Szene: Bild echt aufnehmen (bzw. Modellskizze), ins Notizbuch, gemacht
+function stelleErledigen(s){
+  zustand.gemacht[s.id] = true;
+  const dreh = zustand.seiten.length % 2 ? 0.03 : -0.025;
+  if(!s.modell){ const vorher = ab.s; ab.s = s; const b = aufnehmen(s); ab.schichten = null; ab.s = vorher;
+    zustand.seiten.push({ art: s.art, bild: s.art === 'foto' ? b : mitSignatur(b), name: s.name, ort: s.ort || 'insel', dreh }); return Promise.resolve(); }
+  return (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => { sz.modell = g; sz.L = L;
+    zustand.seiten.push({ art: 'skizze', bild: modellSkizze(s), name: s.name, ort: s.ort || 'insel', dreh }); sz.modell = null; fertigInHuette(s); });
+}
+// Test (waldinsel.js): Stelle id freischalten (wie nach dem Suchblick) bzw. erledigen
+story.kreisZielVon = (id) => { const s = STELLEN.find(q => q.id === id); return s ? kreisZiel(s) : null; };
+story.testStelleFrei = (id) => { const s = STELLEN.find(q => q.id === id); if(s){ const k = kreisZiel(s); k.frei = true; k.entdeckt = true; } };
+story.testStelle = (id) => { const s = STELLEN.find(q => q.id === id); return s ? stelleErledigen(s) : Promise.resolve(); };
 // ---- Detektivmuetze unten rechts: es gibt in der Naehe etwas zu entdecken (Live-Wunsch 16.10.) -----------------------
 // Ein unentdecktes Objekt (Suchblick X) oder eine offene Markierung in MUETZE_R m -> die Muetze erscheint (sanft, leicht
 // wippend). Gezeichnet: braune Sherlock-Muetze mit Schild vorn und hinten und einer Schleife. Genau auf dem Platz von
@@ -875,12 +999,13 @@ function etwasInDerNaehe(){
     // noch mit X zu entdecken – oder entdeckt, aber noch ohne Y (einheitliche Logik, story.js objektOffen)
     if((!o.entdeckt || (story.objektOffen && story.objektOffen(o))) && Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
   }
-  if(!drin && zustand.frei) for(const s of STELLEN) if(!zustand.gemacht[s.id] && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  if(!drin) for(const s of STELLEN) if(stelleSichtbar(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
   return false;
 }
 // Alle vier Markierungen erledigt -> Funkspruch (nach einer kurzen Pause, damit er nicht in die letzte Ansage faellt)
 function pruefeFall1(){
-  if(!detektiv.erklaert || !STELLEN.every(s => zustand.gemacht[s.id]) || !story.fall1Funk) return;
+  if(story.etappe === 2 && story.e2StelleFertig) story.e2StelleFertig();   // waldinsel.js: Foto + Lupe fertig -> Gorilla
+  if(story.etappe !== 1 || !detektiv.erklaert || !E1.every(s => zustand.gemacht[s.id]) || !story.fall1Funk) return;
   story.spaeter(2.0, () => story.fall1Funk());
 }
 })();

@@ -3,8 +3,8 @@
 // Ablauf: Schwarzblende (Ton blendet mit aus) -> Globus: die Kamera faehrt vom letzten zum neuen Ort, ein roter Faden
 // waechst dazwischen -> Schwarzblende -> die Seite wird NEU GELADEN. Das setzt die Etappe vollstaendig zurueck: Speicher
 // leer, keine Timer, Toene, Modelle oder Zustaende, die stehen bleiben oder doppelt laufen (Live-Wunsch). Danach kommt
-// der Startbildschirm. Spaeter: der Spielstand (welche Etappe) wird vorher gemerkt (sessionStorage) und nach dem
-// Neuladen die naechste Etappe aufgebaut – dafuer gibt es story.naechsteEtappe.
+// der Startbildschirm. Der Spielstand (naechste Etappe, Rucksack, Notizbuch) wird vorher gemerkt (story.spielstandMerken,
+// sessionStorage) und nach dem Neuladen die naechste Etappe aufgebaut (seit 21.10.2026: Ort 1 = Waldinsel, waldinsel.js).
 // story.globusReise(nach, fertig?) – nach = Index in ORTE. Ohne fertig: neu laden.
 (function(){
 'use strict';
@@ -15,13 +15,17 @@ const story = window.STORY;
 // feststeht, was sie werden. An der Spitze des wachsenden Fadens: ein kleines Gesicht von Joshi (aus der Spielfigur).
 const ORTE = [
   { name: 'Joshis Insel', lat: 18, lon: -12, symbol: 'haus' },
-  { name: 'Fall 1', lat: 34, lon: 22 },
+  // Waldinsel (Live-Wunsch 21.10.2026): der Punkt am Strand (dort kommt Joshi an – auf der Seite zu seiner Insel hin), die
+  // Hoehle des Gorillas im hinteren Drittel der Insel, noch klar im Wald. Die Insel selbst: WALDINSEL (groesser, mit Wald).
+  { name: 'Die Waldinsel', lat: 32.0, lon: 16.0 },                   // Fall 1, Etappe 2 (waldinsel.js)
+  { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (folgt)
 ];
 // Inseln der Geheimland-Welt (lat, lon, Groesse in Grad) – Joshis Insel ist die erste
-const INSELN = [[18, -12, 7], [34, 22, 5], [-8, 30, 9], [52, -40, 6], [-30, -20, 11], [5, 70, 8], [-45, 60, 7], [40, 110, 10], [-15, 140, 6], [62, 160, 5], [10, -90, 9], [-55, -120, 8]];
+const WALDINSEL = [36, 24, 9];
+const INSELN = [[18, -12, 7], WALDINSEL, [-8, 30, 9], [52, -40, 6], [-30, -20, 11], [5, 70, 8], [-45, 60, 7], [40, 110, 10], [-15, 140, 6], [62, 160, 5], [10, -90, 9], [-55, -120, 8]];
 const GLOBUS_R = 1, GLOBUS_FAHRT = 4.5, GLOBUS_HALT = 2.5;
 const gl = { szene: null, kam: null, erde: null, faden: null, punkte: null, aktiv: false, t: 0, von: 0, nach: 0, fertig: null, ende: false, textEl: null };
-story.reise = [0];
+story.reise = (story.spielstand && story.spielstand.reise) || [0];
 
 function latLon(lat, lon, r){
   const phi = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180;
@@ -67,15 +71,19 @@ function weltTextur(){
   g.fillStyle = meer; g.fillRect(0, 0, W, H);
   let s = 5; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const xy = (lat, lon) => [((lon + 180) / 360) * W, ((90 - lat) / 180) * H];
-  for(const [lat, lon, r] of INSELN){
+  for(const insel of INSELN){
+    const [lat, lon, r] = insel, wald = insel === WALDINSEL;
     const [x, y] = xy(lat, lon), rx = r / 360 * W, ry = r / 180 * H;
-    // unregelmaessiger Umriss: Flachwasser, Sand, Gras
-    for(const [k, farbe] of [[1.55, 'rgba(120,200,220,0.55)'], [1.15, '#e8d49a'], [0.85, '#4f9a4a']]){
+    // unregelmaessiger Umriss: Flachwasser, Sand, Gras (die Waldinsel: Nadelwald, dunkler)
+    for(const [k, farbe] of [[1.55, 'rgba(120,200,220,0.55)'], [1.15, '#e8d49a'], [0.85, wald ? '#2f6a3c' : '#4f9a4a']]){
       g.fillStyle = farbe; g.beginPath();
       for(let i = 0; i <= 24; i++){ const a = i / 24 * Math.PI * 2, w = 1 + (rnd() - 0.5) * 0.35;
         const px = x + Math.cos(a) * rx * k * w, py = y + Math.sin(a) * ry * k * w; i ? g.lineTo(px, py) : g.moveTo(px, py); }
       g.fill();
     }
+    if(wald){ let ts = 13; const tr = () => (ts = (ts * 16807) % 2147483647) / 2147483647;          // kleine Tannen
+      for(let i = 0; i < 46; i++){ const a = tr() * 6.283, d = Math.sqrt(tr()) * 0.7, px = x + Math.cos(a) * rx * d, py = y + Math.sin(a) * ry * d, s = 2.6 + tr() * 1.6;
+        g.fillStyle = tr() < 0.5 ? '#1d4a2a' : '#245834'; g.beginPath(); g.moveTo(px, py - s * 1.5); g.lineTo(px - s, py + s * 0.6); g.lineTo(px + s, py + s * 0.6); g.closePath(); g.fill(); } }
   }
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
 }
@@ -231,16 +239,31 @@ function update(dt){
         f(); schwarzEl.style.opacity = '0';
         requestAnimationFrame(() => requestAnimationFrame(() => { if(!gl.aktiv) tonBlende(1, 1.5); })); return; }
       // Etappe komplett zuruecksetzen: neu laden (der Bildschirm bleibt schwarz, bis der Startbildschirm kommt)
-      try { sessionStorage.setItem('geheimland.reise', JSON.stringify(story.reise)); } catch(e){}
+      // Spielstand merken (story.js): nach dem Neuladen geht es am neuen Ort weiter – Ort 1 = Waldinsel = Etappe 2
+      // Etappe 3 (Gorilla) gibt es noch nicht (Live-Wunsch 21.10.2026: "und erstmal fertig"): dann bleibt es schwarz, die
+      // Erzaehlerin sagt, dass es bald weitergeht, und ein Knopf startet die Waldinsel neu
+      if(!story.etappeGebaut || !story.etappeGebaut(gl.nach + 1)){ fortsetzungFolgt(); return; }
+      if(story.spielstandMerken) story.spielstandMerken(gl.nach + 1);
       location.reload();
     });
   }
 }
+// Ende des bisher Gebauten: schwarz, Satz, Knopf "Nochmal" (laedt die letzte Etappe neu, mit ihrem Spielstand)
+const TEXT_FOLGT = ['Joshi ist auf dem Weg zum Gorilla. Wie es weitergeht, erfährst du bald.'];
+function fortsetzungFolgt(){
+  gl.aktiv = false; gl.unterwegs = false; gl.textEl.style.opacity = '0';
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font:700 34px system-ui,sans-serif;';
+  el.innerHTML = '<div style="font-size:64px">🦍</div><div style="margin-top:12px">Fortsetzung folgt …</div>';
+  document.body.appendChild(el);
+  tonBlende(1, 0.5);
+  setTimeout(() => story.sprich(TEXT_FOLGT), 600);
+}
 // Am Ziel des ersten Falls (segeln.js ruft story.zielErreicht): kurzer Satz, dann der Globus
 // Sofort die Blende (Live-Befund: vorher erst der Satz, und waehrenddessen segelte man weiter); der Satz kommt im Globus
 story.zielErreicht = function(){
-  globusReise(1);
-  setTimeout(() => story.sprich(['Du bist angekommen!']), 2200);       // echte Zeit: im Globus laufen die Story-Timer nicht
+  globusReise(1, story.e2Wechsel ? () => story.e2Wechsel() : null);   // waldinsel.js: ohne Neuladen (wie Trip to Japan)
+  // (der Satz kommt jetzt auf der Waldinsel: waldinsel.js TEXT_ANKUNFT)
 };
 
 // ---- Einhaengen: waehrend des Globus zeichnet nur er, das Spiel steht ------------------------------------------

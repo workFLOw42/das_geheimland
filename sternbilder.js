@@ -97,7 +97,7 @@ function baue(){
 // Mitwandern mit der Kamera (wie die Sternenkuppel), nur auf der Erde und nicht im Innenraum
 story.sternbilderUpdate = function(){
   if(!gruppe) baue();                                           // laeuft aus der Hauptschleife: scene gibt es dann sicher
-  gruppe.visible = locale === 'earth' && !(story.innen && story.innen.drin);
+  gruppe.visible = locale === 'earth' && !(story.innen && story.innen.drin) && story.nacht !== false;   // Waldinsel: Tag
   if(gruppe.visible) gruppe.position.copy(camera.position);
 };
 })();

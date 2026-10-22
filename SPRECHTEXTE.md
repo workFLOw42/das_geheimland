@@ -188,7 +188,8 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 
 | Wann / wer | Stimme | Text |
 |---|---|---|
-| Ankunft (nach dem Aussteigen) | Erzählerin | Du bist auf der Waldinsel angekommen. Schau mal, da vorne am Tisch sitzen die Tiere. · Sie sehen ganz traurig aus. Geh doch mal hin und hör dir an, was passiert ist. |
+| Ankunft (nach dem Aussteigen) | Erzählerin | Du bist auf der Waldinsel angekommen. |
+| Hinweis-Taste, bevor alle Tiere erzählt haben | Erzählerin | Schau mal, da vorne am Tisch sitzen die Tiere. · Sie sehen ganz traurig aus. Geh doch mal hin und hör dir an, was passiert ist. |
 | Elch (Kopfende) | `tierM` | Oh, hallo Joshi. Schön, dass du da bist. · Wir wollten heute ein großes Weihnachtsessen feiern. Alle zusammen, hier am Tisch. · Aber als wir kamen, war alles weg. Das ganze Essen! |
 | Hase | `tierW` | Ich hatte so viele Möhren mitgebracht. Und jetzt ist keine einzige mehr da. |
 | Hasenbaby | `tierK` | Ich hab so großen Hunger. |
@@ -198,7 +199,8 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | blauer Vogel | `tierK` | Piep! Nicht mal ein Krümel ist übrig geblieben. |
 | Weihnachtsbaum | Erzählerin | Ein wunderschön geschmückter Weihnachtsbaum. |
 | Hinweis-Taste (D-Pad ←) | Erzählerin | Geh doch mal zum Tisch. Dort sitzen die Tiere. Mit X kannst du sie entdecken. |
-| alle Tiere gehört | Erzählerin | Hm... Wer das Essen genommen hat, hat vielleicht eine Spur hinterlassen. · Schau dich am Tisch doch noch einmal ganz genau um. |
+| alle Tiere gehört | – | *(keine Ansage: die beiden Ringe erscheinen, der Fuchs zeigt sie)* |
+| Hinweis-Taste, solange ein Ring noch offen ist | Erzählerin | Hm... Wer das Essen genommen hat, hat vielleicht eine Spur hinterlassen. · Schau dich am Tisch doch noch einmal ganz genau um. |
 | Hinweis-Taste, Ring noch nicht da | Erzählerin | Schau dich am Tisch noch einmal ganz genau um. Drück dafür X. |
 | Hinweis-Taste, Ring zu sehen (der Fuchs zeigt den blauen Ring) | Erzählerin | Stell dich in den blauen Kreis vor dem Tisch und drück Y. Dann machst du ein Foto. |
 | Foto vom Tisch (blauer Ring) | Erzählerin | Klasse. Jetzt hast du den Tisch auf deinem Foto. Das schauen wir uns später noch ganz genau an. |
@@ -236,35 +238,40 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | Ankunft (nach dem Globus) | Erzählerin | Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle. · Dort wohnt bestimmt der Gorilla. Hörst du ihn? |
 | Hinweis-Taste | Erzählerin | Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla. |
 
-Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme). Die Mustang hat vor dem Gorilla kein Y.
+Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme) – nur bis Joshi einmal drin war. Die Mustang hat vor dem Gorilla kein Y.
 
 ### In der Höhle *(im Code, alles **Entwurf**)*
 
 | Wann / wer | Stimme | Text |
 |---|---|---|
 | hinein | Erzählerin | Hier ist es ganz schön dunkel. Und da sitzt der Gorilla am Feuer. |
-| Y beim Gorilla, vor der Lupe | `tierM` | Lass mich bitte in Ruhe. |
+| Y beim Gorilla (nach X ist nur er da) | `tierM` | Lass mich bitte in Ruhe. *(danach erscheint der braune Lupenring, der Fuchs zeigt ihn; das sagt er bei jedem Y bis zur Lupe)* |
+| Y beim Gorilla nach seiner Geschichte, vor dem Schnitzen | `tierM` | Ich bin soooo traurig ohne mein Entchen. |
 | Y am Schnitzring zu früh | Erzählerin | Vielleicht siehst du dir vorher noch etwas anderes ganz genau an. |
 | Lupe | Erzählerin | Oh, ein Holzentchen. Es ist zerbrochen. |
 | Y beim Gorilla – Joshi | `joshi` | Ist dein Entchen zerbrochen? |
-| … Gorilla | `tierM` | Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig. · Nichts kann mich trösten. Nicht mal die Bananen, die ich vom Festtisch genommen habe. Der war ja eh schon ganz durcheinander. |
-| … Erzählerin | Erzählerin | Vielleicht kannst du ihm ein neues Entchen schnitzen. Am grünen Kreis liegt ein Stück Holz. |
-| Schnitzen | Erzählerin | Toll! Ein neues Holzentchen. |
+| … Gorilla | `tierM` | Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig. · Nichts kann mich trösten. Nicht mal die vielen Bananen. |
+| (danach erscheint der grüne Schnitzring, der Fuchs zeigt ihn – ohne Ansage) | | |
+| Hinweis-Taste dann | Erzählerin | Am grünen Kreis liegt ein Stück Holz. Schnitz ihm ein neues Entchen. |
+| Schnitzen | Erzählerin | Toll! Ein neues Holzentchen. *(das kaputte Entchen ist danach weg)* |
 | Y beim Gorilla – Joshi | `joshi` | Schau mal, ich habe dir ein neues Entchen geschnitzt. |
-| … Gorilla (trommelt vor Freude) | `tierM` | Für mich? Oh, danke! Das ist ja wunderschön! · Hier, die Bananen gehören euch. Es tut mir leid, dass ich sie genommen habe. |
-| … Erzählerin | Erzählerin | Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch. |
+| … Gorilla (trommelt vor Freude) | `tierM` | Für mich? Oh, danke! Das ist ja wunderschön! · Es tut mir leid, dass ich die Bananen genommen habe. Ich wollte eigentlich nur die anderen Tiere besuchen, aber der Uhu hat geschlafen und alle anderen Tiere waren nicht da. Der Tisch war verwüstet und nur noch die Bananen standen rum. Deshalb hab ich sie einfach mitgenommen. Bitte nimm sie wieder mit. |
+| (er schiebt den Korb hin, daran der braune Lupenring – der Fuchs zeigt ihn) · Hinweis-Taste | Erzählerin | Am Korb ist ein brauner Kreis. Schau dort ganz genau hin. |
+| Y beim Gorilla, nachdem er den Korb hingeschoben hat | `tierM` | Danke, ich bin so glücklich. |
+| Lupe am Korb | Erzählerin | Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch. *(der Bananenkorb ist danach im Inventar)* |
+| Inventar: Bananenkorb (A) | Erzählerin | Das sind die Bananen, die der Gorilla vom Tisch genommen hat. |
 | … Joshi | `joshi` | Weißt du, von wem das rote Fell ist? |
 | … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
-| … Erzählerin | Erzählerin | Mach doch noch ein Foto von deinem neuen Freund. Am Ausgang ist ein blauer Kreis. |
-| Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. · Geh hinaus zum Flugzeug. Der Gorilla hat es dir geliehen. |
+| (danach erscheint der blaue Fotoring, der Fuchs zeigt ihn – ohne Ansage) | | |
+| Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. *(„Geh hinaus zum Flugzeug …“ nur über die Hilfe-Taste)* |
 | Y beim Gorilla danach | `tierM` | Danke, Joshi! Viel Glück beim Hamster. |
-| Hinweis-Taste | Erzählerin | je nach Stand: X drücken · brauner Kreis · mit dem Gorilla sprechen · schnitzen · Foto · zum Flugzeug |
+| Hinweis-Taste | Erzählerin | je nach Stand: X drücken · „Geh doch mal zum Gorilla.“ · brauner Kreis · mit dem Gorilla sprechen · schnitzen · Lupe am Korb · Foto · zum Flugzeug |
 
 ### Abflug
 
 | Wann | Stimme | Text |
 |---|---|---|
-| wieder draußen | Erzählerin | Schau mal, der Wald ist gar nicht mehr dunkel. Jetzt geh zum Flugzeug. |
+| wieder draußen | – | *(keine Ansage: der Waldweg ist einfach hell und ohne Nebel; über der Mustang ein Y)* |
 | einsteigen | Erzählerin | Steig ein. Mit dem rechten Stick gibst du Gas, mit dem linken lenkst du. |
 | in der Luft | Erzählerin | Super, du fliegst! Flieg zum roten Punkt auf dem Radar. |
 | nach einem Absturz | Erzählerin | Hoppla! Versuch es gleich noch einmal. |

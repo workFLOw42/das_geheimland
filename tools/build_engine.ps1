@@ -76,7 +76,8 @@ foreach($n in $modelle.Keys){
 # Toene: sounds/<name>.mp3 -> <name>_snd.js (window.<NAME>_SND)
 # eule, holz: Waldgeraeusche der Waldinsel (Pixabay: freesound_community 'owl', Dragon Studio 'breaking wood')
 # gorilla: Brummen aus der Hoehle (Pixabay: flutie8211 'silverback gorilla roar')
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla')){
+# schnitzen: Schnitzgeraeusch (Pixabay: pineframestudios 'carving wood')
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)
@@ -103,6 +104,7 @@ $skripte += 'notizbuch.js'
 $skripte += 'waldinsel.js'
 $skripte += 'hoehle.js'
 $skripte += 'hoehle_innen.js'
+$skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Hamster)
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
 $ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()

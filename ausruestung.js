@@ -31,6 +31,9 @@ const SACHEN = {
   schmetterling: { glb: 'SCHMETTERLING_GLB', L: 0.09, zeigen: 0, keinRucksack: true },
   // Holzentchen (Etappe 3, Hoehle des Gorillas): "Wooden Duck Toy" von Ujjwal Chauhan (Sketchfab), verkleinert
   entchen: { glb: 'ENTCHEN_GLB', L: 0.3, zeigen: 0.15, keinRucksack: true },
+  // Bananenkorb (Etappe 3): nach der Lupe am Korb im Rucksack (Live-Wunsch 22.10.2026) – kein GLB, aus Grundformen
+  // (hoehle_innen.js story.bananenModell, derselbe Korb wie in der Hoehle, ohne das Fell)
+  bananen: { bau: () => story.bananenModell(), L: 0.22, zeigen: 0.3, invGross: 0.75 },   // im Inventar etwas kleiner (breit und rund)
 };
 const TEXT = {
   notizbuch: ['Ah... ein Notizbuch. Das kann man immer gebrauchen.'],
@@ -39,6 +42,10 @@ const TEXT = {
   messer:    ['Dein Taschenmesser. Das ist praktisch für unterwegs.'],
   stift:     ['Und ein Stift. Damit kannst du alles aufschreiben.'],
   kamera:    ['Und deine Kamera! Damit machst du Fotos von allen Hinweisen.'],
+};
+// Fundstuecke aus den Faellen: im Inventar, aber nicht Teil der Detektiv-Ausruestung (zaehlen nicht fuer "komplett")
+const TEXT_FUND = {
+  bananen:   ['Das sind die Bananen, die der Gorilla vom Tisch genommen hat.'],
 };
 const TEXT_KOMPLETT = ['Klasse. Du hast alles dabei, was man als Detektiv braucht.'];
 // Lage auf dem Tisch (Tisch-Koordinaten, Platte 1,4 x 0,9 m; die Laterne steht bei x 0,35). Liegt dort schon etwas,
@@ -54,6 +61,11 @@ const vorlagen = {};
 function vorlage(n){
   if(vorlagen[n]) return vorlagen[n];
   const S = SACHEN[n];
+  if(S.bau) return vorlagen[n] = Promise.resolve(S.bau()).then(m => { const g = new THREE.Group();
+    m.updateMatrixWorld(true); let bb = new THREE.Box3().setFromObject(m), sz = bb.getSize(new THREE.Vector3());
+    m.scale.multiplyScalar(S.L / Math.max(sz.x, sz.y, sz.z)); m.updateMatrixWorld(true); bb = new THREE.Box3().setFromObject(m);
+    const c = bb.getCenter(new THREE.Vector3()); m.position.set(m.position.x - c.x, m.position.y - bb.min.y, m.position.z - c.z);
+    g.add(m); g.userData.clips = []; return g; });
   return vorlagen[n] = new Promise((fertig) => story.ladeGlb(window[S.glb], n, (gl) => {
     const m = gl.scene;
     if(S.dreh) m.rotation.set(S.dreh[0], S.dreh[1], S.dreh[2]);
@@ -450,7 +462,7 @@ function updateFunkSymbol(dt){
 // (2/3 des Bildschirms), darauf alle eingesammelten Dinge – hoechstens INV_PRO_ZEILE pro Zeile, mittig, jedes mit einem
 // dezenten warmen Schein dahinter und langsam drehend (wie beim Einstecken). Waehrend des Einsteckens geht es nicht auf.
 const INV_PRO_ZEILE = 3;
-const INV_REIHE = ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera'];
+const INV_REIHE = ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen'];
 const inv = { an: false, k: 0, dinge: [], t: 0, flaeche: null, glowTex: null };
 // Die Flaeche ist ein Mesh in der Bildebene selbst (ein DOM-Element laege ueber oder unter allen Dingen, nicht dazwischen).
 // Reihenfolge: Flaeche (renderOrder -1) -> Schein (0, ohne Tiefentest) -> die Dinge (normal, mit Tiefe).
@@ -555,7 +567,7 @@ function inventarSteuern(dt){
     if(d.n === 'notizbuch' && story.notizSeiten && story.notizSeiten().length){ if(story.stimmeStopp) story.stimmeStopp(); inv.sprichtWahl = false; buchOeffnen(); return; }
     if(inv.sprichtWahl && story.stimmeStopp) story.stimmeStopp();
     inv.sprichtWahl = true;
-    story.sprich(TEXT_INVENTAR[d.n] || TEXT[d.n] || [], () => { inv.sprichtWahl = false; }, 'inventar');
+    story.sprich(TEXT_INVENTAR[d.n] || TEXT[d.n] || TEXT_FUND[d.n] || [], () => { inv.sprichtWahl = false; }, 'inventar');
   }
 }
 // Im Inventar ohne das "Und" vom Einpacken (Live-Wunsch 16.10.) – dort steht jeder Satz fuer sich
@@ -563,7 +575,9 @@ const TEXT_INVENTAR = {
   stift:  ['Ein Stift. Damit kannst du alles aufschreiben.'],
   kamera: ['Deine Kamera! Damit machst du Fotos von allen Hinweisen.'],
 };
-function inventarSchliessen(){ inv.sprichtWahl = false; buch.offen = false; if(story.inventarZu) story.inventarZu(); }
+// B schliesst nur das Inventar (Live-Befund 22.10.2026: Joshi kniete sich danach hin – die Engine las dasselbe B im naechsten
+// Bild als "knien"). story.bSperre haelt B fest, bis die Taste losgelassen ist (story.js evaActionB fragt es ab).
+function inventarSchliessen(){ inv.sprichtWahl = false; buch.offen = false; story.bSperre = true; if(story.inventarZu) story.inventarZu(); }
 
 // ---- Notizbuch (Live-Wunsch 16.10.) -------------------------------------------------------------------------------
 // Im Inventar das Notizbuch mit A: es wird gross und schlaegt sich auf der zuletzt beklebten Seite auf (Doppelseite: links
@@ -715,9 +729,39 @@ story.inselIcon = function(c, cx, cy, g, art){
 // Ortssymbol neben der Seitenzahl, wie mit dem Bleistift gezeichnet: Insel = die Insel mit Huette und Palmen
 // (weitere Orte bekommen hier ihr Symbol, sobald sie feststehen)
 // (x, y) = Mitte, g = Groesse
+story.testOrtSymbol = (c, ort, x, y, g) => ortSymbol(c, ort, x, y, g);   // Test (Vorschau des Symbols)
 function ortSymbol(c, ort, x, y, g){
   if(ort === 'insel') story.inselIcon(c, x, y, g, 'stift');
   if(ort === 'waldinsel') tannenIcon(c, x, y, g);
+  if(ort === 'hoehle') gorillaIcon(c, x, y, g);
+}
+// Hoehle des Gorillas (Live-Wunsch 22.10.2026: "gerne einen Gorilla"): Gorillakopf von vorn, wie mit dem Bleistift – runder
+// Kopf mit dem typischen Scheitelkamm, zwei Ohren, ein helleres Gesicht (Herzform) mit Augen unter dem Brauenwulst, breite
+// Nase und ein Laecheln (er ist ja wieder froh)
+function gorillaIcon(c, x, y, g){
+  c.save(); c.translate(x, y); const s = g / 100; c.strokeStyle = 'rgba(70,55,40,.8)'; c.lineWidth = 3.2 * s; c.lineJoin = 'round'; c.lineCap = 'round';
+  const linie = (f) => { c.beginPath(); f(); c.stroke(); };
+  // Kopf: oben spitzer (Scheitelkamm), unten breit
+  linie(() => { c.moveTo(0, -44 * s); c.bezierCurveTo(26 * s, -44 * s, 40 * s, -20 * s, 38 * s, 4 * s); c.bezierCurveTo(37 * s, 30 * s, 20 * s, 42 * s, 0, 42 * s);
+    c.bezierCurveTo(-20 * s, 42 * s, -37 * s, 30 * s, -38 * s, 4 * s); c.bezierCurveTo(-40 * s, -20 * s, -26 * s, -44 * s, 0, -44 * s); });
+  // Ohren
+  for(const v of [-1, 1]) linie(() => { c.arc(v * 42 * s, 0, 8 * s, v > 0 ? -Math.PI / 2 : Math.PI / 2, v > 0 ? Math.PI / 2 : Math.PI * 1.5); });
+  // Gesicht: Herzform, ein paar Bleistiftstriche fuer das dunkle Fell drumherum
+  linie(() => { c.moveTo(0, -14 * s); c.bezierCurveTo(10 * s, -26 * s, 30 * s, -18 * s, 26 * s, 4 * s); c.bezierCurveTo(24 * s, 24 * s, 12 * s, 34 * s, 0, 34 * s);
+    c.bezierCurveTo(-12 * s, 34 * s, -24 * s, 24 * s, -26 * s, 4 * s); c.bezierCurveTo(-30 * s, -18 * s, -10 * s, -26 * s, 0, -14 * s); });
+  c.lineWidth = 2 * s;
+  for(let i = 0; i < 7; i++){ const a = -2.4 + i * 0.3; linie(() => { c.moveTo(Math.cos(a) * 30 * s, Math.sin(a) * 34 * s - 6 * s); c.lineTo(Math.cos(a) * 36 * s, Math.sin(a) * 40 * s - 6 * s); }); }
+  c.lineWidth = 3.2 * s;
+  // Brauenwulst und Augen
+  linie(() => { c.moveTo(-20 * s, -6 * s); c.quadraticCurveTo(-10 * s, -14 * s, 0, -8 * s); c.quadraticCurveTo(10 * s, -14 * s, 20 * s, -6 * s); });
+  c.fillStyle = 'rgba(70,55,40,.85)';
+  for(const v of [-1, 1]){ c.beginPath(); c.arc(v * 10 * s, -1 * s, 3.2 * s, 0, Math.PI * 2); c.fill(); }
+  // Nase: breit, zwei Nasenloecher
+  linie(() => { c.moveTo(-9 * s, 10 * s); c.quadraticCurveTo(0, 2 * s, 9 * s, 10 * s); c.quadraticCurveTo(0, 16 * s, -9 * s, 10 * s); });
+  for(const v of [-1, 1]){ c.beginPath(); c.arc(v * 4 * s, 10 * s, 1.8 * s, 0, Math.PI * 2); c.fill(); }
+  // Laecheln
+  linie(() => { c.moveTo(-12 * s, 22 * s); c.quadraticCurveTo(0, 30 * s, 12 * s, 22 * s); });
+  c.restore();
 }
 // Waldinsel: zwei Tannen auf einem Inselbogen, wie mit dem Bleistift (Linien, kein Fuellen)
 function tannenIcon(c, x, y, g){
@@ -766,7 +810,7 @@ function updateInventar(dt){
     d.p.position.set(x, y, 0.3);
     // Live-Wunsch: die Auswahl etwas groesser (40 %); ohne Auswahl nur ein Hauch von Schein, mit Auswahl deutlich – vorher
     // war der normale Schein so stark, dass man keinen Unterschied sah
-    d.p.scale.setScalar(s * gross / d.L * (1 + 0.4 * d.w) * (buch.offen ? 1 - buch.k : 1));
+    d.p.scale.setScalar(s * gross / d.L * (SACHEN[d.n].invGross || 1) * (1 + 0.4 * d.w) * (buch.offen ? 1 - buch.k : 1));
     _iq.setFromAxisAngle(_y, inv.t * 0.9 + d.i * 1.1);            // langsam drehen, jedes etwas versetzt
     d.p.quaternion.copy(_iq).multiply(d.q);
     d.glow.position.set(x, y, -0.2);                              // hinter dem Ding

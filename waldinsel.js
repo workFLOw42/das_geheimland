@@ -74,8 +74,9 @@ const TIERE = [
 // naechste). Die Plaetze liegen ~0,85 m auseinander: wer genau vor einem Tier steht, bekommt dessen Y.
 const VOR_R = 0.4;
 // Erste Ansage nach dem Aussteigen am Steg (Erzaehlerin, Entwurf): wo man ist und dass die Tiere warten
-const TEXT_ANKUNFT = ['Du bist auf der Waldinsel angekommen. Schau mal, da vorne am Tisch sitzen die Tiere.',
-  'Sie sehen ganz traurig aus. Geh doch mal hin und hör dir an, was passiert ist.'];
+// Live-Wunsch 22.10.2026: bei der Ankunft nur der erste Satz; was zu tun ist, sagt die Hilfe-Taste (TEXT_HINWEIS_TIERE)
+const TEXT_ANKUNFT = ['Du bist auf der Waldinsel angekommen.'];
+const TEXT_HINWEIS_TIERE = ['Schau mal, da vorne am Tisch sitzen die Tiere.', 'Sie sehen ganz traurig aus. Geh doch mal hin und hör dir an, was passiert ist.'];
 // Der Tisch selbst bekommt im naechsten Schritt den blauen Fotoring (Spur sichern) – jetzt noch kein Y am Tisch
 const TEXT_BAUM = ['Ein wunderschön geschmückter Weihnachtsbaum.'];
 
@@ -518,6 +519,28 @@ story.waldweg = function(o){
   const sch = wegSchatten(kurve); w.add(sch);
   return { kurve, baeume };
 };
+// Dunst in der Waldgasse (Live-Wunsch 22.10.2026: "der Waldeingang sollte auch normal etwas neblig aussehen, nicht erst,
+// wenn ich ihn betrete"): weiche, helle Schleier zwischen den Tannen entlang des Wegs, von aussen schon zu sehen. Sprites
+// (drehen sich zur Kamera), ohne Tiefe schreiben, im Nebel der Szene. o = { welt, linie, von, bis, farbe }. aus(): weg.
+story.waldNebel = function(o){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 4, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(255,255,255,0.75)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.32)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c), w = story.welt(o.welt), kurve = new THREE.CatmullRomCurve3(o.linie.map(p => new THREE.Vector3(p.x, 0, p.z)));
+  const gruppe = new THREE.Group(); gruppe.userData.deko = true;
+  let s = 5; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const n = 30;
+  for(let i = 0; i < n; i++){
+    const u = o.von + (i + rnd() * 0.6) / n * (o.bis - o.von), p = kurve.getPointAt(Math.min(1, u)), t = kurve.getTangentAt(Math.min(1, u)), q = (rnd() - 0.5) * 2.2;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: o.farbe || 0xc8d2dc, transparent: true, depthWrite: false, opacity: 0.55 + rnd() * 0.3 }));
+    const k = Math.min(1, (u - o.von) / 0.08);                     // vorn am Eingang zart, dahinter dichter
+    sp.material.opacity *= 0.45 + 0.55 * k;
+    sp.position.set(p.x - t.z * q, ISLAND_Y + 1.2 + rnd() * 1.6, p.z + t.x * q); sp.scale.set(7 + rnd() * 4, 3.2 + rnd() * 1.6, 1);
+    sp.renderOrder = 4; gruppe.add(sp);
+  }
+  w.add(gruppe);
+  return { gruppe, aus(){ gruppe.visible = false; } };
+};
 function abstandZumWeg(x, z){
   let d = Infinity;
   for(let i = 0; i + 1 < WEG_LINIE.length; i++){ const a = WEG_LINIE[i], b = WEG_LINIE[i + 1], dx = b.x - a.x, dz = b.z - a.z;
@@ -634,7 +657,10 @@ const TEXT_GORILLA_ERZ = ['Vielleicht weiß der Gorilla etwas. Folge doch dem We
 const TEXT_ERST_FOTO = ['Vorher machst du aber noch ein Foto vom Tisch. Stell dich in den blauen Kreis.'];
 const TEXT_HINWEIS_WEG = ['Folge dem Weg in den Wald. Dort wohnt der Gorilla.'];
 const TEXT_WEG_NOCH_NICHT = ['Hier geht ein Weg in den Wald. Schau dich vorher noch genau auf der Lichtung um.'];
-const WEG_REIN = { x: 11.6, z: 43, r: 3.2 };          // ein Stueck im Wald auf dem Weg: hier beginnt die Reise
+// Live-Wunsch 22.10.2026: "den Weg im Wald ein wenig laenger laufbar, damit es laenger gruselig ist" – und dann "deutlich
+// kuerzen, etwa 50–75 % laenger als im Original": die Reise beginnt ~21 m hinter dem Eingang (vorher 12,9 m), auf der
+// WEG_LINIE zwischen (11, 45) und (13,5, 33)
+const WEG_REIN = { x: 12.0, z: 37, r: 3.2 };
 // notizbuch.js ruft das nach jeder fertigen Stelle (Foto, Lupe)
 // Nach dem Tatortfoto (Live-Wunsch 21.10.2026: "muesste Joshi nicht auch nach den Spuren fragen?"): Joshi fragt, wem die
 // Spuren gehoeren – keiner am Tisch war es (Hamster und Eichhoernchen sitzen nicht dabei), verraten wird nichts.
@@ -702,17 +728,22 @@ function updateWeg(){
 }
 // Tatortfoto (notizbuch.js 'tisch_foto'): nur der Tisch mit Resten und Spuren – die Tiere sind fuer das Bild weg
 story.e2FotoAusblenden = () => wi.tiere.map(t => t.obj);
+// Live-Wunsch 22.10.2026: die beiden Ringe erscheinen, sobald Joshi mit den Tieren gesprochen hat – ohne neues X und ohne
+// Ansage (Weihnachtsbaum und Waldweg spielen dafuer keine Rolle); der Fuchs zeigt sie. TEXT_SPUR nur noch ueber die Hilfe-Taste.
 function spurPruefen(){
   if(wi.spurGesagt || !alleTiereGehoert()) return;
   wi.spurGesagt = true;
-  story.spaeter(1.0, () => story.sprich(TEXT_SPUR));
+  for(const id of ['tisch_foto', 'weg_lupe']){ const k = story.kreisZielVon && story.kreisZielVon(id); if(k) k.frei = true; }
+  story.spaeter(0.8, () => { if(eva && story.fuchsRundgang) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0, true,
+    o => o === story.kreisZielVon('tisch_foto') || o === story.kreisZielVon('weg_lupe')); });
 }
 // Hinweis-Taste auf der Waldinsel (story.js hinweisGeben fragt zuerst hier): null = die allgemeinen Saetze
 story.e2Hinweis = function(){
   if(wi.wegFrei) return TEXT_HINWEIS_WEG;
+  if(!wi.spurGesagt && !alleTiereGehoert()) return TEXT_HINWEIS_TIERE;     // noch nicht bei allen Tieren gewesen
   if(!wi.spurGesagt || !story.stelleZustand) return null;
   const foto = story.stelleZustand('tisch_foto'), lupe = story.stelleZustand('weg_lupe');
-  if(foto === 'zu' || lupe === 'zu') return TEXT_HINWEIS_SPUR;
+  if(foto === 'zu' || lupe === 'zu') return TEXT_SPUR;
   if(foto === 'offen') return TEXT_HINWEIS_RING;
   if(lupe === 'offen') return TEXT_HINWEIS_LUPE;
   return null;
@@ -788,6 +819,8 @@ function baue(){
   w.add(aesteUeberWeg(kurve));
   // Schatten ueber dem Weg im Wald (dunkler Streifen, weich) – der Eingang wirkt duester
   w.add(wegSchatten(kurve));
+  // Dunst im Wald: schon von der Lichtung aus zu sehen (nicht erst beim Betreten)
+  story.waldNebel({ welt: 2, linie: WEG_LINIE, von: 0.1, bis: 0.62, farbe: 0xb4c2cf });
   // Lichterketten zwischen den vordersten Baeumen um die Lichtung (etwas Weihnachtsschmuck an den Baeumen)
   const rand = baeume.filter(b => Math.hypot(b.x - LICHTUNG.x, b.z - LICHTUNG.z) < WALD_AB + 5 && b.z < LICHTUNG.z + 8)
     .sort((a, b) => Math.atan2(a.z - LICHTUNG.z, a.x - LICHTUNG.x) - Math.atan2(b.z - LICHTUNG.z, b.x - LICHTUNG.x));
@@ -896,7 +929,12 @@ story.e2Wechsel = function(){
 // einer zufaelligen Seite. Die Takte laufen ueber story.spaeter: in Pause und Inventar steht alles.
 // Live-Befund 21.10.2026: das Knacken war nicht zu hoeren (0,06), die Eule kam erst mit dem Globus – jetzt laeuft beides
 // schon ab dem Eingang des Wegs (WEG), die Eule gleich, das Holz nach ~2 s
-const WALD_TON = { eule: { vol: 0.35, pause: [8, 13] }, holz: { vol: 0.16, pause: [5, 10] } };
+// Live-Befund 22.10.2026: das Knacken klang "wie ein Knacksen des Lautsprechers" – die Aufnahme ist 8 s lang und meist fast
+// still, dazwischen einzelne harte Spitzen; leise abgespielt blieben nur die Spitzen. Jetzt: ein zusammenhaengendes Stueck
+// (HOLZ_STUECK, beginnt kurz vor dem lautesten Bruch bei ~1,4 s) mit weichem Ein- und Ausblenden, ein Tiefpass nimmt das
+// Harte, und etwas lauter.
+const WALD_TON = { eule: { vol: 0.35, pause: [8, 13] }, holz: { vol: 0.42, pause: [5, 10] } };
+const HOLZ_STUECK = { ab: 1.1, lang: 2.6, ein: 0.06, aus: 0.7, tief: 2600 };
 const ton = { eule: null, holz: null, laedt: false, an: false };
 function waldTonLaden(){
   if(ton.laedt || typeof decodeSound !== 'function' || !audioCtx) return; ton.laedt = true;
@@ -909,18 +947,27 @@ function waldTon(n){
   g.gain.value = WALD_TON[n].vol * (0.8 + Math.random() * 0.4);
   q.playbackRate.value = 0.94 + Math.random() * 0.12;               // nie zweimal ganz gleich
   let ziel = g;
+  if(n === 'holz'){
+    const H = HOLZ_STUECK, t0 = audioCtx.currentTime, v = g.gain.value, lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = H.tief; lp.connect(g);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + H.ein); g.gain.setValueAtTime(v, t0 + H.lang - H.aus); g.gain.linearRampToValueAtTime(0, t0 + H.lang);
+    if(audioCtx.createStereoPanner){ const p = audioCtx.createStereoPanner(); p.pan.value = (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.5); g.connect(p); ziel = p; }
+    q.connect(lp); ziel.connect(audioCtx.destination); q.start(t0, H.ab, H.lang + 0.05); return;
+  }
   if(audioCtx.createStereoPanner){ const p = audioCtx.createStereoPanner(); p.pan.value = (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.5); g.connect(p); ziel = p; }
   q.connect(g); ziel.connect(audioCtx.destination); q.start();
 }
 function waldTonTakt(n){
   const [a, b] = WALD_TON[n].pause;
-  story.spaeter(a + Math.random() * (b - a), () => { if(!ton.an) return; waldTon(n); waldTonTakt(n); });
+  // nur auf der Waldinsel (Live-Befund 22.10.2026: vor der Hoehle knackte es weiter – updateE2 laeuft in Etappe 3 nicht
+  // mehr, ton.an wurde nie zurueckgesetzt)
+  story.spaeter(a + Math.random() * (b - a), () => { if(!ton.an || !e2()){ ton.an = false; return; } waldTon(n); waldTonTakt(n); });
 }
 function updateWaldTon(){
   const drin = !!(eva && abstandZumWeg(eva.group.position.x, eva.group.position.z) < 4.5 && Math.hypot(eva.group.position.x - WEG.x, eva.group.position.z - WEG.z) < 60
     && eva.group.position.z < WEG.z + 1.5);                         // ab dem Eingang des Wegs (am Wegweiser) in den Wald hinein
   if(drin) waldTonLaden();
-  if(drin && !ton.an){ ton.an = true; story.spaeter(0.3, () => { if(ton.an) waldTon('eule'); }); story.spaeter(2.2, () => { if(ton.an) waldTon('holz'); });
+  if(drin && !ton.an){ ton.an = true; story.spaeter(0.3, () => { if(ton.an && e2()) waldTon('eule'); }); story.spaeter(2.2, () => { if(ton.an && e2()) waldTon('holz'); });
     waldTonTakt('eule'); waldTonTakt('holz'); }
   else if(!drin) ton.an = false;
 }

@@ -2,15 +2,19 @@
 // vor der Engine. Konzept Abschnitt 7, Etappe 3 "In der Hoehle":
 //   1. Der Gorilla sitzt zusammengesunken am Feuer. Vor dem Suchblick passiert NICHTS (Live-Wunsch 21.10.2026: "Joshi muss
 //      innen erst X druecken") – kein Y, keine Ringe.
-//   2. X -> der Gorilla, der braune Lupenring und der Holzscheit mit dem gruenen Schnitzring leuchten auf.
-//      Y beim Gorilla (vor der Lupe): "Lass mich bitte in Ruhe." · Schnitzring (vor der Lupe): noch nicht.
+//   2. X -> nur der Gorilla leuchtet auf. Y beim Gorilla: "Lass mich bitte in Ruhe." – erst danach erscheint der braune
+//      Lupenring beim kaputten Entchen (Live-Wunsch 22.10.2026), der Fuchs zeigt ihn.
 //   3. Lupe: ein zerbrochenes Holzentchen (Skizze ins Notizbuch).
 //   4. Y beim Gorilla: "Ist dein Entchen zerbrochen?" – ja, seitdem ist er so traurig, nicht mal die Bananen vom Tisch
 //      haben geholfen.
+//      Erst jetzt erscheint der gruene Schnitzring (der Fuchs zeigt ihn; Live-Wunsch 22.10.2026: ohne Ansage, nur die
+//      Hinweis-Taste sagt, wie Joshi helfen kann).
 //   5. Schnitzring: Joshi schnitzt ein neues Entchen (Skizze unter dem kaputten; eine Kopie steht spaeter im Huettenregal).
-//   6. Y beim Gorilla: das Entchen schenken -> er trommelt vor Freude auf die Brust und gibt den Bananenkorb zurueck; daran
-//      rotes Fell (klebt dann im Notizbuch).
-//   7. Joshi fragt nach dem Fell: weiss er nicht – frag doch den Hamster. Und: er leiht Joshi sein Flugzeug.
+//      Danach ist das kaputte Entchen weg (auch nicht auf dem Foto).
+//   6. Y beim Gorilla: das Entchen schenken -> er trommelt vor Freude und schiebt Joshi den Bananenkorb hin; daran rotes
+//      Fell. Am Korb erscheint ein brauner Lupenring (der Fuchs zeigt ihn).
+//   7. Lupe am Korb: das rote Fell (klebt dann im Notizbuch). Erst danach fragt Joshi nach dem Fell: weiss er nicht – frag
+//      doch den Hamster. Und: er leiht Joshi sein Flugzeug.
 //   8. Vor dem Ausgang der blaue Fotoring: Foto vom Gorilla mit seinem Entchen.
 // Danach draussen (hoehle.js): der Weg ist hell, die Mustang hat ein Y, Abflug.
 // Die Hoehle schwebt weit draussen (RAUM, BODEN_Y = 150 wie die Huette) – von der Insel aus nicht zu sehen.
@@ -28,11 +32,12 @@ GORILLA.blick = Math.atan2(FEUER.x - GORILLA.x, FEUER.z - GORILLA.z);
 const SCHEIT = { x: RAUM.x + 3.6, z: RAUM.z + 1.4 };   // rechts vorn, mit dem gruenen Ring
 const LUPE_P = { x: RAUM.x - 3.7, z: RAUM.z + 0.2 };   // links neben dem Gorilla: das zerbrochene Entchen
 const KORB = { x: RAUM.x - 3.2, z: RAUM.z - 4.6 };     // hinter dem Gorilla im Schatten (er gibt ihn spaeter zurueck)
+const KORB_HIN = { x: GORILLA.x + 0.4, z: GORILLA.z + 1.8 };   // dorthin schiebt er ihn (davor der Lupenring, notizbuch.js fell_lupe)
 const FOTO_P = { x: RAUM.x, z: RAUM.z + RAUM.R - 2.2 }; // vor dem Ausgang
 const hi = story.hoehleInnen = { drin: false, wechsel: null, sperre: 0, gebaut: false, gruppe: null, gorilla: null, stufe: 'x',
   mixer: null, acts: {}, cur: null, korb: null, kaputt: null, entchen: null, t: 0 };
-// stufe: 'x' (vor dem Suchblick) -> 'gesucht' -> 'lupe' (Entchen gesehen) -> 'erzaehlt' -> 'geschnitzt' -> 'froh' (geschenkt,
-// Korb zurueck) -> 'fell' (Fell gesehen, Flugzeug geliehen) -> 'foto' (fertig)
+// stufe: 'x' (vor dem Suchblick) -> 'gesucht' -> 'ruhe' (Gorilla: "Lass mich in Ruhe", Lupenring da) -> 'lupe' (Entchen gesehen) -> 'erzaehlt' -> 'geschnitzt' -> 'froh' (geschenkt)
+// -> 'korb' (Korb zurueck, Lupenring am Fell) -> 'fell' (Fell unter der Lupe, Flugzeug geliehen) -> 'foto' (fertig)
 
 // ---- Texte (Entwuerfe) ------------------------------------------------------------------------------------------------
 const T = {
@@ -43,21 +48,25 @@ const T = {
   entchenGesehen: ['Oh, ein Holzentchen. Es ist zerbrochen.'],
   joshiFragt: ['Ist dein Entchen zerbrochen?'],
   gorillaErzaehlt: ['Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig.',
-    'Nichts kann mich trösten. Nicht mal die Bananen, die ich vom Festtisch genommen habe. Der war ja eh schon ganz durcheinander.'],
-  schnitzIdee: ['Vielleicht kannst du ihm ein neues Entchen schnitzen. Am grünen Kreis liegt ein Stück Holz.'],
+    'Nichts kann mich trösten. Nicht mal die vielen Bananen.'],                   // Texte: SPRECHTEXTE.md (Nutzer, 22.10.2026)
   geschnitzt: ['Toll! Ein neues Holzentchen.'],
   schenken: ['Schau mal, ich habe dir ein neues Entchen geschnitzt.'],
   froh: ['Für mich? Oh, danke! Das ist ja wunderschön!'],
-  korb: ['Hier, die Bananen gehören euch. Es tut mir leid, dass ich sie genommen habe.'],
-  fell: ['Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch.'],
+  korb: ['Es tut mir leid, dass ich die Bananen genommen habe.',
+    'Ich wollte eigentlich nur die anderen Tiere besuchen, aber der Uhu hat geschlafen und alle anderen Tiere waren nicht da.',
+    'Der Tisch war verwüstet und nur noch die Bananen standen rum. Deshalb hab ich sie einfach mitgenommen.',
+    'Bitte nimm sie wieder mit.'],
   joshiFell: ['Weißt du, von wem das rote Fell ist?'],
   gorillaFell: ['Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden.',
     'Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm.'],
-  fotoIdee: ['Mach doch noch ein Foto von deinem neuen Freund. Am Ausgang ist ein blauer Kreis.'],
   foto: ['Klasse! Der Gorilla lacht wieder.'],
   hinweisLupe: ['Neben dem Gorilla ist ein brauner Kreis. Schau dort ganz genau hin.'],
+  hinweisZumGorilla: ['Geh doch mal zum Gorilla.'],
+  traurig: ['Ich bin soooo traurig ohne mein Entchen.'],
+  gluecklich: ['Danke, ich bin so glücklich.'],
   hinweisGorilla: ['Sprich doch noch einmal mit dem Gorilla.'],
   hinweisSchnitz: ['Am grünen Kreis liegt ein Stück Holz. Schnitz ihm ein neues Entchen.'],
+  hinweisFell: ['Am Korb ist ein brauner Kreis. Schau dort ganz genau hin.'],
   hinweisFoto: ['Am Ausgang ist ein blauer Kreis. Mach ein Foto vom Gorilla.'],
   hinweisRaus: ['Geh hinaus zum Flugzeug. Der Gorilla hat es dir geliehen.'],
 };
@@ -77,8 +86,8 @@ function baueRaum(){
   if(hi.gruppe) return;
   const g = new THREE.Group(), R = RAUM.R, H = RAUM.H;
   let s = 9; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  // Wand mit Ausgang: Zylinder von a0..a1 (die Oeffnung bei +z ausgelassen), Ecken versetzt
-  const offen = Math.asin(AUSGANG.B / 2 / R) + 0.04, a0 = Math.PI / 2 + offen, laenge = Math.PI * 2 - 2 * offen;
+  // Wand mit Ausgang: Zylinder von a0..a1 (die Oeffnung bei +z ausgelassen – bei three.js liegt Winkel 0 auf +z), Ecken versetzt
+  const offen = Math.asin(AUSGANG.B / 2 / R) + 0.04, a0 = offen, laenge = Math.PI * 2 - 2 * offen;
   let wand = new THREE.CylinderGeometry(R, R, H, 40, 6, true, a0, laenge).toNonIndexed();
   const v = new THREE.Vector3(), merk = new Map(), pos = wand.attributes.position;
   for(let i = 0; i < pos.count; i++){ v.fromBufferAttribute(pos, i); const key = v.x.toFixed(2) + ',' + v.y.toFixed(2) + ',' + v.z.toFixed(2);
@@ -150,30 +159,47 @@ function baueKorb(){
   return g;
 }
 story.typ('bananenkorb', { bau: () => baueKorb() });
-// zerbrochenes Entchen: das Modell, oberhalb der Hals-Hoehe abgeschnitten (Kopf daneben, gekippt), ein paar Splitter
-const HALS = 0.5;                                     // Anteil der Hoehe, an dem der Hals bricht
+// zerbrochenes Entchen (Live-Befund 22.10.2026: "besteht nur aus zweimal der Ente" – die Schnittebenen von vorher griffen
+// nicht, der Renderer schneidet nicht): das Modell wird wirklich zerlegt. Seine Dreiecke werden nach ihrer Mitte verteilt –
+// Kopf mit Hals (oben, auf der Seite des Schnabels) und Rumpf mit Schwanz und Raedern; die Bruchkante ist dadurch gezackt
+// wie gebrochenes Holz. Der Kopf ist neben den Rumpf gekippt, auf den Schnabel; dazu ein paar Splitter.
+const HALS = 0.47;                                    // Anteil der Hoehe, an dem der Hals bricht
 function entchenTeile(){
   return story.modellKlon('entchen').then(({ g, L }) => {
     const ganz = new THREE.Group(); ganz.add(g); g.scale.setScalar(0.32 / L); ganz.updateMatrixWorld(true);
     const bb = new THREE.Box3().setFromObject(ganz); g.position.y -= bb.min.y; ganz.updateMatrixWorld(true);
-    const bb2 = new THREE.Box3().setFromObject(ganz), hals = bb2.min.y + (bb2.max.y - bb2.min.y) * HALS;
-    return { ganz, hals };
+    let mesh = null; ganz.traverse(o => { if(o.isMesh && !mesh) mesh = o; });
+    const geo = mesh.geometry.clone(); if(geo.attributes.tangent) geo.deleteAttribute('tangent');
+    geo.applyMatrix4(mesh.matrixWorld);                    // in den Raum des Entchens (ganz steht im Ursprung)
+    geo.computeBoundingBox();
+    const b = geo.boundingBox, p = geo.attributes.position, idx = geo.index, nTri = (idx ? idx.count : p.count) / 3;
+    const ecke = (t, v) => idx ? idx.getX(t * 3 + v) : t * 3 + v;
+    let top = 0; for(let i = 1; i < p.count; i++) if(p.getY(i) > p.getY(top)) top = i;   // Kopfseite: dort ist die hoechste Ecke
+    const mx = (b.min.x + b.max.x) / 2, seite = Math.sign(p.getX(top) - mx) || -1, hy = b.min.y + (b.max.y - b.min.y) * HALS;
+    const kopf = [], rumpf = [];
+    for(let t = 0; t < nTri; t++){
+      let cx = 0, cy = 0; for(let v = 0; v < 3; v++){ cx += p.getX(ecke(t, v)) / 3; cy += p.getY(ecke(t, v)) / 3; }
+      (cy > hy && (cx - mx) * seite > -0.01 ? kopf : rumpf).push(t);
+    }
+    const hol = ['getX', 'getY', 'getZ', 'getW'];
+    const teil = (liste) => { const ng = new THREE.BufferGeometry();
+      for(const [name, a] of Object.entries(geo.attributes)){ const k = a.itemSize, arr = new Float32Array(liste.length * 3 * k);
+        liste.forEach((t, j) => { for(let v = 0; v < 3; v++) for(let c = 0; c < k; c++) arr[(j * 3 + v) * k + c] = a[hol[c]](ecke(t, v)); });
+        ng.setAttribute(name, new THREE.BufferAttribute(arr, k)); }
+      // Lambert mit der Holztextur (wie die uebrige Kulisse): das Standard-Material blieb unter der Lupe schwarz
+      const m = new THREE.Mesh(ng, new THREE.MeshLambertMaterial({ map: mesh.material.map, color: 0xffffff })); m.castShadow = true; return m; };
+    return { kopf: teil(kopf), rumpf: teil(rumpf), hy, kx: mx + seite * (b.max.x - b.min.x) * 0.05, seite };
   });
 }
-function clipNach(obj, hals, oben){
-  // Material mit Schnittebene: oben = nur der Teil ueber dem Hals, sonst nur darunter
-  obj.traverse(m => { if(!m.isMesh) return; m.material = m.material.clone();
-    m.material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, oben ? 1 : -1, 0), oben ? -hals : hals)]; m.material.clipShadows = true; });
-}
 function baueKaputt(){
-  return entchenTeile().then(({ ganz, hals }) => {
-    const g = new THREE.Group();
-    const rumpf = ganz.clone(true); clipNach(rumpf, hals, false); g.add(rumpf);
-    const kopf = ganz.clone(true); clipNach(kopf, hals, true);
-    // Kopf abgelegt: um den Bruch gekippt, neben dem Rumpf
-    const k = new THREE.Group(); k.add(kopf); kopf.position.y = -hals; k.position.set(0.24, 0.06, 0.1); k.rotation.set(0.2, 0.9, 1.35); g.add(k);
+  return entchenTeile().then(({ kopf, rumpf, hy, kx, seite }) => {
+    const g = new THREE.Group(); g.add(rumpf);
+    // Kopf: um die Bruchstelle nach vorn auf den Schnabel gekippt, ein Stueck vor dem Rumpf, liegt auf dem Boden auf
+    const k = new THREE.Group(); kopf.position.set(-kx, -hy, 0); k.add(kopf);
+    k.position.set(kx + seite * 0.1, 0, 0.13); k.rotation.set(0, 0.35, -seite * 1.25); g.add(k);
+    g.updateMatrixWorld(true); const kb = new THREE.Box3().setFromObject(k); k.position.y -= kb.min.y;
     const holz = new THREE.MeshLambertMaterial({ color: 0xc89a62 });
-    for(let i = 0; i < 4; i++){ const sp = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.008, 0.012), holz); sp.position.set(0.1 + i * 0.03, 0.005, -0.06 + i * 0.03); sp.rotation.y = i; sp.userData.keinKoerper = true; g.add(sp); }
+    for(let i = 0; i < 5; i++){ const sp = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.012), holz); sp.position.set(kx + (i - 2) * 0.03, 0.005, 0.05 + (i % 2) * 0.05); sp.rotation.y = i; sp.userData.keinKoerper = true; g.add(sp); }
     g.userData.welt = true; return g;
   });
 }
@@ -212,7 +238,8 @@ function gorillaLaden(){
 function gorillaAnim(n, einmal){
   const a = hi.acts[n]; if(!a || hi.cur === n) return;
   const alt = hi.cur && hi.acts[hi.cur];
-  a.reset(); a.setLoop(einmal ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = !!einmal; a.play();
+  // einmal: true = einmal, eine Zahl = so oft hintereinander (danach bleibt er in der letzten Haltung stehen)
+  a.reset(); a.setLoop(THREE.LoopRepeat, einmal ? (einmal === true ? 1 : einmal) : Infinity); a.clampWhenFinished = !!einmal; a.play();
   if(alt) a.crossFadeFrom(alt, 0.4, false);
   hi.cur = n;
 }
@@ -222,27 +249,32 @@ function sprichDann(saetze, rolle, fertig){ story.sprich(saetze, fertig, rolle);
 function gorillaY(o){
   if(o.spricht) return; o.spricht = true;
   const fertig = () => { o.spricht = false; };
-  if(hi.stufe === 'gesucht'){ sprichDann(T.inRuhe, 'tierM', fertig); return; }
+  // erstes Mal: "Lass mich in Ruhe" – danach erscheint der Lupenring, der Fuchs zeigt ihn (ohne Ansage)
+  if(hi.stufe === 'gesucht'){ hi.stufe = 'ruhe'; sprichDann(T.inRuhe, 'tierM', () => { fertig(); fuchsZu('entchen_lupe'); }); return; }
+  if(hi.stufe === 'ruhe'){ sprichDann(T.inRuhe, 'tierM', fertig); return; }
   if(hi.stufe === 'lupe'){
     hi.stufe = 'erzaehlt';
     sprichDann(T.joshiFragt, 'joshi'); gorillaAnim('schauen');
-    sprichDann(T.gorillaErzaehlt, 'tierM', () => { gorillaAnim('sitzen'); sprichDann(T.schnitzIdee, undefined, fertig); fuchsZu('entchen_schnitzen'); });
+    // danach erscheint der gruene Schnitzring – ohne Ansage (Live-Wunsch 22.10.2026), der Fuchs zeigt ihn
+    sprichDann(T.gorillaErzaehlt, 'tierM', () => { gorillaAnim('sitzen'); fertig(); fuchsZu('entchen_schnitzen'); });
     return;
   }
-  if(hi.stufe === 'erzaehlt'){ sprichDann(T.hinweisSchnitz, undefined, fertig); return; }
+  // nach seiner Geschichte, bis das neue Entchen da ist (Live-Wunsch 22.10.2026: kein Hilfetext beim Gorilla)
+  if(hi.stufe === 'erzaehlt'){ sprichDann(T.traurig, 'tierM', fertig); return; }
   if(hi.stufe === 'geschnitzt'){
     hi.stufe = 'froh';
-    sprichDann(T.schenken, 'joshi');
-    story.spaeter(1.5, () => { entchenZeigen(); });
-    sprichDann(T.froh, 'tierM', () => { gorillaAnim('freuen', true); story.spaeter(2.4, () => gorillaAnim('stehen'));
+    // er bekommt das Entchen und trommelt vor Freude (zweimal), waehrend er sich bedankt; dann schiebt er Joshi den Korb hin.
+    // Daran das rote Fell – am Korb erscheint der braune Lupenring, der Fuchs zeigt ihn. Das Gespraech ueber das Fell kommt
+    // erst nach der Lupe (e3StelleFertig 'fell_lupe').
+    sprichDann(T.schenken, 'joshi', () => { entchenZeigen(); gorillaAnim('freuen', 2); story.spaeter(4.6, () => { if(hi.cur === 'freuen') gorillaAnim('stehen'); }); });
+    sprichDann(T.froh, 'tierM', () => {
       korbZurueck(); sprichDann(T.korb, 'tierM', () => {
         if(hi.korb && hi.korb.userData.fell) hi.korb.userData.fell.visible = true;
-        sprichDann(T.fell, undefined, () => { fellInsNotizbuch(); hi.stufe = 'fell';
-          sprichDann(T.joshiFell, 'joshi'); sprichDann(T.gorillaFell, 'tierM', () => {
-            story.e3MustangFrei = true;                            // hoehle.js: Y an der Mustang, der Weg wird hell
-            sprichDann(T.fotoIdee, undefined, fertig); fuchsZu('gorilla_foto'); }); }); }); });
+        hi.stufe = 'korb'; fertig(); fuchsZu('fell_lupe'); }); });
     return;
   }
+  // nach dem Korb (Live-Wunsch 22.10.2026): kein Hilfetext, er ist einfach froh – den Lupenring nennt nur die Hilfe-Taste
+  if(hi.stufe === 'korb' || hi.stufe === 'geschenkt'){ sprichDann(T.gluecklich, 'tierM', fertig); return; }
   if(hi.stufe === 'fell' || hi.stufe === 'foto'){ sprichDann(['Danke, ' + 'Joshi! Viel Glück beim Hamster.'], 'tierM', fertig); return; }
   sprichDann(T.inRuhe, 'tierM', fertig);
 }
@@ -251,16 +283,17 @@ function entchenZeigen(){
   if(hi.entchen) return;
   // als Kind des Gorillas: vor seiner Brust, ein Stueck groesser (es soll auf dem Foto klar zu sehen sein)
   story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.5 / L); g.updateMatrixWorld(true);
-    const bb = new THREE.Box3().setFromObject(g), c = bb.getCenter(new THREE.Vector3()); g.position.set(-c.x, 1.0 - c.y, 0.85 - c.z); g.rotation.y = Math.PI / 2;   // vor der Brust, klar vor dem Koerper
+    const bb = new THREE.Box3().setFromObject(g), c = bb.getCenter(new THREE.Vector3()); g.position.set(-c.x, 1.0 - c.y, 0.85 - c.z);   // vor der Brust, klar vor dem Koerper, von der Seite zur Kamera (Profil)
     g.userData.deko = true; hi.gorilla.add(g); hi.entchen = g; });
 }
 // Den Korb schiebt er zu Joshi hin: er rueckt ein Stueck nach vorn (sichtbar)
 function korbZurueck(){
   const d = story.dinge.find(q => q.obj === hi.korb); if(!d) return;
-  hi.korbWeg = { t: 0, von: hi.korb.position.clone(), nach: new THREE.Vector3(GORILLA.x + 0.4, BODEN_Y, GORILLA.z + 1.8) };
+  hi.korbWeg = { t: 0, von: hi.korb.position.clone(), nach: new THREE.Vector3(KORB_HIN.x, BODEN_Y, KORB_HIN.z) };
 }
-// Fell ins Notizbuch: Bleistift-Skizze (rote Haare auf Papier, gezeichnet) – Seite "Rotes Fell"
-function fellInsNotizbuch(){
+// Fell ins Notizbuch: Bleistift-Skizze (rote Haare auf Papier, gezeichnet) – die Seite der Lupe am Korb (notizbuch.js
+// fell_lupe, seite)
+function fellBild(){
   const W = 1200, H = 800, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
   g.fillStyle = '#f4ecd8'; g.fillRect(0, 0, W, H);
   let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -270,42 +303,102 @@ function fellInsNotizbuch(){
     g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * L * 0.5 + 18, y + Math.sin(a) * L * 0.5, x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); }
   // Bleistift-Rahmen: Klebeband-Umriss wie ein Fundstueck
   g.strokeStyle = 'rgba(60,55,50,.55)'; g.lineWidth = 3; g.strokeRect(400, 220, 420, 360);
-  if(story.notizSeiteDazu) story.notizSeiteDazu({ art: 'skizze', bild: c, name: 'Rotes Fell', ort: 'waldinsel' });
+  return c;
 }
+story.e3FellSeite = fellBild;
+// Der Bananenkorb im Inventar (ausruestung.js SACHEN.bananen): derselbe Korb, ohne das Fell
+story.bananenModell = function(){ const g = baueKorb(); if(g.userData.fell){ g.remove(g.userData.fell); g.userData.fell = null; } return g; };
+// Unter der Lupe: ein Stueck vom Korbrand (Geflecht), daran rote Haare – gross und gut zu sehen
+story.e3FellModell = function(){
+  const g = new THREE.Group(), braun = new THREE.MeshLambertMaterial({ color: 0x9a6b3a }), dunkel = new THREE.MeshLambertMaterial({ color: 0x6e4a26 });
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 0.05), braun));
+  for(let i = 0; i < 6; i++){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.085, 0.054), dunkel); s.position.x = -0.135 + i * 0.054; g.add(s); }
+  const rot = [new THREE.MeshLambertMaterial({ color: 0xc44a1e }), new THREE.MeshLambertMaterial({ color: 0x96321a })];
+  let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for(let i = 0; i < 16; i++){ const L = 0.07 + rnd() * 0.07, h = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.004, L, 5), rot[i % 2]);
+    h.position.set(-0.06 + rnd() * 0.12, -0.01 - L * 0.35 + rnd() * 0.03, 0.03); h.rotation.set(0, 0, -0.6 + rnd() * 1.2); g.add(h); }
+  // mittig und so gekippt, dass die Lupe (notizbuch.js: Oberseite +y zur Kamera) die Vorderseite zeigt
+  const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.sub(c);
+  const h = new THREE.Group(); h.add(g); h.rotation.x = -Math.PI / 2; const aussen = new THREE.Group(); aussen.add(h);
+  return Promise.resolve({ g: aussen, L: 0.32 });
+};
 function fuchsZu(id){
-  const k = story.kreisZielVon && story.kreisZielVon(id); if(!k || !eva || !story.fuchsRundgang) return;
+  const k = story.kreisZielVon && story.kreisZielVon(id); if(!k) return;
+  k.frei = true;                                                   // der Ring erscheint jetzt (ohne neuen Suchblick)
+  if(!eva || !story.fuchsRundgang) return;
   story.spaeter(0.6, () => story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === k));
 }
 
 // notizbuch.js: nach jeder fertigen Stelle
 story.e3StelleFertig = function(id){
-  if(id === 'entchen_lupe' && hi.stufe === 'gesucht'){ hi.stufe = 'lupe'; story.spaeter(0.8, () => story.sprich(T.hinweisGorilla)); }
-  if(id === 'entchen_schnitzen' && hi.stufe === 'erzaehlt'){ hi.stufe = 'geschnitzt'; story.spaeter(0.8, () => story.sprich(T.hinweisGorilla)); }
-  if(id === 'gorilla_foto'){ hi.stufe = 'foto'; story.spaeter(0.6, () => story.sprich(T.hinweisRaus)); }
+  // "Sprich noch einmal mit dem Gorilla": nur, wenn Joshi bis dahin nicht schon bei ihm war (sonst klappte der Satz nach dem
+  // naechsten Gespraech hinterher – die Ansage wartet, bis die vorige fertig ist)
+  // (Live-Wunsch 22.10.2026: "Sprich doch noch einmal mit dem Gorilla" nur noch ueber die Hilfe-Taste)
+  if(id === 'entchen_lupe' && hi.stufe === 'ruhe') hi.stufe = 'lupe';
+  if(id === 'entchen_schnitzen'){ kaputtWeg(); if(hi.stufe === 'erzaehlt') hi.stufe = 'geschnitzt'; }
+  // Fell unter der Lupe und im Notizbuch: jetzt erst fragt Joshi danach; der Gorilla leiht ihm das Flugzeug
+  // ... und der Korb ist ab jetzt in Joshis Rucksack (Live-Wunsch 22.10.2026): in der Hoehle verschwindet er
+  if(id === 'fell_lupe'){ bananenEinpacken(); }
+  if(id === 'fell_lupe' && hi.stufe === 'korb'){ hi.stufe = 'fell';
+    story.spaeter(0.6, () => { sprichDann(T.joshiFell, 'joshi'); sprichDann(T.gorillaFell, 'tierM', () => {
+      story.e3MustangFrei = true;                                  // hoehle.js: Y an der Mustang, der Weg wird hell
+      fuchsZu('gorilla_foto'); }); }); }   // ohne "Mach doch noch ein Foto" (Live-Wunsch 22.10.2026): der Fuchs zeigt den Ring
+  if(id === 'gorilla_foto') hi.stufe = 'foto';            // "Geh hinaus zum Flugzeug" nur ueber die Hilfe-Taste (Live-Wunsch 22.10.2026)
 };
-// Bedingungen der Stellen (notizbuch.js STELLEN): erst nach dem Suchblick; Schnitzen erst nach dem Gespraech; Foto am Schluss
+function bananenEinpacken(){
+  if(story.ausruestung) story.ausruestung.bananen = true;
+  const k = hi.korb && story.dinge.find(q => q.obj === hi.korb); if(k){ story.entferne(k); hi.korb = null; hi.korbWeg = null; }
+}
+// Das kaputte Entchen ist nach dem Schnitzen weg (Live-Wunsch 22.10.2026) – auch nicht mehr auf dem Foto
+function kaputtWeg(){ if(hi.kaputt && !hi.kaputtWeg){ hi.kaputtWeg = true; story.entferne(hi.kaputt); } }
+// Bedingungen der Stellen (notizbuch.js STELLEN): Lupe nach dem Suchblick; der Schnitzring erst nach dem Gespraech (vorher
+// ist er gar nicht da, Live-Wunsch 22.10.2026); der Lupenring am Fell, wenn der Korb zurueck ist; Foto am Schluss
+const AB = (...stufen) => stufen.includes(hi.stufe);
 story.e3StelleFrei = function(id){
-  if(id === 'entchen_lupe') return hi.stufe !== 'x';
-  if(id === 'entchen_schnitzen') return hi.stufe !== 'x';           // sichtbar ab dem Suchblick, Y erst nach dem Gespraech (e3Darf)
-  if(id === 'gorilla_foto') return hi.stufe === 'fell' || hi.stufe === 'foto';
+  if(id === 'entchen_lupe') return hi.stufe !== 'x' && hi.stufe !== 'gesucht';   // erst nach "Lass mich in Ruhe"
+  if(id === 'entchen_schnitzen') return AB('erzaehlt', 'geschnitzt', 'froh', 'korb', 'fell', 'foto');
+  if(id === 'fell_lupe') return AB('korb', 'fell', 'foto');
+  if(id === 'gorilla_foto') return (hi.stufe === 'fell' && !!story.e3MustangFrei) || hi.stufe === 'foto';
   return false;
 };
 story.e3Darf = function(id){                                       // Y am Kreis: darf es schon? (sonst ein Satz)
   if(id === 'entchen_schnitzen' && hi.stufe !== 'erzaehlt'){ story.sprich(T.nochNicht); return false; }
   return true;
 };
-// Foto vom Gorilla: er steht, das Entchen in der Hand (vor ihm), schaut zur Kamera und lacht (ChestDrum ist zu wild – stehen)
+// Foto vom Gorilla (Live-Wunsch 22.10.2026): das Entchen steht auf dem gelben Strohplatz (seinem Schlafplatz) neben ihm, er
+// schaut zur Kamera und macht seine Freuden-Pose – ChestDrum, angehalten in der Mitte (Arme oben an der Brust)
+const STROH = { x: RAUM.x - RAUM.R + 2.4, z: RAUM.z - 1.8, y: 0.25 };   // wie in baueRaum (Stroh 0,25 m hoch)
+const FREUDE_POSE = 0.45;                                                // Anteil des Clips: die Faeuste an der Brust
 story.e3FotoVorbereiten = function(){ if(!hi.gorilla) return; story.fotoLaeuft = true;
-  hi.gorilla.rotation.y = Math.atan2(FOTO_P.x - GORILLA.x, FOTO_P.z - GORILLA.z); gorillaAnim('stehen');
-  if(hi.korb){ hi.korbWeg = null; hi.korb.position.set(GORILLA.x + 1.1, BODEN_Y, GORILLA.z + 0.4); }
+  hi.gorilla.rotation.y = Math.atan2(FOTO_P.x - GORILLA.x, FOTO_P.z - GORILLA.z);
+  const a = hi.acts.freuen; if(a){ for(const x of Object.values(hi.acts)) x.stop(); a.reset(); a.play(); a.paused = true; a.time = a.getClip().duration * FREUDE_POSE; hi.cur = 'freuen'; hi.mixer.update(0); }
+  else gorillaAnim('stehen');
+  if(hi.entchen){ const e = hi.entchen; story.welt(3).attach(e);                    // aus seinen Haenden aufs Stroh
+    // schaut im 60-Grad-Winkel zum Gorilla (Live-Wunsch 22.10.2026): der Schnabel des Modells zeigt auf -x, also um die
+    // Richtung zum Gorilla drehen und 60 Grad zur Kamera hin versetzen
+    const zumGorilla = Math.atan2(GORILLA.x - STROH.x, GORILLA.z - STROH.z), zurKamera = Math.atan2(FOTO_P.x - STROH.x, FOTO_P.z - STROH.z);
+    // die Seite, auf der der Schnabel mehr zur Kamera zeigt (so sieht man die Ente eher im Profil als von hinten)
+    const a = zumGorilla + Math.PI / 3, b = zumGorilla - Math.PI / 3;
+    const blick = Math.cos(a - zurKamera) > Math.cos(b - zurKamera) ? a : b;
+    // Schnabelrichtung am Objekt selbst messen (hoechste Ecke = Kopf; waagerecht von der Mitte dorthin) und um den Rest drehen
+    e.rotation.set(0, 0, 0); e.updateMatrixWorld(true);
+    { const v = new THREE.Vector3(), c0 = new THREE.Box3().setFromObject(e).getCenter(new THREE.Vector3()); let top = null;
+      e.traverse(m => { if(!m.isMesh) return; const p = m.geometry.attributes.position; for(let i = 0; i < p.count; i += 3){ v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld); if(!top || v.y > top.y) top = v.clone(); } });
+      const ist = top ? Math.atan2(top.x - c0.x, top.z - c0.z) : 0;
+      e.rotation.y = blick - ist; e.updateMatrixWorld(true); }
+    const bb = new THREE.Box3().setFromObject(e), c = bb.getCenter(new THREE.Vector3());
+    e.position.x += STROH.x + 0.5 - c.x; e.position.z += STROH.z + 0.6 - c.z; e.position.y += BODEN_Y + STROH.y - bb.min.y; }
+  if(hi.korb){ hi.korbWeg = null; hi.korb.position.set(GORILLA.x + 1.1, BODEN_Y, GORILLA.z + 0.4); }   // (nach der Lupe ist er im Rucksack)
   story.spaeter(8, () => { story.fotoLaeuft = false; }); };
 story.e3Hinweis = function(){
   if(hi.drin){
     if(hi.stufe === 'x') return T.hinweisX;
-    if(hi.stufe === 'gesucht') return T.hinweisLupe;
+    if(hi.stufe === 'gesucht') return T.hinweisZumGorilla;
+    if(hi.stufe === 'ruhe') return T.hinweisLupe;
     if(hi.stufe === 'lupe') return T.hinweisGorilla;
     if(hi.stufe === 'erzaehlt') return T.hinweisSchnitz;
     if(hi.stufe === 'geschnitzt') return T.hinweisGorilla;
+    if(hi.stufe === 'korb') return T.hinweisFell;
     if(hi.stufe === 'fell') return T.hinweisFoto;
     return T.hinweisRaus;
   }
@@ -318,11 +411,12 @@ story.e3Gesucht = function(){ if(hi.drin && hi.stufe === 'x') hi.stufe = 'gesuch
 story.testE3 = function(){
   baueRaum();
   const warte = () => { if(!hi.gorilla){ story.spaeter(0.3, warte); return; }
-    hi.stufe = 'gesucht';
+    hi.stufe = 'ruhe';
     let k = Promise.resolve();
     for(const id of ['entchen_lupe', 'entchen_schnitzen']) k = k.then(() => story.testStelle ? story.testStelle(id) : null);
-    k.then(() => { hi.stufe = 'froh'; entchenZeigen(); gorillaAnim('stehen'); if(hi.korb && hi.korb.userData.fell) hi.korb.userData.fell.visible = true;
-      korbZurueck(); fellInsNotizbuch(); hi.stufe = 'fell'; story.e3MustangFrei = true; hi.warDrin = true;
+    k.then(() => { kaputtWeg(); hi.stufe = 'froh'; entchenZeigen(); gorillaAnim('stehen'); if(hi.korb && hi.korb.userData.fell) hi.korb.userData.fell.visible = true;
+      korbZurueck(); hi.stufe = 'korb'; return story.testStelle ? story.testStelle('fell_lupe') : null; })
+     .then(() => { hi.stufe = 'fell'; story.e3MustangFrei = true; hi.warDrin = true;
       return story.testStelle ? story.testStelle('gorilla_foto') : null; })
      .then(() => { hi.stufe = 'foto'; if(story.e3Draussen) story.e3Draussen(); });
   };
@@ -390,7 +484,7 @@ story.updateHoehleInnen = function(dt){
     hi.korb.position.lerpVectors(w.von, w.nach, e); hi.korb.position.y = BODEN_Y + Math.sin(k * Math.PI) * 0.25;
     if(k >= 1){ hi.korbWeg = null; const d = story.dinge.find(q => q.obj === hi.korb); if(d && story.dingNeu) story.dingNeu(d); } }
   // Gorilla schaut traurig ins Feuer; froh: zu Joshi
-  if(hi.gorilla && eva && hi.drin && (hi.stufe === 'froh' || hi.stufe === 'fell') && !story.fotoLaeuft){
+  if(hi.gorilla && eva && hi.drin && (hi.stufe === 'froh' || hi.stufe === 'korb' || hi.stufe === 'fell') && !story.fotoLaeuft){
     const p = eva.group.position, soll = Math.atan2(p.x - GORILLA.x, p.z - GORILLA.z); let dw = soll - hi.gorilla.rotation.y; dw = Math.atan2(Math.sin(dw), Math.cos(dw));
     hi.gorilla.rotation.y += dw * Math.min(1, dt * 2); }
 };

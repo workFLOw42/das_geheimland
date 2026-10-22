@@ -61,13 +61,19 @@ const STELLEN = [
   // ---- Etappe 3, in der Hoehle des Gorillas (hoehle_innen.js; innen: nur in der Hoehle) ----
   // Lupe: das zerbrochene Holzentchen neben dem Gorilla (erst nach dem Suchblick in der Hoehle)
   { id: 'entchen_lupe', art: 'lupe', name: 'Das kaputte Entchen', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 636.3, z: -619.0, r: 0.95 }, nachX: true,
-    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_lupe')), modell: 'entchen_kaputt', liegt: true,
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_lupe')), modell: 'entchen_kaputt', seitlich: true,
     bau: () => story.kaputtesEntchen(), text: ['Oh, ein Holzentchen. Es ist zerbrochen.'] },
-  // Schnitzen: der Holzscheit rechts vorn am Feuer – ein neues Entchen (erst nach dem Gespraech mit dem Gorilla)
+  // Schnitzen: der Holzscheit rechts vorn am Feuer – ein neues Entchen (der Ring erst nach dem Gespraech mit dem Gorilla)
   { id: 'entchen_schnitzen', art: 'messer', name: 'Das neue Entchen', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 643.6, z: -617.8, r: 0.95 }, nachX: true,
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_schnitzen')), darf: () => !story.e3Darf || story.e3Darf('entchen_schnitzen'),
     modell: 'entchen', scheitHoehle: true, arbeitsplatz: { x: 641.6, z: -618.6 }, feuer: { x: 640, z: -620.5 }, regal: 'entchen',
     text: ['Toll! Ein neues Holzentchen.'] },
+  // Lupe am Korb (Live-Wunsch 22.10.2026): hat der Gorilla Joshi den Korb hingeschoben, liegt davor ein brauner Ring – unter
+  // der Lupe das rote Fell am Korbrand; ins Notizbuch kommt die Fell-Skizze (seite statt der Modellskizze). Kein nachX: der
+  // Ring erscheint sofort (hoehle_innen.js fuchsZu), der Fuchs zeigt ihn.
+  { id: 'fell_lupe', art: 'lupe', name: 'Rotes Fell', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 638.1, z: -619.2, r: 0.95 }, nachX: true,
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('fell_lupe')), modell: 'fell', liegt: true,
+    bau: () => story.e3FellModell(), seite: () => story.e3FellSeite(), text: ['Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch.'] },
   // Foto: der Gorilla mit seinem Entchen, vor dem Ausgang (ganz am Schluss)
   { id: 'gorilla_foto', art: 'foto', name: 'Der Gorilla', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 640, z: -613.6, r: 0.95 },
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('gorilla_foto')), vorher: () => story.e3FotoVorbereiten && story.e3FotoVorbereiten(),
@@ -648,6 +654,24 @@ story.bildEbene = function(dt, szene, pause){
 // von oben, mit schlagenden Fluegeln – bis B. Danach jeweils eine Bleistiftskizze des Modells (mit J) ins Notizbuch.
 const sz = { phase: null, t: 0, s: null, gruppe: null, modell: null, L: 1, klotz: null, spaene: [], mx: null, skizze: null };
 const T_SCHNITZ = 7.0;          // Live-Wunsch 16.10.: etwas laenger (vorher 4 s)
+// Schnitzgeraeusch (Live-Wunsch 22.10.2026: "carving wood" von pineframestudios, Pixabay – schnitzen_snd.js): laeuft vom
+// ersten Schnitt bis zum Ende des Schnitzens in Schleife (6,5 s Aufnahme, 7 s Schnitzen), am Ende 0,4 s ausgeblendet. Die
+// Aufnahme ist sehr leise (Spitze 0,11) – deshalb kraeftig verstaerkt.
+const SCHNITZ_VOL = 7, SCHNITZ_AUS = 0.4;
+const schnitzTon = { buf: null, laedt: false, src: null, gain: null };
+function schnitzTonLaden(){ if(schnitzTon.buf || schnitzTon.laedt || !window.SCHNITZEN_SND || typeof decodeSound !== 'function' || !audioCtx) return; schnitzTon.laedt = true;
+  decodeSound(window.SCHNITZEN_SND).then(b => { schnitzTon.buf = b; }).catch(e => console.warn('Schnitz-Ton', e)); }
+function schnitzTonAn(){
+  try { schnitzTonLaden(); } catch(e){ return; } if(schnitzTon.src || !schnitzTon.buf || !soundOn || !audioCtx || audioCtx.state !== 'running') return;
+  const q = audioCtx.createBufferSource(), g = audioCtx.createGain(); q.buffer = schnitzTon.buf; q.loop = true;
+  g.gain.value = 0; g.gain.linearRampToValueAtTime(SCHNITZ_VOL, audioCtx.currentTime + 0.15);
+  q.connect(g); g.connect(audioCtx.destination); q.start(); schnitzTon.src = q; schnitzTon.gain = g;
+}
+function schnitzTonAus(){
+  const q = schnitzTon.src, g = schnitzTon.gain; if(!q) return; schnitzTon.src = null; schnitzTon.gain = null;
+  const t = audioCtx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + SCHNITZ_AUS);
+  try { q.stop(t + SCHNITZ_AUS + 0.05); } catch(e){}
+}
 // Holzscheit: Schwarzblende, Joshi sitzt am Lagerfeuer (Arbeitsplatz), aufblenden – dann beginnt das Schnitzen
 const feuerVon = (s) => s.feuer || story.insel.feuer;
 function blendeZumArbeitsplatz(s, weiter){
@@ -685,7 +709,7 @@ function szeneStarten(s){
     E.szene.add(sz.flaeche); sz.flaeche.visible = false;
     g.traverse(m => { if(m.isMesh){ m.renderOrder = 6; m.material = m.material.clone(); m.material.transparent = true; } });
     sz.gruppe.visible = false;
-    sz.skizze = modellSkizze(s);                                   // die Bleistiftskizze schon jetzt (aus dem fertigen Modell)
+    sz.skizze = s.seite ? s.seite() : modellSkizze(s);             // die Bleistiftskizze schon jetzt (aus dem fertigen Modell)
     if(s.art === 'messer'){
       // Holzklotz: heller Quader mit Maserung, in den das Messer schneidet
       const holz = document.createElement('canvas'); holz.width = holz.height = 128; const hg = holz.getContext('2d');
@@ -741,7 +765,8 @@ function modellSkizze(s){
   const kopie = story.klonSkin(sz.modell); kopie.scale.setScalar(1 / sz.L); szn.add(kopie); kopie.updateMatrixWorld(true);
   // Fuchs schraeg von vorn, Schmetterling von oben (wie unter der Lupe)
   // Holzfuchs: um 180 Grad gedreht (Live-Befund 16.10.: die Schnauze zeigte nach hinten)
-  if(s.art === 'lupe') kopie.rotation.set(s.liegt ? Math.PI / 2 - 0.25 : Math.PI / 2, 0, 0); else kopie.rotation.set(0.15, -0.6 + Math.PI, 0);
+  if(s.seitlich) kopie.rotation.set(0.35, 0.45, 0);
+  else if(s.art === 'lupe') kopie.rotation.set(s.liegt ? Math.PI / 2 - 0.25 : Math.PI / 2, 0, 0); else kopie.rotation.set(0.15, -0.6 + Math.PI, 0);
   const kam = new THREE.PerspectiveCamera(30, W / H, 0.01, 10); kam.position.set(0, 0, 2.2); kam.lookAt(0, 0, 0);
   const rt = new THREE.WebGLRenderTarget(W, H), alt = renderer.getRenderTarget();
   renderer.setRenderTarget(rt); renderer.clear(); renderer.render(szn, kam); renderer.setRenderTarget(alt);
@@ -754,7 +779,10 @@ function modellSkizze(s){
 }
 const _sv = new THREE.Vector3();
 function updateSzene(dt, pause){
+  if(pause && schnitzTon.src) schnitzTonAus();                     // Pause/Inventar: Schnitzgeraeusch aus (kommt mit dem Weiterschnitzen wieder)
   if(!sz.phase || pause) return;
+  if(sz.phase !== 'schnitzen' && schnitzTon.src) schnitzTonAus();
+  if(sz.s && sz.s.art === 'messer') schnitzTonLaden();
   sz.t += dt;
   const E = story.ebene(), H = E.hoehe, gross = H * 0.42;
   const g = sz.modell, grp = sz.gruppe;
@@ -764,7 +792,9 @@ function updateSzene(dt, pause){
   if(sz.phase === 'schnitzen'){
     // Klotz wird kleiner, der Fuchs waechst aus ihm heraus; das Messer (raus.akt, ausruestung.js) schabt rechts daneben
     const k = weich(sz.t / T_SCHNITZ);
-    grp.position.set(-0.25, -0.15, 0.4);
+    // genau dort, wo das fertige Modell danach steht (Live-Wunsch 22.10.2026: vorher bei -0,25/-0,15, beim Zeigen 0/0 – es
+    // sprang nach dem Schnitzen in die Mitte). Das Messer schabt am rechten Rand (story.messerAn)
+    grp.position.set(0, 0, 0.4);
     const lin = Math.min(1, sz.t / T_SCHNITZ);
     sz.klotz.scale.set(gross * 1.25, gross * 0.8, gross * 0.6);
     klotzMaske(lin);
@@ -774,18 +804,21 @@ function updateSzene(dt, pause){
     const fa = weich((lin - 0.35) / 0.5);
     g.visible = fa > 0.01; g.traverse(m => { if(m.isMesh){ m.material.opacity = fa; m.material.depthWrite = fa > 0.95; } });
     if(story.messerAn) story.messerAn(Math.sin(sz.t * 9) * 0.3, 0.05 + Math.cos(sz.t * 4.5) * 0.08);
+    schnitzTonAn();                                                // laeuft (einmal gestartet) bis zum Ende des Schnitzens
     // Spaene: kleine helle Holzstueckchen, die vom Klotz wegfliegen
     if(Math.random() < dt * 22) spahn(grp);
-    if(sz.t >= T_SCHNITZ){ grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; g.visible = true; g.traverse(m => { if(m.isMesh){ m.material.opacity = 1; m.material.depthWrite = true; } }); }
+    if(sz.t >= T_SCHNITZ){ schnitzTonAus(); grp.remove(sz.klotz); sz.phase = 'zeigen'; sz.t = 0; g.visible = true; g.traverse(m => { if(m.isMesh){ m.material.opacity = 1; m.material.depthWrite = true; } }); }
   } else if(sz.phase === 'lupe'){
     // Die Lupe steht aufrecht gross im Bild (raus.akt, ausruestung.js lupeAn) – genau hinter ihrem Glas der Schmetterling,
     // von oben gesehen und stark vergroessert, mit schlagenden Fluegeln
     const gl = story.lupeGlas ? story.lupeGlas() : null;            // Mitte und Groesse des Glases in der Ebene
     if(gl) grp.position.set(gl.x, gl.y, gl.z - 0.5); else grp.position.set(0, 0.05, 0.2);
-    g.scale.setScalar((gl ? gl.r * (sz.s.liegt ? 1.85 : 1.5) : gross) / sz.L);   // ganz im Glas (die flache Schale darf es fast fuellen)
+    g.scale.setScalar((gl ? gl.r * (sz.s.liegt || sz.s.seitlich ? 1.85 : 1.5) : gross) / sz.L);   // ganz im Glas (die flache Schale darf es fast fuellen)
     // von oben (Oberseite zur Kamera, Kopf nach oben), dreht sich nur ganz leicht
     // liegt (Bananenschale): Oberseite +y zur Kamera (+z) kippen, sonst wie der Schmetterling
-    if(sz.s.liegt) g.rotation.set(Math.PI / 2 - 0.25, Math.sin(sz.t * 0.5) * 0.12, 0); else g.rotation.set(Math.PI / 2, 0, Math.sin(sz.t * 0.5) * 0.12);
+    // seitlich (das kaputte Entchen): von der Seite, leicht von oben – Rumpf und abgebrochener Kopf nebeneinander
+    if(sz.s.seitlich) g.rotation.set(0.35, 0.45 + Math.sin(sz.t * 0.5) * 0.12, 0);
+    else if(sz.s.liegt) g.rotation.set(Math.PI / 2 - 0.25, Math.sin(sz.t * 0.5) * 0.12, 0); else g.rotation.set(Math.PI / 2, 0, Math.sin(sz.t * 0.5) * 0.12);
     if(sz.falterMx) sz.falterMx.setTime(0.03 * (1 - Math.cos(sz.t * 1.6)));
     if(sz.s.animiere) sz.s.animiere(g, sz.t);                      // eigene Bewegung (Ameisen auf der Bananenschale)
     if(story.lupeAn) story.lupeAn();
@@ -971,7 +1004,7 @@ function stelleErledigen(s){
   if(!s.modell){ const vorher = ab.s; ab.s = s; const b = aufnehmen(s); ab.schichten = null; ab.s = vorher;
     zustand.seiten.push({ art: s.art, bild: s.art === 'foto' ? b : mitSignatur(b), name: s.name, ort: s.ort || 'insel', dreh }); return Promise.resolve(); }
   return (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => { sz.modell = g; sz.L = L;
-    zustand.seiten.push({ art: 'skizze', bild: modellSkizze(s), name: s.name, ort: s.ort || 'insel', dreh }); sz.modell = null; fertigInHuette(s); });
+    zustand.seiten.push({ art: 'skizze', bild: s.seite ? s.seite() : modellSkizze(s), name: s.name, ort: s.ort || 'insel', dreh }); sz.modell = null; fertigInHuette(s); });
 }
 // Test (waldinsel.js): Stelle id freischalten (wie nach dem Suchblick) bzw. erledigen
 story.kreisZielVon = (id) => { const s = STELLEN.find(q => q.id === id); return s ? kreisZiel(s) : null; };

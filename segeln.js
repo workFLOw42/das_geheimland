@@ -3,6 +3,7 @@
 // nach Norden und pendelt nach). Im Segelboot (steg.js) oben links das Radar (gleich gross wie der Kompass) mit dem roten
 // Punkt zum Ziel (wie in Trip to Japan: die SPITZE des Dreiecks ist das Boot), darunter der Schubbalken
 // (senkrecht, so breit wie das Radar; Farben wie in der Engine; blendet nach 5 s aus, bei jeder Aenderung wieder da). Kein linkes HUD, kein Gyroskop.
+// In der Mustang (Etappe 3, hoehle.js story.e3FlugAnzeige) dieselben Anzeigen: Radar mit dem roten Punkt, Schubbalken.
 // Ziel: story.ziel = { x, z, r } – gesetzt, sobald der Funkspruch angenommen ist (FALL1_ZIEL). Ankommen wie in Trip to
 // Japan: grob in der Naehe (Abstand < r), dann story.zielErreicht().
 (function(){
@@ -19,6 +20,7 @@ const RADAR_WEIT = 300;          // m am Radarrand
 const W = 130;                   // Groesse von Radar und Kompass (px), wie die Engine-Scheiben
 const SCHUB_H = 293;            // Hoehe des Schubbalkens (px) – Segmente um 1/3 groesser als zuerst (220, Live-Wunsch)
 const SCHUB_ABST = 20;          // px Luft zwischen Radar und Schubbalken (Live-Wunsch: 10 px tiefer)
+const FLUG_WEIT = 3000;         // m am Radarrand im Flugzeug (es ist zehnmal so schnell wie das Boot)
 
 // ---- Anzeigen (DOM) ---------------------------------------------------------------------------------------------
 const hud = { radar: null, ctx: null, kompass: null, schub: null, seg: [], an: false };
@@ -50,7 +52,8 @@ function zeigen(an){
 }
 
 // ---- Radar: Spitze des Dreiecks = das Boot, roter Punkt = Ziel (wie Trip to Japan, story.js hookRadarAnzeige) -----
-function malRadar(x, z, kurs){
+function malRadar(x, z, kurs, ziel, weit){
+  ziel = ziel || story.ziel; weit = weit || RADAR_WEIT;
   const g = hud.ctx, cx = W / 2, cy = W / 2, R = W / 2 - 6;
   g.clearRect(0, 0, W, W);
   g.fillStyle = 'rgba(10,25,40,0.55)'; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
@@ -59,13 +62,13 @@ function malRadar(x, z, kurs){
   // Insel (Startinsel bei 0, 0) als heller Fleck – zum Wiederfinden
   const punkt = (px, pz, r, farbe, rand) => {
     const dx = px - x, dz = pz - z, rel = kurs - Math.atan2(dx, dz), d = Math.hypot(dx, dz);
-    const rr = Math.min(R - 8, d / RADAR_WEIT * (R - 8));
+    const rr = Math.min(R - 8, d / weit * (R - 8));
     g.fillStyle = farbe; g.beginPath(); g.arc(cx + Math.sin(rel) * rr, cy - Math.cos(rel) * rr, r, 0, Math.PI * 2); g.fill();
     if(rand){ g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1; g.stroke(); }
   };
-  if(story.insel) punkt(0, 0, Math.max(3, story.insel.R * 1.12 / RADAR_WEIT * (R - 8)), 'rgba(220,200,140,0.55)');
+  if(story.insel) punkt(0, 0, Math.max(3, story.insel.R * 1.12 / weit * (R - 8)), 'rgba(220,200,140,0.55)');
   g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 13); g.lineTo(cx + 5, cy + 13); g.closePath(); g.fill();
-  if(story.ziel) punkt(story.ziel.x, story.ziel.z, 5, '#ff5a3c', true);
+  if(ziel) punkt(ziel.x, ziel.z, 5, '#ff5a3c', true);
   g.restore();
   g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
 }
@@ -223,7 +226,8 @@ function update(dt){
   bauen();
   const s = story.stegZustand;
   const imBoot = !!(eva && s && s.imBoot && !s.wechsel && locale === 'earth');
-  zeigen(imBoot);
+  const flug = story.e3FlugAnzeige ? story.e3FlugAnzeige() : null;   // in der Mustang
+  zeigen(imBoot || !!flug);
   // Kompass (Live-Wunsch): sobald er im Rucksack ist, immer rechts oben – zu Fuss, schwimmend und im Boot. Nicht im
   // Huetten-Raum (eigene Welt, dort gibt es kein Norden) und nicht waehrend der Ausruestungs-Szene.
   const k = !!(eva && story.ausruestung && story.ausruestung.kompass && !(story.innen && story.innen.drin) && locale === 'earth');
@@ -231,6 +235,7 @@ function update(dt){
   // Blickrichtung ab +z: im Boot der Bug, sonst Joshi (Engine: Nase -Z -> yaw + PI)
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);
   if(s && story.etappe === 1) updateFahrtOptik(dt, s, imBoot);
+  if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT); malSchub(state.throttle, dt); return; }
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);

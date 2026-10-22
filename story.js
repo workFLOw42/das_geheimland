@@ -55,7 +55,7 @@ story.etappeWechsel = function(n){
 story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene);
 story.spielstandMerken = function(naechste){
   const A = story.ausruestung || {}, rucksack = {};
-  for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera']) rucksack[n] = !!A[n];
+  for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen']) rucksack[n] = !!A[n];
   const seiten = (story.notizSeiten ? story.notizSeiten() : []).map(s => {
     let bild = null; try { bild = s.bild && s.bild.toDataURL ? s.bild.toDataURL('image/png') : null; } catch(e){}
     return { art: s.art, name: s.name, ort: s.ort, dreh: s.dreh, bild };
@@ -314,7 +314,12 @@ function hookFigur(){
   };
   // B zu Fuss: hinknien / aufstehen (Engine: buttonB -> evaActionB, Tastatur B und Controller-Knopf 1)
   // im Inventar ist B "zu" (ausruestung.js), bei einem grossen Bild "fertig" (notizbuch.js) – dann nicht knien
-  evaActionB = function(){ if(hilfeOffen() || (story.szeneLaeuft && story.szeneLaeuft())) return; knieUmschalten(); };
+  evaActionB = function(){ if(hilfeOffen() || story.bSperre || (story.szeneLaeuft && story.szeneLaeuft())) return; knieUmschalten(); };
+  // story.bSperre (ausruestung.js: Inventar mit B geschlossen) gilt, bis B losgelassen ist – Tastatur und Controller
+  (function bFrei(){ if(story.bSperre){ let b = !!(keys['KeyB'] || keys['Backspace'] || keys['Escape']);
+      for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[1] && gp.buttons[1].pressed) b = true;
+      if(!b) story.bSperre = false; }
+    requestAnimationFrame(bFrei); })();
   evaJump = function(){};          // der Engine-Huepfer passt nicht zur Figur
   // Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund
   const solidFigOrig = evaSolid;
@@ -338,12 +343,10 @@ function hookFigur(){
     if(sw.aktiv || segeln) lookY = 0;
     return r; };
   cycleModel = function(){};       // Fahrzeuge waehlt die Geschichte
-  // Grosses Astronauten-Symbol beim Aussteigen passt nicht zur Figur
+  // Das grosse Symbol in der Bildmitte (#big: Ein-/Aussteigen ✈️ 🧑‍🚀, Strand 🏖️ …) gibt es gar nicht mehr (Live-Wunsch
+  // 22.10.2026, vorher nur das Astronauten-Symbol weg): showBig zeigt nichts, das Element ist aus (HUD_AUS)
   const showBigOrig = showBig;
-  showBig = function(t){
-    if(t && /\u{1F9D1}‍\u{1F680}/u.test(t)) t = '';
-    return showBigOrig.call(this, t);
-  };
+  showBig = function(){ return showBigOrig.call(this, ''); };
   // Kamera beim Gitarrespielen weiter weg, damit Figur und tanzender Fuchs (5 m vor ihr) ins Bild passen. Die
   // Engine-Kamera folgt der Figur weich (lerp); darauf kann man nicht jedes Bild multiplizieren (der Abstand wuchs
   // dann ins Unendliche). Deshalb hier eine eigene, ruhige Kamera: hinter der Figur in KAM_WEIT x Engine-Abstand,
@@ -1054,6 +1057,13 @@ function fuchsSchaue(dt, x, z, rate){
 }
 function updateFuchs(dt){
   if(!fuchs.obj || !fuchs.aktiv) return;
+  // Sitzt Joshi im Flugzeug (eva = null an Land, nicht im Boot), fliegt der Fuchs mit: nicht zu sehen (Live-Wunsch 22.10.2026).
+  // Steigt Joshi aus, steht er wieder neben ihm (das Nachholen unten setzt ihn hin).
+  // (am Fallschirm ist Joshi ebenso nicht zu Fuss – fallschirm.js; nach der Landung ist er es wieder, dann ist Fuchsi da)
+  const imFlieger = !eva && locale === 'earth' && !(story.imBoot && story.imBoot());
+  if(fuchs.obj.visible === imFlieger){ fuchs.obj.visible = !imFlieger;
+    if(!imFlieger && eva){ const n = nebenFigur(-1.5, 1.2); if(fuchsFrei(n.x, n.z)){ fuchs.obj.position.x = n.x; fuchs.obj.position.z = n.z; fuchs.ziel = null; } } }
+  if(imFlieger) return;
   fuchs.mixer.update(dt);
   fuchs.t += dt;
   const fp = fuchs.obj.position;
@@ -1494,6 +1504,8 @@ const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
   if(rolle === 'inventar'){ story.stimmeStopp(); halten(); }
   else if(sprichtGerade || gehalten){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
+  // saetze darf eine Funktion sein: sie entscheidet erst, wenn die Ansage drankommt (leer = nichts mehr zu sagen; hoehle_innen.js)
+  if(typeof saetze === 'function'){ saetze = saetze() || []; if(!saetze.length){ if(fertig) fertig(); const n = sprichWarte.shift(); if(n) n(); return; } }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
   const me = sprichtGerade = { rolle };
@@ -2044,10 +2056,10 @@ function hookLoop(){
 
 // ---- HUD: ausgeblendet (Live-Wunsch 14.10.) ----------------------------------------------------
 // Kein Radar, kein Gyroskop, keine linke Anzeige (Modell/Hoehe/Speed/Sprung/Symbole), kein
-// Controller-Hinweis. Das grosse Bestaetigungssymbol (#big) bleibt, ist aber leer gefiltert.
+// Controller-Hinweis, kein grosses Bestaetigungssymbol (#big, Live-Wunsch 22.10.2026).
 // Ideen, falls doch ein HUD gebraucht wird: statt "Modell: Detektiv" + Astronauten-Symbol nur der
 // Name (Joshi) und Joshis Gesicht als kleines Icon (aus dem Figur-Render ausschneiden) – sonst nichts.
-const HUD_AUS = ['hud', 'radar', 'gyro', 'pad'];
+const HUD_AUS = ['hud', 'radar', 'gyro', 'pad', 'big'];
 function hookHudAus(){
   const st = document.createElement('style');
   st.textContent = HUD_AUS.map(id => '#' + id).join(',') + '{display:none!important}';

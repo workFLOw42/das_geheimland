@@ -357,6 +357,10 @@ const ORCA_UEBER = 3;           // m zusaetzliche Hoehe im Sprung ueber das Boot
 const ORCA_EXTRA = 3;           // zu den 6 der Engine
 const ORCA_SPRINGER = 4;        // so viele davon springen (fest, die Engine wuerfelt beim Umsetzen neu)
 const ORCA_UFER = 120;          // m ab Inselmitte: naeher ans Ufer kommt keiner (Sand bis 98,6; tauchen braucht Wasser)
+// ... je Etappe: Radius der Insel + Sand + Luft (Live-Befund 22.10.2026: auf der Waldpiste vor der Hoehle – Etappe 3, Insel
+// 230 m – schwammen und sprangen Wale; die 120 m galten fuer Joshis kleine Insel, und wer nach dem Etappenwechsel an
+// Land lag, wurde nie umgesetzt)
+const orcaUfer = () => Math.max(ORCA_UFER, ((story.etappeR && story.etappeR[story.etappe]) || 0) * 1.12 + 25);
 const ORCA_REVIER = 80;         // m: weiter weg von Joshi/dem Boot schwimmt er zurueck
 const STEG_NAH = 50;            // m: so nah muss Joshi am liegenden Boot sein
 const STEG_ERST = 15, STEG_PAUSE = 60;   // s bis zum ersten Sprung, danach 60-90 s
@@ -404,6 +408,9 @@ function orcaVorher(dt){
   }
   for(const o of orcas){
     if(!o.group || !o.placed || o.deep) continue;
+    // an Land (z. B. nach einem Etappenwechsel mit groesserer Insel): sofort weit draussen neu setzen
+    if(Math.hypot(o.x, o.z) < orcaUfer() || (typeof isOnLand === 'function' && (isOnLand(o.x, o.z) || isOnBeach(o.x, o.z)))){
+      const F = worldFocus(); if(!placeOrca(o, F.x, F.z) || Math.hypot(o.x, o.z) < orcaUfer()){ o.group.visible = false; continue; } o.group.visible = true; o.jfg = null; continue; }
     const st = o.jfg || (o.jfg = { modus: null, t: 0, kuehl: Math.random() * 8, seite: 1, ueber: 0 });
     st.kuehl -= dt;
     if(st.modus === 'steg'){
@@ -468,7 +475,7 @@ function orcaVorher(dt){
     // ... und in Sichtweite bleiben: nicht ans Ufer, nicht weit weg von Joshi bzw. dem Boot
     if(soll === null && jo){
       const px = ziel.da ? ziel.x : jo.x, pz = ziel.da ? ziel.z : jo.z;
-      if(Math.hypot(o.x, o.z) < ORCA_UFER) soll = Math.atan2(-o.x, -o.z);            // von der Inselmitte weg
+      if(Math.hypot(o.x, o.z) < orcaUfer()) soll = Math.atan2(-o.x, -o.z);          // von der Inselmitte weg
       else if(Math.hypot(px - o.x, pz - o.z) > ORCA_REVIER) soll = Math.atan2(o.x - px, o.z - pz);
     }
     if(soll !== null) o.heading += klemme(wd(o.heading, soll), -rate * dt, rate * dt);

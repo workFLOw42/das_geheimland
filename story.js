@@ -24,6 +24,7 @@ const story = window.STORY = { etappe: 1, gestartet: false, ton: false, abenteue
 // Schliessen faengt wieder auf Joshis Insel an. Zum Testen: index.html?etappe=2 springt direkt hin (mit voller
 // Ausruestung, ohne Seiten), ?etappe=1 loescht den Spielstand.
 const SPIELSTAND = 'geheimland.stand';
+story.urlParameter = location.search;                         // vor dem Aufraeumen der Adresse (Testzugaenge, z. B. teleskop.js)
 story.spielstand = (function(){
   let stand = null;
   try {
@@ -1456,6 +1457,7 @@ function hinweisGeben(){
   else if(story.detektivPhase && story.detektivPhase()) satz = HINWEIS.detektiv;      // Markierungen offen (notizbuch.js)
   else if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
   else if(story.etappe === 3 && story.e3Hinweis) satz = story.e3Hinweis();   // vor der Hoehle (hoehle.js)
+  else if(story.etappe === 4 && story.e4HinweisInnen && story.e4HinweisInnen()) satz = story.e4HinweisInnen();   // im Observatorium (observatorium_innen.js)
   else if(story.etappe === 4 && story.e4Hinweis && story.e4Hinweis()) satz = story.e4Hinweis();   // Oase (wueste.js)
   else if(story.etappe === 2){                                      // Waldinsel: eine Welt, keine Huette
     const hier = interListe.filter(o => o.welt === 2), e2 = story.e2Hinweis && story.e2Hinweis();
@@ -2053,7 +2055,7 @@ function pauseAnzeige(an){
   pauseEl.style.display = an ? 'block' : 'none';
 }
 function pauseWechsel(an){
-  pauseAnzeige(an && pause.art !== 'inventar');
+  pauseAnzeige(an && pause.art !== 'inventar' && pause.art !== 'teleskop');   // Teleskop (teleskop.js): eigene Ansicht, kein PAUSE
   document.body.classList.toggle('pausiert', an);                 // Kompass, Radar, Schubbalken aus (data-etappe-hud)
   // die Y-Zeichen ueber den Objekten auch (sie schimmerten durch die Inventar-Flaeche); danach setzt updateInteraktion sie neu
   if(an) for(const o of interListe) if(o.zeichen) o.zeichen.visible = false;
@@ -2067,7 +2069,7 @@ function pauseWechsel(an){
   if(synth){ if(an){ if(synth.speaking){ synth.pause(); story.stimmePausiert = true; } } else { synth.resume(); story.stimmePausiert = false; } }
   // Ton: in der Pause ganz aus, im Inventar bleibt das Hintergrundgeraeusch (Meer, Moewen) – Live-Wunsch 16.10.; danach
   // wieder an (ausser der Globus laeuft – der hat den Ton selbst ausgeblendet)
-  if(story.master && audioCtx && (pause.art !== 'inventar' || !an)){ const g = story.master.gain, t = audioCtx.currentTime;
+  if(story.master && audioCtx && ((pause.art !== 'inventar' && pause.art !== 'teleskop') || !an)){ const g = story.master.gain, t = audioCtx.currentTime;
     if(an){ story.master.vorPause = g.value; g.cancelScheduledValues(t); g.setValueAtTime(0, t); }
     else { const ziel = story.globusAktiv && story.globusAktiv() ? 0 : (story.master.vorPause === undefined ? 1 : Math.max(story.master.vorPause, 1));
       g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(ziel, t + 0.3); } }
@@ -2116,6 +2118,7 @@ function hookLoop(){
     if(story.updateE3) story.updateE3(dt);         // hoehle.js: vor der Hoehle des Gorillas
     if(story.updateE4) story.updateE4(dt);         // wueste.js: Anflug, Sprung, Oase
     if(story.updateHoehleInnen) story.updateHoehleInnen(dt);   // hoehle_innen.js: in der Hoehle
+    if(story.updateObsInnen) story.updateObsInnen(dt);         // observatorium_innen.js: im Observatorium
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.updateSteg) story.updateSteg(dt);     // steg.js: Steg, Segelboot, einsteigen
     if(story.sternbilderUpdate) story.sternbilderUpdate();   // sternbilder.js

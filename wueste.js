@@ -488,13 +488,14 @@ function tiereUpdate(dt){
   m.o.position.set(x, Math.max(seeBoden(x, z) + 0.8, seeY() - MANTA.tief) + Math.sin(tiere.t * 0.4) * 0.4, z);
   m.o.rotation.y = Math.atan2(Math.sin(m.a), -Math.cos(m.a)); m.mx.update(dt);
 }
-// ---- Durch die offene Tuer: Schwarzblende, dann (vorerst) "Fortsetzung folgt" -------------------------------------
+// ---- Durch die offene Tuer: Blende, ins Observatorium (observatorium_innen.js; ohne diese Datei "Fortsetzung folgt") --
 function tuerPruefen(){
   const T = w4.tuer; if(!T || !eva || w4.drin || eva.boat) return;
   const p = eva.group.position;
   if(Math.abs(p.x - T.x) > TUER.b / 2 || p.z > T.z + 0.9 || p.z < T.z - 1) return;
   if(story.aktionLaeuft && story.aktionLaeuft()){ p.z = T.z + 0.9; return; }      // waehrend einer Aktion ist die Tuer zu
   w4.drin = true;
+  if(story.e4Rein){ story.e4Rein(); return; }
   const el = document.createElement('div'); el.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;transition:opacity .35s;pointer-events:none;z-index:55;';
   document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; });
   setTimeout(() => { if(story.fortsetzungFolgt) story.fortsetzungFolgt('🐹', TEXT_FOLGT); }, 400);

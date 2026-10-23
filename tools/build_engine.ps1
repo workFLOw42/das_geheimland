@@ -73,6 +73,14 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              gorilla = 'GORILLA_GLB'; entchen = 'ENTCHEN_GLB'; hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB';
              # Wueste (Etappe 4): das Observatorium des Hamsters ("Welcome to the Observatory" von XelaDoesArt, CC-BY-4.0)
              observatorium = 'OBSERVATORIUM_GLB';
+             # Im Observatorium: Teleskop ("Telescope realistic" von Raphael Grimm) und der Hamster (josephineburns, CC-BY-4.0)
+             teleskop = 'TELESKOP_GLB'; hamster = 'HAMSTER_GLB';
+             # Durch das Teleskop: Sonne, Mond, Planeten und Pluto (Akshat, CC-BY-4.0; die Erde fehlt – auf ihr steht man)
+             planet_sonne = 'PLANET_SONNE_GLB'; planet_merkur = 'PLANET_MERKUR_GLB'; planet_venus = 'PLANET_VENUS_GLB'; planet_mond = 'PLANET_MOND_GLB';
+             planet_mars = 'PLANET_MARS_GLB'; planet_jupiter = 'PLANET_JUPITER_GLB'; planet_saturn = 'PLANET_SATURN_GLB'; planet_uranus = 'PLANET_URANUS_GLB';
+             planet_neptun = 'PLANET_NEPTUN_GLB'; planet_pluto = 'PLANET_PLUTO_GLB';
+             # Draussen: der Schluessel fuer das Raumschiff des Hamsters ("Key Wooden" von Sam, CC-BY-4.0)
+             schluessel = 'SCHLUESSEL_GLB';
              # See der Oase: Meeresschildkroete und Baby (Low Poly, animiert, WildPoly3D, CC-BY-NC-4.0)
              meeresschildkroete = 'MEERESSCHILDKROETE_GLB'; meeresschildkroete_baby = 'MEERESSCHILDKROETE_BABY_GLB' }
 $skripte = @()
@@ -119,6 +127,8 @@ $skripte += 'hoehle.js'
 $skripte += 'hoehle_innen.js'
 $skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Hamster)
 $skripte += 'wueste.js'          # Etappe 4: die Wueste mit der Oase des Hamsters
+$skripte += 'observatorium_innen.js'   # Etappe 4: im Observatorium des Hamsters
+$skripte += 'teleskop.js'              # Etappe 4: durch das Teleskop (Nachthimmel, Planeten, Sternbilder)
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
 $ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()

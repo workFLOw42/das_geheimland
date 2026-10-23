@@ -91,6 +91,10 @@ NC-Lizenzen bedeuten: **nicht kommerziell** – das Spiel darf mit diesen Werken
 | [Bird 3 – Animated Low Poly](https://sketchfab.com/3d-models/bird-3-animated-low-poly-2ed5c072ecaa480aad2bf205651dc028) | **WildPoly3D** | CC-BY-NC-4.0 | kleiner blauer Vogel |
 | [Bird 4 – Animated Low Poly](https://sketchfab.com/3d-models/bird-4-animated-low-poly-c1746868085e4009ac1eea8df3d9ef18) | **WildPoly3D** | CC-BY-NC-4.0 | Meise |
 | [Welcome to the Observatory](https://sketchfab.com/3d-models/welcome-to-the-observatory-258ad7a70f204856b2de319d2756383e) | **XelaDoesArt** | CC-BY-4.0 | Observatorium des Hamsters (Wüste, Etappe 4) |
+| [Telescope (Realistic)](https://sketchfab.com/3d-models/telescope-realistic-b61ba4deb13a4833ae7cd340983823f1) | **Raphael Grimm** | CC-BY-4.0 | Teleskop im Observatorium (Texturen verkleinert) |
+| [Hamster](https://sketchfab.com/3d-models/hamster-364b9958d9fa463f80b9ba99eb533d5a) | **josephineburns** | CC-BY-4.0 | der Hamster (im Spiel eingefärbt) |
+| Sun, Mercury, Venus, Moon, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto ([Sketchfab](https://sketchfab.com/3d-models/sun-cd65c13799fd47a1aeb4c8ac018b2914)) | **Akshat** | CC-BY-4.0 | Sonne, Mond, Planeten und Pluto im Teleskop |
+| [Key Wooden](https://sketchfab.com/3d-models/key-wooden-6448c643b4614815a10115861db8d05c) | **Sam** | CC-BY-4.0 | der geschnitzte Schlüssel für das Raumschiff des Hamsters |
 | [Sea Turtle – Animated Low Poly](https://sketchfab.com/3d-models/sea-turtle-animated-low-poly-d2c766bc36724d5998b62f8b2150acb9) | **WildPoly3D** | CC-BY-NC-4.0 | Meeresschildkröte im See der Oase |
 | [SeaTurtle Baby – Animated Low Poly](https://sketchfab.com/3d-models/seaturtle-baby-animated-low-poly-d6a5a74b67df418585c33ed37873531a) | **WildPoly3D** | CC-BY-NC-4.0 | Schildkröten-Baby im See der Oase |
 | [Ring-Billed Gull](https://sketchfab.com/3d-models/ring-billed-gull-3df7913df7f34b90b152b05e12737c43) | **Oregon State University Ecampus** (osuecampus) | CC-BY-4.0 | sitzende Möwen |

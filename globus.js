@@ -21,7 +21,16 @@ const ORTE = [
   { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (hoehle.js)
   // Live-Wunsch 23.10.2026: der Ankunftspunkt liegt in der Mitte der Wuesteninsel (WUESTE) – dort ist die Oase (wueste.js)
   { name: 'Die Wüste', lat: 6, lon: 66 },                              // Fall 1, Etappe 4 (wueste.js)
+  // Live-Wunsch 23.10.2026: mit dem Raumschiff des Hamsters zum Mond – der Globus zoomt heraus und wandert nach unten, oben im
+  // Nord-Nord-Osten erscheint der Mond, der rote Faden geht im Bogen von der Wueste zu ihm hinauf (mond: true)
+  { name: 'Der Mond', mond: true, folgt: '🌙', satz: 'Joshi fliegt zum Mond. Wie es weitergeht, erfährst du bald.' },
 ];
+const MOND = { r: 0.27, abst: 2.5 };
+// Lage des Mondes zur Kugel: ueber der Wueste nach oben und etwas nach rechts (Nord-Nord-Ost, von der Kamera aus gesehen)
+function mondPos(){
+  const w = latLon(6, 66, 1), oben = new THREE.Vector3(0, 1, 0), rechts = new THREE.Vector3().crossVectors(w.clone().negate(), oben).normalize();
+  return w.clone().multiplyScalar(0.55).add(oben.multiplyScalar(1.15)).addScaledVector(rechts, 0.35).normalize().multiplyScalar(MOND.abst);
+}
 // Inseln der Geheimland-Welt (lat, lon, Groesse in Grad) – Joshis Insel ist die erste
 const WALDINSEL = [36, 24, 9];
 const WUESTE = [6, 66, 11];                                         // gross, gelb, ohne Gruen (Etappe 4)
@@ -36,6 +45,12 @@ function latLon(lat, lon, r){
 }
 // Grosskreis zwischen zwei Orten, in der Mitte leicht ueber der Oberflaeche
 function bogen(a, b, n){
+  if(b.mond){
+    const s = latLon(a.lat, a.lon, GLOBUS_R * 1.02), m = mondPos(), ende = m.clone().addScaledVector(m.clone().sub(s).normalize(), -MOND.r * 1.02);
+    const ctrl = s.clone().add(ende).multiplyScalar(0.5).addScaledVector(s.clone().normalize(), 0.9), out = [];
+    for(let i = 0; i <= n; i++){ const t = i / n, u = 1 - t; out.push(new THREE.Vector3().addScaledVector(s, u * u).addScaledVector(ctrl, 2 * u * t).addScaledVector(ende, t * t)); }
+    return out;
+  }
   const va = latLon(a.lat, a.lon, 1), vb = latLon(b.lat, b.lon, 1), w = Math.max(1e-4, va.angleTo(vb)), out = [];
   for(let i = 0; i <= n; i++){
     const t = i / n;
@@ -66,6 +81,11 @@ function bauen(){
   // feste Symbole (einmal gebaut, nicht jedes Bild): Haus auf Joshis Insel, Joshis Gesicht an der Fadenspitze
   gl.haus = symbolSprite(inselBild(), 0.22); gl.erde.add(gl.haus);
   gl.gesicht = symbolSprite(gesichtBild(), 0.15); gl.gesicht.visible = false; gl.erde.add(gl.gesicht);
+  // der Mond (gemalt: grau mit Kratern), erst zu sehen, wenn die Reise dorthin geht
+  const mc = document.createElement('canvas'); mc.width = 256; mc.height = 128; const mg = mc.getContext('2d'); mg.fillStyle = '#b9b6ae'; mg.fillRect(0, 0, 256, 128);
+  for(let i = 0; i < 70; i++){ const x = Math.random() * 256, y = Math.random() * 128, r = 2 + Math.random() * 9; mg.fillStyle = 'rgba(90,88,82,' + (0.25 + Math.random() * 0.3) + ')'; mg.beginPath(); mg.arc(x, y, r, 0, 7); mg.fill(); }
+  gl.mond = new THREE.Mesh(new THREE.SphereGeometry(MOND.r, 32, 24), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(mc) }));
+  gl.mond.position.copy(mondPos()); gl.mond.visible = false; gl.erde.add(gl.mond);
 }
 // Karte als Canvas (equirektangular: x = Laenge, y = Breite) – passt zu latLon und SphereGeometry
 function weltTextur(){
@@ -175,13 +195,18 @@ function zeichnen(anteil){
   // Joshis Insel: das Haus (statt eines Punkts), etwas ueber der Oberflaeche
   gl.haus.position.copy(latLon(ORTE[0].lat, ORTE[0].lon, GLOBUS_R * 1.06));
   // die anderen Orte: Standardpunkt, der neue erst bei Ankunft (bis feststeht, was sie werden)
-  for(let i = 1; i < r.length; i++){ if(i === r.length - 1 && anteil < 1) continue; if(ORTE[r[i]].symbol !== 'haus') punkt(ORTE[r[i]], 0xffd23f, false); }
+  for(let i = 1; i < r.length; i++){ if(i === r.length - 1 && anteil < 1) continue; if(ORTE[r[i]].symbol !== 'haus' && !ORTE[r[i]].mond) punkt(ORTE[r[i]], 0xffd23f, false); }
+  if(gl.mond) gl.mond.visible = r.some(n => ORTE[n] && ORTE[n].mond);
   // Joshis Gesicht wandert an der Spitze des Fadens mit, am Ziel bleibt es dort
   gl.gesicht.visible = !!spitze;
   if(spitze) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(Math.max(GLOBUS_R * 1.09, spitzeHoch + 0.03));
 }
 function kamera(k){
   const a = ORTE[gl.von], b = ORTE[gl.nach], e = k * k * (3 - 2 * k);
+  if(b.mond){
+    const v = latLon(a.lat, a.lon, 1).normalize(), m = mondPos(), ziel = m.clone().multiplyScalar(0.42 * e);   // Blick wandert zum Mond hin
+    gl.kam.position.copy(v).multiplyScalar(4.2 + 2.6 * e).add(ziel); gl.kam.up.set(0, 1, 0); gl.kam.lookAt(ziel); return;
+  }
   const v = latLon(a.lat + (b.lat - a.lat) * e, a.lon + (b.lon - a.lon) * e, 1).normalize();
   gl.kam.position.copy(v).multiplyScalar(4.2 - 0.6 * Math.sin(Math.PI * e)); gl.kam.up.set(0, 1, 0); gl.kam.lookAt(0, 0, 0);
 }

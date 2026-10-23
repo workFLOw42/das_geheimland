@@ -94,10 +94,12 @@ function baue(){
   gruppe.traverse(o => { o.frustumCulled = false; });
   scene.add(gruppe);                                            // global-ok: Himmel gehoert keiner Welt
 }
-// Mitwandern mit der Kamera (wie die Sternenkuppel), nur auf der Erde und nicht im Innenraum
+// Mitwandern mit der Kamera (wie die Sternenkuppel), nur auf der Erde und nicht im Innenraum – ausser im Observatorium (dort
+// sieht man sie durch den offenen Kuppelspalt, observatorium_innen.js)
 story.sternbilderUpdate = function(){
   if(!gruppe) baue();                                           // laeuft aus der Hauptschleife: scene gibt es dann sicher
-  gruppe.visible = locale === 'earth' && !(story.innen && story.innen.drin) && story.nacht !== false;   // Waldinsel: Tag
+  const innen = story.innen && story.innen.drin && story.innen.wo !== 'observatorium';
+  gruppe.visible = locale === 'earth' && !innen && story.nacht !== false;   // Waldinsel: Tag
   if(gruppe.visible) gruppe.position.copy(camera.position);
 };
 })();

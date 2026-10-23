@@ -661,12 +661,14 @@ function buchMalen(){
   // Bindung in der Mitte
   const bg = c.createLinearGradient(W / 2 - 30, 0, W / 2 + 30, 0); bg.addColorStop(0, 'rgba(0,0,0,0)'); bg.addColorStop(0.5, 'rgba(0,0,0,.35)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = bg; c.fillRect(W / 2 - 30, 54, 60, H - 108);
-  // Inhalt: links Seite buch.seite, rechts buch.seite + 1
+  // Inhalt: links Seite buch.seite, rechts buch.seite + 1 (buch.lage: wo welches Bild liegt – fuer story.buchUeber/buchTick)
+  buch.lage = [];
   for(const [i, x] of [[buch.seite, 60], [buch.seite + 1, W / 2 + 6]]){
     const s = seiten[i]; if(!s) continue;
     const bw = W / 2 - 66, bh = H - 108, pad = 70;
     const ar = s.bild.width / s.bild.height; let w = bw - pad * 2, h = w / ar; if(h > bh - pad * 2 - 60){ h = bh - pad * 2 - 60; w = h * ar; }
     const bx = x + (bw - w) / 2, by = 54 + pad + 10;
+    buch.lage.push({ s, i, x: bx, y: by, w, h, dreh: s.dreh || 0 });
     c.save(); c.translate(bx + w / 2, by + h / 2); c.rotate(s.dreh || 0);
     if(s.art === 'foto'){ c.fillStyle = '#ffffff'; c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillRect(-w / 2 - 18, -h / 2 - 18, w + 36, h + 80); c.shadowColor = 'transparent'; }
     c.drawImage(s.bild, -w / 2, -h / 2, w, h);
@@ -687,6 +689,7 @@ function buchMalen(){
   const pfeil = (x, r) => { c.beginPath(); c.moveTo(x, H / 2 - 34); c.lineTo(x + 34 * r, H / 2); c.lineTo(x, H / 2 + 34); c.closePath(); c.fill(); };
   if(buch.seite > 0) pfeil(52, -1);
   if(buch.seite + 2 < seiten.length) pfeil(W - 52, 1);
+  if(story.buchUeber) story.buchUeber(c, buch.lage);              // Etappen malen darueber (observatorium_innen.js: Spuren vergleichen)
   buch.tex.needsUpdate = true;
 }
 // ---- Symbol fuer Joshis Insel (Live-Wunsch 16.10.: farbig auf dem Globus, als Bleistift-Miniskizze im Notizbuch) ----
@@ -738,6 +741,20 @@ function ortSymbol(c, ort, x, y, g){
   if(ort === 'insel') story.inselIcon(c, x, y, g, 'stift');
   if(ort === 'waldinsel') tannenIcon(c, x, y, g);
   if(ort === 'hoehle') gorillaIcon(c, x, y, g);
+  if(ort === 'observatorium' || ort === 'wueste') observatoriumIcon(c, x, y, g);
+}
+// Etappe 4 (Live-Wunsch 23.10.2026): ein stilisiertes Observatorium wie mit dem Bleistift – Haus mit Tonnendach, darauf die Kuppel
+// mit dem Spalt und das schraeg herausschauende Fernrohr, eine Tuer und zwei Fenster
+function observatoriumIcon(c, x, y, g){
+  c.save(); c.translate(x, y); const s = g / 100; c.strokeStyle = 'rgba(70,55,40,.8)'; c.lineWidth = 3.2 * s; c.lineJoin = 'round'; c.lineCap = 'round';
+  const linie = (f) => { c.beginPath(); f(); c.stroke(); };
+  linie(() => { c.moveTo(-40 * s, 40 * s); c.lineTo(-40 * s, 2 * s); c.quadraticCurveTo(0, -14 * s, 40 * s, 2 * s); c.lineTo(40 * s, 40 * s); c.closePath(); });   // Haus mit Tonnendach
+  linie(() => { c.moveTo(-18 * s, -6 * s); c.arc(0, -6 * s, 18 * s, Math.PI, 0); });                                              // Kuppel
+  linie(() => { c.moveTo(-3 * s, -24 * s); c.lineTo(-3 * s, -8 * s); c.moveTo(3 * s, -24 * s); c.lineTo(3 * s, -8 * s); });     // Spalt
+  linie(() => { c.moveTo(2 * s, -18 * s); c.lineTo(30 * s, -42 * s); c.lineTo(35 * s, -36 * s); c.lineTo(7 * s, -12 * s); });   // Fernrohr
+  linie(() => { c.rect(-8 * s, 18 * s, 16 * s, 22 * s); });                                                                       // Tuer
+  for(const v of [-1, 1]) linie(() => { c.rect(v * 26 * s - 6 * s, 14 * s, 12 * s, 10 * s); });                                 // Fenster
+  c.restore();
 }
 // Hoehle des Gorillas (Live-Wunsch 22.10.2026: "gerne einen Gorilla"): Gorillakopf von vorn, wie mit dem Bleistift – runder
 // Kopf mit dem typischen Scheitelkamm, zwei Ohren, ein helleres Gesicht (Herzform) mit Augen unter dem Brauenwulst, breite
@@ -786,11 +803,23 @@ function updateBuch(dt){
   const H = hoeheEbene(), B = H * innerWidth / innerHeight, s = weich(buch.k);
   const w = Math.min(B * 0.86, H * 0.86 * 1.6);
   if(buch.um){ buch.um.t += dt; if(buch.um.t >= T_BLATT){ buch.um = null; buchMalen(); } else blattMalen(); }   // nur das Blatt bewegt sich
+  else if(buch.offen && story.buchTick && story.buchTick(dt, buch.lage)) buchMalen();   // laufende Animation einer Etappe: neu malen
   buch.mesh.position.set(0, 0, 1);
   buch.mesh.scale.set(w * s, w / 1.6 * s, 1);
   buch.mesh.material.opacity = s;
 }
 const _iq = new THREE.Quaternion();
+// Knopf-Zeichen im Stil des Y und des B (Kreis mit weissem Rand, Buchstabe): A gruen, X blau – story.knopfTextur(buchstabe)
+const KNOPF_FARBE = { A: ['#2ecc40', '#ffffff'], X: ['#2f7df6', '#ffffff'], Y: ['#f5c518', '#1a1a1a'], B: ['#e8352b', '#ffffff'] };
+const knopfTex = {};
+story.knopfTextur = function(b){
+  if(knopfTex[b]) return knopfTex[b];
+  const [farbe, schrift] = KNOPF_FARBE[b] || KNOPF_FARBE.A, c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(64, 68, 56, 0, 7); g.fill();
+  g.fillStyle = farbe; g.beginPath(); g.arc(64, 62, 54, 0, 7); g.fill(); g.lineWidth = 6; g.strokeStyle = '#ffffff'; g.stroke();
+  g.fillStyle = schrift; g.font = 'bold 76px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(b, 64, 66);
+  return (knopfTex[b] = new THREE.CanvasTexture(c));
+};
 function updateInventar(dt){
   inv.k += klemme((inv.an ? 1 : 0) - inv.k, -dt * 4, dt * 4);
   if(inv.flaeche) inv.flaeche.visible = inv.k > 0.001;
@@ -820,7 +849,16 @@ function updateInventar(dt){
     d.glow.position.set(x, y, -0.2);                              // hinter dem Ding
     d.glow.scale.setScalar(platz * (0.6 + 0.5 * d.w) * s * (1 + Math.sin(inv.t * 1.6 + d.i) * 0.04));
     d.glow.material.opacity = (0.05 + 0.8 * d.w) * s * (buch.offen ? 1 - buch.k : 1);
+    // Gruenes A (Live-Wunsch 23.10.2026): klein, unten mittig halb ueberlappend am gewaehlten Ding – A erklaert es bzw. oeffnet
+    // das Notizbuch; nur dort, nie bei offenem Buch
+    if(d.i === inv.wahl){
+      if(!inv.aSp){ inv.aSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: story.knopfTextur('A'), transparent: true, depthTest: false, depthWrite: false })); inv.aSp.renderOrder = 8; szene.add(inv.aSp); }
+      const k = s * d.w * (buch.offen ? 1 - buch.k : 1);
+      inv.aSp.visible = k > 0.02; inv.aSp.material.opacity = k;
+      inv.aSp.position.set(x, y - gross * 0.5 * (1 + 0.4 * d.w), 0.8); inv.aSp.scale.setScalar(platz * 0.17);
+    }
   }
+  if(inv.aSp && (!inv.dinge.some(d => d.i === inv.wahl) || inv.k <= 0.001)) inv.aSp.visible = false;
 }
 
 // ---- Einhaengen: jedes Bild nach dem Spielbild die Ebene zeichnen -------------------------------------------------

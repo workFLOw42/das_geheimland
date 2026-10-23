@@ -51,8 +51,9 @@ function zeigen(an){
     const r = hud.radar.getBoundingClientRect(); hud.schub.style.top = Math.round(r.bottom + SCHUB_ABST) + 'px'; }
 }
 
-// ---- Radar: Spitze des Dreiecks = das Boot, roter Punkt = Ziel (wie Trip to Japan, story.js hookRadarAnzeige) -----
-function malRadar(x, z, kurs, ziel, weit){
+// ---- Radar: Spitze des Symbols = das Boot bzw. Flugzeug, roter Punkt = Ziel. Symbole seit 23.10.2026 aus der Engine
+// (radarSymbol): im Segelboot das Boot-Oval, in der Mustang die P-51-Silhouette – dieselben wie in Trip to Japan ----------
+function malRadar(x, z, kurs, ziel, weit, art){
   ziel = ziel || story.ziel; weit = weit || RADAR_WEIT;
   const g = hud.ctx, cx = W / 2, cy = W / 2, R = W / 2 - 6;
   g.clearRect(0, 0, W, W);
@@ -67,24 +68,25 @@ function malRadar(x, z, kurs, ziel, weit){
     if(rand){ g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1; g.stroke(); }
   };
   if(story.insel) punkt(0, 0, Math.max(3, story.insel.R * 1.12 / weit * (R - 8)), 'rgba(220,200,140,0.55)');
-  g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 13); g.lineTo(cx + 5, cy + 13); g.closePath(); g.fill();
+  if(typeof radarSymbol === 'function') radarSymbol(g, cx, cy, art || 'boot', 0);   // global-ok: Engine
   if(ziel) punkt(ziel.x, ziel.z, 5, '#ff5a3c', true);
   g.restore();
   g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
 }
-// ---- Schubbalken: der eingestellte Schub (0..100 %, rueckwaerts = rotes Segment) – nicht die Fahrt: die naehert sich
-// dem Hoechstwert nur an, damit blieb das letzte blaue Segment unerreichbar (Live-Befund 16.10.) ------------------------
+// ---- Schubbalken: der eingestellte Schub (10..100 %, rueckwaerts = alle Segmente rot; Farben und Abstaende seit 23.10.2026
+// aus der Engine, schubSegmente) – nicht die Fahrt: die naehert sich dem Hoechstwert nur an, damit blieb das letzte blaue
+// Segment unerreichbar (Live-Befund 16.10.) ---------------------------------------------------------------------------
 const SCHUB_SICHT = 5, SCHUB_AUS = 1.5;      // s sichtbar nach der letzten Aenderung, dann s ausblenden
 let schubAlt = '', schubT = 0, schubOp = '';
 // Live-Wunsch 18.10.2026: sichtbar nicht erst, wenn sich der Schub AENDERT, sondern sobald die Schubtasten betaetigt
 // werden – auch bei Vollschub und weiter hoch gedrueckt. Schubtasten: rechter Stick / W,S (thrHold), Leertaste, X, A/C
 // (Hook in hookSegeln). Eine geaenderte Stufe zaehlt weiterhin mit.
 function schubBetaetigt(){ schubT = 0; }
-function malSchub(g, dt){
-  const an = g < -0.01 ? -1 : Math.round(klemme(g, 0, 1) * 10);
-  if(String(an) !== schubAlt){
-    schubAlt = String(an); schubT = 0;                           // geaendert: sofort wieder ganz sichtbar
-    hud.seg.forEach((q, i) => { q.style.opacity = (i === 0 ? an < 0 : i <= an) ? '1' : '.15'; });
+function malSchub(g, dt, art){
+  const an = (g < -0.01 ? 'b' : Math.round(klemme(g, 0, 1) * 10)) + '|' + art;
+  if(an !== schubAlt){
+    schubAlt = an; schubT = 0;                                   // geaendert: sofort wieder ganz sichtbar
+    schubSegmente(hud.seg, g, 3, art);                           // global-ok: Engine (Segelboot: gleiche Abstaende, Mustang: Flugzeug)
   } else schubT += dt;
   const op = klemme(1 - (schubT - SCHUB_SICHT) / SCHUB_AUS, 0, 1).toFixed(2);
   if(op !== schubOp){ schubOp = op; hud.schub.style.opacity = op; }
@@ -235,11 +237,11 @@ function update(dt){
   // Blickrichtung ab +z: im Boot der Bug, sonst Joshi (Engine: Nase -Z -> yaw + PI)
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);
   if(s && story.etappe === 1) updateFahrtOptik(dt, s, imBoot);
-  if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT); malSchub(state.throttle, dt); return; }
+  if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT, 'flieger'); malSchub(state.throttle, dt, 'flieger'); return; }
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);
-  malSchub(story.bootSchub ? story.bootSchub() : 0, dt);
+  malSchub(story.bootSchub ? story.bootSchub() : 0, dt, 'boot');
   // Angekommen? Grob in der Naehe reicht (wie in Trip to Japan)
   const z = story.ziel;
   if(z) zielZiehen(z, s, dt);

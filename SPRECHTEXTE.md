@@ -260,6 +260,18 @@ Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme) – nur
 | Y beim Gorilla, nachdem er den Korb hingeschoben hat | `tierM` | Danke, ich bin so glücklich. |
 | Lupe am Korb | Erzählerin | Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch. *(der Bananenkorb ist danach im Inventar)* |
 | Inventar: Bananenkorb (A) | Erzählerin | Das sind die Bananen, die der Gorilla vom Tisch genommen hat. |
+
+### Zurück an der Lichtung (freiwillig, mit dem Bananenkorb im Inventar)
+
+Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung (und wieder zur Höhle). Der Wald ist dann hell: Vogelgezwitscher (oliviaaydin, Pixabay), kein Uhu, kein Knacken, kein Nebel. Über dem Tisch ein Y, solange der Korb im Inventar ist; danach steht er auf dem Tisch.
+
+| Wann | Stimme | Text |
+|---|---|---|
+| Y bei den Tieren | Joshi | Ich weiß jetzt, wer die Bananen genommen hat. Es war der Gorilla. · Er war ganz doll traurig, weil sein Holzentchen kaputt war. Und niemand war da, mit dem er reden konnte. · Er lässt sich bei euch entschuldigen. Hier sind eure Bananen. |
+| … Hase | `tierW` | Oh nein, der arme Gorilla! Das wussten wir ja gar nicht. |
+| … Eule | `tierM` | Hu-huu. Wir hätten mal nach ihm sehen sollen. |
+| … Elch | `tierM` | Wie schön, dass die Bananen wieder da sind! |
+| … Hase | `tierW` | Wir gehen ihn gleich mal besuchen. |
 | … Joshi | `joshi` | Weißt du, von wem das rote Fell ist? |
 | … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
 | (danach erscheint der blaue Fotoring, der Fuchs zeigt ihn – ohne Ansage) | | |

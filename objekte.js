@@ -356,11 +356,8 @@ const ORCA_UEBER = 3;           // m zusaetzliche Hoehe im Sprung ueber das Boot
 // der Skizze), wenn Joshi in der Naehe ist.
 const ORCA_EXTRA = 3;           // zu den 6 der Engine
 const ORCA_SPRINGER = 4;        // so viele davon springen (fest, die Engine wuerfelt beim Umsetzen neu)
-const ORCA_UFER = 120;          // m ab Inselmitte: naeher ans Ufer kommt keiner (Sand bis 98,6; tauchen braucht Wasser)
-// ... je Etappe: Radius der Insel + Sand + Luft (Live-Befund 22.10.2026: auf der Waldpiste vor der Hoehle – Etappe 3, Insel
-// 230 m – schwammen und sprangen Wale; die 120 m galten fuer Joshis kleine Insel, und wer nach dem Etappenwechsel an
-// Land lag, wurde nie umgesetzt)
-const orcaUfer = () => Math.max(ORCA_UFER, ((story.etappeR && story.etappeR[story.etappe]) || 0) * 1.12 + 25);
+// (Abstand zum Ufer: seit 22.10.2026 nach der Wassertiefe der Engine – wasserTiefe, ORCA_TIEF_MIN –, nicht mehr nach einem
+// Radius um die Inselmitte; der passte nur zu einer Inselgroesse)
 const ORCA_REVIER = 80;         // m: weiter weg von Joshi/dem Boot schwimmt er zurueck
 const STEG_NAH = 50;            // m: so nah muss Joshi am liegenden Boot sein
 const STEG_ERST = 15, STEG_PAUSE = 60;   // s bis zum ersten Sprung, danach 60-90 s
@@ -368,6 +365,7 @@ const STEG_KURS = Math.PI / 2 + 0.2;     // quer zum Blick vom Strand wie in der
                                          // 60 m vor dem Boot noch im Wasser und nicht am Ufer)
 const STEG_SCHEITEL = { dx: 1.0, dz: 1.5 };   // Scheitel etwas hinter dem Boot (vom Strand aus)
 const stegSprung = { t: STEG_ERST };
+story.stegSprungT = () => +stegSprung.t.toFixed(1);   // Test: Countdown bis zum naechsten Sprung ueber das Boot
 const ziel = { x: 0, z: 0, vx: 0, vz: 0, da: false, boot: false };
 function zielNachfuehren(dt){
   let p = null, boot = false;
@@ -383,6 +381,49 @@ function zielNachfuehren(dt){
   } else { ziel.vx = 0; ziel.vz = 0; }
   ziel.x = p.x; ziel.z = p.z; ziel.da = true; ziel.boot = boot;
 }
+// ---- Begleitwal beim Segeln (Live-Wunsch 22.10.2026) -----------------------------------------------------------------
+// Er schwimmt leicht vor Joshi (BOOT_BEGLEIT_VOR) auf der Seite des Bootes, auf der bis zum Bildrand mehr Platz ist
+// (BOOT_BEGLEIT_SEITE daneben). Lenkt Joshi auf ihn zu, taucht er ab und auf der anderen Seite wieder auf.
+const BOOT_BEGLEIT_T = 60, BOOT_BEGLEIT_VOR = 9, BOOT_BEGLEIT_SEITE = 13;   // s, m vor dem Bug, m neben dem Kurs
+const BOOT_HOLEN = 4;            // s im Boot, dann wird ein Begleiter geholt
+const bootHolen = { t: 0 };
+const _bv = new THREE.Vector3(), _cr = new THREE.Vector3();
+function bootBegleit(o, st, dt, p, w){
+  const B = story.stegZustand, bfx = Math.sin(B.yaw), bfz = Math.cos(B.yaw);
+  // Seite: das Boot steht im Bild links -> mehr Platz rechts (Hysterese: nur alle 3 s und nicht, wenn es mittig steht)
+  st.seiteT = (st.seiteT || 0) - dt;
+  if(!st.seiteW || (st.seiteT <= 0 && !st.taucht)){
+    _bv.set(B.bx, seaYAt(B.bx, B.bz), B.bz).project(camera); _cr.setFromMatrixColumn(camera.matrixWorld, 0);   // global-ok: Engine
+    let sx = _cr.x, sz = _cr.z; const df = sx * bfx + sz * bfz; sx -= df * bfx; sz -= df * bfz; const l = Math.hypot(sx, sz) || 1;
+    const s = st.seiteW && Math.abs(_bv.x) < 0.1 ? st.seiteS : (_bv.x < 0 ? 1 : -1);
+    st.seiteS = s; st.seiteW = [sx / l * s, sz / l * s]; st.seiteT = 3;
+  }
+  // faehrt Joshi auf ihn zu: abtauchen, die Seite wechseln
+  const rx = o.x - B.bx, rz = o.z - B.bz, rd = Math.hypot(rx, rz) || 1;
+  if(!st.taucht && rd < 24 && Math.abs(B.v) > 0.4 && (rx * bfx + rz * bfz) / rd > Math.cos(0.5)){ st.taucht = 0.001; st.seiteS = -st.seiteS; st.seiteW = [-st.seiteW[0], -st.seiteW[1]]; st.seiteT = 6; }
+  // Platz neben dem Boot – ist es dort zu flach, die andere Seite; sind beide zu flach, bleibt er unten (taucht wieder auf,
+  // sobald es tief genug ist)
+  let tx = B.bx + bfx * BOOT_BEGLEIT_VOR + st.seiteW[0] * BOOT_BEGLEIT_SEITE, tz = B.bz + bfz * BOOT_BEGLEIT_VOR + st.seiteW[1] * BOOT_BEGLEIT_SEITE;
+  if(wasserTiefe(tx, tz) < ORCA_TIEF_MIN){
+    const ux = B.bx + bfx * BOOT_BEGLEIT_VOR - st.seiteW[0] * BOOT_BEGLEIT_SEITE, uz = B.bz + bfz * BOOT_BEGLEIT_VOR - st.seiteW[1] * BOOT_BEGLEIT_SEITE;
+    if(wasserTiefe(ux, uz) >= ORCA_TIEF_MIN){ st.seiteS = -st.seiteS; st.seiteW = [-st.seiteW[0], -st.seiteW[1]]; st.seiteT = 4; tx = ux; tz = uz; }
+    else if(!st.taucht) st.taucht = 0.001;
+  }
+  const ex = tx - o.x, ez = tz - o.z, ed = Math.hypot(ex, ez);
+  // mithalten: die Engine schwimmt mit ORCA_SPD (wie das Boot); liegt der Platz voraus, etwas schneller – unter Wasser mehr
+  const vor = ex * -Math.sin(o.heading) + ez * -Math.cos(o.heading), plus = klemme(vor * 0.3, 0, st.taucht ? 4 : 2);
+  o.x += -Math.sin(o.heading) * plus * dt; o.z += -Math.cos(o.heading) * plus * dt;
+  // Tiefe: an der Oberflaeche – ausser beim Abtauchen: zuegig hinunter (Phase schneller), dann frei wieder auf (ORCA_PERIOD);
+  // wieder oben erst, wo es tief genug ist. Solange er unten ist, faehrt das Boot ueber ihn hinweg (Grenze aus)
+  if(st.taucht){ st.taucht += dt; if(p < 0.6) o.t += dt * 2.5;
+    if(st.taucht > 3 && p < 0.06 && wasserTiefe(o.x, o.z) >= ORCA_TIEF_MIN) st.taucht = 0; }
+  else { const t = (-o.x * 0.01) / w - dt; o.t = ((t % ORCA_PERIOD) + ORCA_PERIOD) % ORCA_PERIOD; }
+  const dg = o.group && o.group.userData.ding; if(dg) dg.aus = !!st.taucht && p > 0.25;
+  return ed > 4 ? Math.atan2(-ex, -ez) : Math.atan2(-bfx, -bfz);   // zum Platz, dort mit dem Kurs des Bootes
+}
+// Das Segelboot an die Engine melden (Tiere weichen ihm aus, booteAufDemWasser): nur wenn Joshi drin sitzt
+window.spielBoote = function(){ const B = story.stegZustand; if(!B || !B.imBoot || locale !== 'earth') return null;   // global-ok: Engine
+  return [{ x: B.bx, z: B.bz, fx: Math.sin(B.yaw), fz: Math.cos(B.yaw), v: Math.abs(B.v) }]; };
 function orcaVorher(dt){
   zielNachfuehren(dt);
   const tSchwimm = ORCA_JUMP_CYCLE - ORCA_RUNUP_T - ORCA_JUMP_T - ORCA_UNDER_T;   // davor schwimmt der Springer
@@ -403,28 +444,42 @@ function orcaVorher(dt){
       const weg = ORCA_SPD * (ORCA_JUMP_CYCLE - o.t + tSchwimm) + wegScheitel;
       o.x = B.bx + STEG_SCHEITEL.dx - fx * weg; o.z = B.bz + STEG_SCHEITEL.dz - fz * weg; o.heading = STEG_KURS; o.spur = null;
       Object.assign(o.jfg, { modus: 'steg', kurs: STEG_KURS, ueber: ORCA_UEBER, flog: false });
+      o.sprungGeplant = true;                                       // Engine orcaSprungFrei: dieser Sprung ist gewollt (ueber das Boot am Steg)
       stegSprung.t = STEG_PAUSE + Math.random() * 30;
     }
   }
+  // Im Boot schnell einen Begleiter (Live-Befund 22.10.2026: er kam erst nach 15-20 s von weit her): sitzt Joshi BOOT_HOLEN s im
+  // Boot und keiner begleitet ihn, wird ein Wal der Schule, der gerade tief unten ist, unter Wasser neben das Boot gesetzt – er
+  // taucht dort auf
+  bootHolen.t = ziel.da && ziel.boot ? bootHolen.t + dt : 0;
+  if(bootHolen.t > BOOT_HOLEN && !orcas.some(q => q.jfg && q.jfg.modus === 'begleit')){
+    const kand = orcas.find(q => q.group && q.placed && !q.jumper && !q.deep && q.jfg && !q.jfg.modus && (0.5 - 0.5 * Math.cos(q.t * w + q.x * 0.01)) > 0.6);
+    const B = story.stegZustand;
+    if(kand && B){ const bfx = Math.sin(B.yaw), bfz = Math.cos(B.yaw);
+      for(const s of [1, -1]){ const x = B.bx + bfx * 14 + bfz * 18 * s, z = B.bz + bfz * 14 - bfx * 18 * s;   // vor dem Boot: bis er oben ist, ist es heran
+        if(wasserTiefe(x, z) < ORCA_TIEF_MIN + 3) continue;
+        const ph = kand.t * w + kand.x * 0.01; kand.x = x; kand.z = z; kand.t = (ph - kand.x * 0.01) / w;   // gleiche Phase (bleibt unten)
+        kand.heading = Math.atan2(-bfx, -bfz); kand.jfg.kuehl = 0; bootHolen.t = 0; break; } }
+  }
   for(const o of orcas){
     if(!o.group || !o.placed || o.deep) continue;
-    // an Land (z. B. nach einem Etappenwechsel mit groesserer Insel): sofort weit draussen neu setzen
-    if(Math.hypot(o.x, o.z) < orcaUfer() || (typeof isOnLand === 'function' && (isOnLand(o.x, o.z) || isOnBeach(o.x, o.z)))){
-      const F = worldFocus(); if(!placeOrca(o, F.x, F.z) || Math.hypot(o.x, o.z) < orcaUfer()){ o.group.visible = false; continue; } o.group.visible = true; o.jfg = null; continue; }
     const st = o.jfg || (o.jfg = { modus: null, t: 0, kuehl: Math.random() * 8, seite: 1, ueber: 0 });
     st.kuehl -= dt;
     if(st.modus === 'steg'){
       // Kurs halten (die Engine laesst ihn sonst wandern, siehe unten bei 'sprung'); nach dem Eintauchen wieder frei
       if(o.t > tSchwimm + ORCA_RUNUP_T && o.t < tUnter) st.flog = true;
-      else if(st.flog && o.t >= tUnter){ st.modus = null; st.kuehl = 20; }
+      else if(st.flog && o.t >= tUnter){ st.modus = null; st.kuehl = 20; o.sprungGeplant = false; }
       o.heading = st.kurs - Math.sin(seaTime * 0.11 + o.x * 0.002) * 0.10 * dt;
       continue;
     }
     let soll = null, rate = ORCA_DREH;
     const dx = ziel.x - o.x, dz = ziel.z - o.z, d = Math.hypot(dx, dz) || 1e-3;
+    // frei springend (Engine-Sprung, nicht ueber Joshi/das Boot): vom Anlauf bis zum Auftauchen den Kurs nicht anfassen –
+    // die Engine hat die Strecke vorher geprueft (orcaSprungFrei), ein Drehen mitten im Sprung sah komisch aus
+    if(o.jumper && o.t >= tSchwimm && st.modus !== 'sprung'){ continue; }
     if(o.jumper){
       if(st.modus === 'sprung'){
-        if(o.t < tSchwimm - 0.5){ st.modus = null; st.kuehl = 20; }   // Zyklus herum: wieder schwimmen
+        if(o.t < tSchwimm - 0.5){ st.modus = null; st.kuehl = 20; o.sprungGeplant = false; }   // Zyklus herum: wieder schwimmen
         else {
           // Im Anlauf noch auf das Ziel nachzielen (es faehrt weiter), danach geradeaus. Die Engine laesst den Kurs
           // jedes Bild leicht wandern (Sinus, bis 0,1 rad/s – ueber 7 s Sprung bis zu 20 m daneben): vorab abziehen.
@@ -445,20 +500,23 @@ function orcaVorher(dt){
         if(e < wegScheitel - 6) soll = Math.atan2(ex, ez);           // zu nah: erst Abstand gewinnen
         else {
           soll = Math.atan2(-ex, -ez);
-          if(Math.abs(wd(o.heading, soll)) < 0.12 && e <= wegScheitel + 3){
-            o.t = tSchwimm; st.modus = 'sprung'; st.kurs = soll; st.ueber = ziel.boot ? ORCA_UEBER : 0; continue;
+          // springen nur, wenn Anlauf, Flug und Landung passen (Engine orcaSprungFrei: Landung in mindestens ORCA_TIEF_MIN)
+          if(Math.abs(wd(o.heading, soll)) < 0.12 && e <= wegScheitel + 3 && orcaSprungFrei(o)){
+            o.t = tSchwimm; st.modus = 'sprung'; st.kurs = soll; st.ueber = ziel.boot ? ORCA_UEBER : 0; o.sprungGeplant = true; continue;
           }
         }
       } else if(st.modus === 'anflug') st.modus = null;
     } else {
       // Schule: nur oben (Phase am Scheitel) anfangen, sonst schnappte sie aus 7 m Tiefe hoch
       const p = 0.5 - 0.5 * Math.cos(o.t * w + o.x * 0.01);
-      if(st.modus !== 'begleit' && ziel.da && st.kuehl <= 0 && d < 90 && p < 0.08){
-        st.modus = 'begleit'; st.t = ORCA_BEGLEIT_T * (0.8 + Math.random() * 0.5); st.seite = Math.random() < 0.5 ? 1 : -1;
+      // im Segelboot begleitet ihn nur EIN Wal (bootBegleit); beim Schwimmen wie bisher die Schule
+      if(st.modus !== 'begleit' && ziel.da && st.kuehl <= 0 && d < 90 && p < 0.08 && !(ziel.boot && orcas.some(q => q.jfg && q.jfg.modus === 'begleit'))){
+        st.modus = 'begleit'; st.t = (ziel.boot ? BOOT_BEGLEIT_T : ORCA_BEGLEIT_T) * (0.8 + Math.random() * 0.5); st.seite = Math.random() < 0.5 ? 1 : -1; st.taucht = 0; st.seiteW = null;
       }
       if(st.modus === 'begleit'){
         st.t -= dt;
         if(!ziel.da || st.t <= 0 || d > 120){ st.modus = null; st.kuehl = ORCA_KUEHL; }   // abtauchen: die Phase laeuft weiter
+        else if(ziel.boot){ soll = bootBegleit(o, st, dt, p, w); rate = 1.2; }
         else {
           const ux = -dx / d, uz = -dz / d;                          // vom Ziel zum Orca
           const k = klemme((ORCA_BEGLEIT_R - d) / ORCA_BEGLEIT_R, -1, 1) * 1.5;
@@ -472,12 +530,17 @@ function orcaVorher(dt){
     }
     // Ausweichen: Joshi/das Boot nie rammen ...
     if(ziel.da && d < ORCA_MEIDE){ soll = Math.atan2(dx, dz); rate = 1.4; }
+    if(st.modus === 'begleit' && ziel.boot) o.sprungGeplant = true;   // die Engine laesst ihn (kein Ausweichen vor dem Boot)
+    else if(o.sprungGeplant && !st.modus) o.sprungGeplant = false;
     // ... und in Sichtweite bleiben: nicht ans Ufer, nicht weit weg von Joshi bzw. dem Boot
     if(soll === null && jo){
       const px = ziel.da ? ziel.x : jo.x, pz = ziel.da ? ziel.z : jo.z;
-      if(Math.hypot(o.x, o.z) < orcaUfer()) soll = Math.atan2(-o.x, -o.z);          // von der Inselmitte weg
-      else if(Math.hypot(px - o.x, pz - o.z) > ORCA_REVIER) soll = Math.atan2(o.x - px, o.z - pz);
+      // vor zu flachem Wasser (wasserTiefe) dreht die Engine selbst ab; hier nur: nicht zu weit weg von Joshi bzw. dem Boot
+      if(Math.hypot(px - o.x, pz - o.z) > ORCA_REVIER) soll = Math.atan2(o.x - px, o.z - pz);
     }
+    // nie ins Flache lenken (Live-Befund 22.10.2026: Begleiter und Anflug zogen die Orcas zu Joshi ans Ufer): fuehrt der
+    // gewuenschte Kurs ins Flache, lenkt hier keiner – die Engine dreht dann selbst ab
+    if(soll !== null && !(st.modus === 'begleit' && ziel.boot) && wasserTiefe(o.x - Math.sin(soll) * 25, o.z - Math.cos(soll) * 25) < ORCA_TIEF_MIN){ soll = null; if(st.modus === 'begleit' || st.modus === 'anflug'){ st.modus = null; st.kuehl = 8; } }
     if(soll !== null) o.heading += klemme(wd(o.heading, soll), -rate * dt, rate * dt);
     // ... und umeinander herum (nur wer an der Oberflaeche ist; die Tiefsee-Tiere ziehen weit darunter)
     const fx = -Math.sin(o.heading), fz = -Math.cos(o.heading);
@@ -521,8 +584,24 @@ function orcaNachher(){
 
 // ---- Jedes Bild: Zaehler, Schiffe schieben Schwimmer und Boot beiseite --------------------------------------------
 const _sb = { x: 0, y: 0, z: 0 };                       // Segelboot an der Oberflaeche (Hoehe fuer die 3D-Form der Schiffe)
+// ---- Meer nur, wenn man auf dem Meer ist (Live-Befund 22.10.2026, Waldinsel) ---------------------------------------------
+// Gemessen auf der Waldinsel: 10 grosse Schiffe 1,5-2,4 km draussen = 211.000 Dreiecke (40 % von allem), dazu 437 Objekte der
+// Unterwasser-Zellen – waehrend Joshi an Land steht. Und ein U-Boot-Turm ragte hinter den Baeumen auf, als stuende er im Wald.
+// Jetzt: die Schiffe nur, wenn Joshi segelt, schwimmt oder fliegt, und nie naeher als SCHIFF_ABSTAND am Inselrand; die
+// Unterwasser-Zellen nur beim Schwimmen und im Boot. Gerechnet werden beide weiter (nur nicht gezeichnet).
+const SCHIFF_ABSTAND = 400;
+function meerSichtbar(){
+  const aufSee = !eva || (story.imBoot && story.imBoot()) || !!(story.schwimm && story.schwimm.aktiv);
+  const imWasser = (story.imBoot && story.imBoot()) || !!(story.schwimm && story.schwimm.aktiv);
+  const i = islandInfo(0, 0), rand = i ? i.radius * BEACH_FACTOR : 0;         // global-ok: Engine
+  for(const sh of seaShips){ if(!sh.group) continue;                         // global-ok: Engine
+    const weit = !i || Math.hypot(sh.x - i.wx, sh.z - i.wz) - rand > SCHIFF_ABSTAND + (sh.hl || 0);
+    const soll = aufSee && weit; if(sh.group.visible !== soll) sh.group.visible = soll; }
+  if(typeof uwCells !== 'undefined') for(const [, u] of uwCells){ const g = u && (u.isObject3D ? u : u.group); if(g && g.visible !== imWasser) g.visible = imWasser; }   // global-ok: Engine
+}
 story.updateObjekte = function(dt){
   bildNr++;
+  if(locale === 'earth') meerSichtbar();
   if(locale !== 'earth' || typeof pushOutOfSeaShip !== 'function') return;
   // Ein Rumpf schiebt hinaus, statt dass man in ihm feststeckt (wie die Engine es fuer ihre Boote macht)
   if(eva && story.schwimm && story.schwimm.aktiv) pushOutOfSeaShip(eva.group.position, null, dt);
@@ -564,6 +643,10 @@ function hookAussen(){
     updateStrandleben = function(dt){
       const r = strandOrig.apply(this, arguments);
       for(const t of strandleben.loewen) if(!t.obj.userData.ding) ding(t.obj, { welt: '*', beweglich: true, orca: true, typ: t.art });
+      // Rochen: ebenso eine Grenze (Live-Wunsch 22.10.2026: man schwimmt nicht durch die Tiere hindurch) – aus, solange er
+      // nicht zu sehen ist (die Engine blendet ihn aus, bevor sie ihn neu setzt; sonst sperrte er an der alten Stelle)
+      for(const r of strandleben.rochen){ if(!r.obj.userData.ding) ding(r.obj, { welt: '*', beweglich: true, orca: true, typ: 'rochen' });
+        const dr = r.obj.userData.ding; if(dr) dr.aus = !r.obj.visible; }
       for(const g of strandleben.forellen) for(const f of g.fische) f.obj.userData.deko = true;
       for(let i = dinge.length - 1; i >= 0; i--) if(dinge[i].orca && !dinge[i].obj.parent) dinge.splice(i, 1);   // clearStrandleben
       return r;

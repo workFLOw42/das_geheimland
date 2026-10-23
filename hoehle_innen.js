@@ -428,7 +428,8 @@ function imRaum(x, z){ return Math.hypot(x - RAUM.x, z - RAUM.z) < RAUM.R + HUEL
 function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z, d = Math.hypot(lx, lz);
   // im Durchgang (bei +z, so breit wie der Ausgang) frei bis ein Stueck hinaus – dort loest updateWechsel den Wechsel aus
-  if(lz > 0 && Math.abs(lx) < AUSGANG.B / 2 - 0.25) return lz > RAUM.R + 1.0 ? lz - (RAUM.R + 1.0) : 0;
+  // ... ausser waehrend einer Aktion (story.aktionLaeuft): dann ist der Ausgang eine Wand wie der Rest
+  if(lz > 0 && Math.abs(lx) < AUSGANG.B / 2 - 0.25 && !(story.aktionLaeuft && story.aktionLaeuft())) return lz > RAUM.R + 1.0 ? lz - (RAUM.R + 1.0) : 0;
   return Math.max(0, d - (RAUM.R - KOERPER - 0.3));
 }
 function raumFrei(x, z){ const t = raumTiefe(x, z); if(t <= 0) return true; const von = story.schrittVon && story.schrittVon(); return !!von && t <= raumTiefe(von.x, von.z) + 1e-6; }
@@ -447,6 +448,9 @@ function setzeUm(ziel){
     g.position.set(x, evaFootY(x, z), z); eva.yaw = Math.PI;      // Blick vom Berg weg (Wiese, Piste)
     hi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(story.e3Draussen) story.e3Draussen();
+    // noch in der Blende die Aussenwelt vorwaermen (Engine szeneVorwaermen): sonst ruckelte das erste Einsteigen in die
+    // Mustang (draussen gelten anderes Licht und anderer Nebel als in der Hoehle – andere Shader)
+    story.spaeter(0.1, () => { if(typeof szeneVorwaermen === 'function' && !hi.drin) szeneVorwaermen(); });
   }
   g.rotation.y = eva.yaw; evaOrbit = 0; evaPitch = 0;
   const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));
@@ -466,11 +470,13 @@ function updateWechsel(dt){
   const p = eva.group.position;
   if(hi.drin){
     if(!imRaum(p.x, p.z) || p.y < BODEN_Y - 1){ setzeUm('innen'); return; }
-    if(p.z - RAUM.z > RAUM.R - 0.1 && Math.abs(p.x - RAUM.x) < AUSGANG.B / 2) hi.wechsel = { t: 0, ziel: 'aussen', gesetzt: false };
+    if(p.z - RAUM.z > RAUM.R - 0.1 && Math.abs(p.x - RAUM.x) < AUSGANG.B / 2 && !(story.aktionLaeuft && story.aktionLaeuft())) hi.wechsel = { t: 0, ziel: 'aussen', gesetzt: false };
   } else {
     const H = story.hoehle.eingang;                                // durch das schwarze Loch hinein
     // schon an der dunklen Oeffnung (vor dem Felsbogen, der Joshi sonst kurz davor aufhielt – gemessen bei z -16,9)
-    if(Math.abs(p.x - H.x) < H.B / 2 - 0.4 && p.z < H.z + 2.4 && p.z > H.z - 1.5) hi.wechsel = { t: 0, ziel: 'innen', gesetzt: false };
+    if(Math.abs(p.x - H.x) < H.B / 2 - 0.4 && p.z < H.z + 2.4 && p.z > H.z - 1.5){
+      if(story.aktionLaeuft && story.aktionLaeuft()) p.z = H.z + 2.4;                   // waehrend einer Aktion: davor stehen bleiben
+      else hi.wechsel = { t: 0, ziel: 'innen', gesetzt: false }; }
   }
 }
 

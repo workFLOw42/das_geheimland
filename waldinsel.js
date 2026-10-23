@@ -720,12 +720,37 @@ story.e2StelleFertig = function(){
   }
 };
 function updateWeg(){
-  if(!eva || wi.reise || (story.imBoot && story.imBoot())) return;
+  if(!eva || (story.imBoot && story.imBoot())) return;
   const p = eva.group.position, drin = Math.hypot(p.x - WEG_REIN.x, p.z - WEG_REIN.z) < WEG_REIN.r;
+  // waehrend einer Aktion (story.aktionLaeuft) geht es nicht weiter in den Wald: wie an einer Wand zurueck an den Rand des
+  // Ausloesers (und auf dem Weg nicht daran vorbei)
+  if(drin && (wi.reise || wi.wegFrei) && story.aktionLaeuft && story.aktionLaeuft()){
+    const dx = p.x - WEG_REIN.x, dz = p.z - WEG_REIN.z, l = Math.hypot(dx, dz) || 1, vx = ZURUECK.x - WEG_REIN.x, vz = ZURUECK.z - WEG_REIN.z, vl = Math.hypot(vx, vz);
+    const ux = dx * vx + dz * vz > 0 ? dx / l : vx / vl, uz = dx * vx + dz * vz > 0 ? dz / l : vz / vl;   // immer zur Lichtung hin hinaus
+    p.x = WEG_REIN.x + ux * WEG_REIN.r; p.z = WEG_REIN.z + uz * WEG_REIN.r; return; }
+  // schon einmal bei der Hoehle gewesen: der Waldweg fuehrt mit einer kurzen Schwarzblende hinueber (dieselbe Insel)
+  if(wi.reise){ if(drin && story.e3Besucht && story.waldinselWechsel) story.waldinselWechsel(3); return; }
   if(!drin){ wi.amWeg = false; return; }
   if(wi.wegFrei){ wi.reise = true; story.globusReise(2, story.e3Wechsel ? () => story.e3Wechsel() : null); return; }   // hoehle.js: Etappe 3
   if(!wi.amWeg){ wi.amWeg = true; story.sprich(wi.gorillaGesagt ? TEXT_ERST_FOTO : TEXT_WEG_NOCH_NICHT); }
 }
+const ZURUECK = { x: 11.2, z: 45.5 };                // zwischen Wegeingang (WEG) und WEG_REIN
+// Die Lichtung gibt es auch, wenn man in Etappe 3 neu geladen hat (Fliegen: von oben zu sehen; zurueckgehen): dann wird sie
+// nachgebaut, und alles dort gilt als erledigt (Joshi war ja schon da)
+story.e2Bauen = function(){ if(wi.gebaut) return; baue(); wi.angekommen = wi.losGerufen = true; wi.spurGesagt = wi.spurBesprochen = wi.gorillaBesprochen = wi.wegFrei = wi.reise = true; };
+story.e2Voegel = (an) => voegel(an);
+story.e2Zurueck = function(){
+  story.e2Bauen();
+  story.etappe = 2; story.ziel = null;
+  if(!eva) return;
+  const { x, z } = story.freierPlatz(ZURUECK.x, ZURUECK.z, 'joshi');
+  eva.group.position.set(x, evaFootY(x, z), z); eva.vy = 0;
+  eva.yaw = Math.atan2(x - LICHTUNG.x, z - LICHTUNG.z); eva.group.rotation.y = eva.yaw;   // Blick zur Lichtung
+  if(typeof evaOrbit !== 'undefined'){ evaOrbit = 0; evaPitch = 0; }                         // global-ok: Engine
+  const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));
+  camera.position.copy(eva.group.position).addScaledVector(back, 5).add(new THREE.Vector3(0, 2, 0));   // global-ok: Engine
+  if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: x - 1.2, z: z + 1.0, blick: eva.yaw + Math.PI, modus: 'streifen', sitzt: false, warte: 1 });
+};
 // Tatortfoto (notizbuch.js 'tisch_foto'): nur der Tisch mit Resten und Spuren – die Tiere sind fuer das Bild weg
 story.e2FotoAusblenden = () => wi.tiere.map(t => t.obj);
 // Live-Wunsch 22.10.2026: die beiden Ringe erscheinen, sobald Joshi mit den Tieren gesprochen hat – ohne neues X und ohne
@@ -816,11 +841,11 @@ function baue(){
   // Aeste ueber dem Weg (Live-Wunsch: "ab der dritten, vierten Baumreihe die Aeste auch ueber den Weg wachsen lassen") –
   // dunkle, flache, schraege Astkegel von beiden Seiten, die sich ueber der Wegmitte treffen; unten frei ab ~2,6 m
   // (Joshi 1,2 m, Kamera ~2 m dahinter) – eine Art Dach, darunter wird es dunkel. Alle in EINEM Mesh (Zeichenaufrufe).
-  w.add(aesteUeberWeg(kurve));
+  wi.dunkel = [aesteUeberWeg(kurve)]; w.add(wi.dunkel[0]);
   // Schatten ueber dem Weg im Wald (dunkler Streifen, weich) – der Eingang wirkt duester
-  w.add(wegSchatten(kurve));
+  wi.dunkel.push(wegSchatten(kurve)); w.add(wi.dunkel[1]);
   // Dunst im Wald: schon von der Lichtung aus zu sehen (nicht erst beim Betreten)
-  story.waldNebel({ welt: 2, linie: WEG_LINIE, von: 0.1, bis: 0.62, farbe: 0xb4c2cf });
+  wi.nebel = story.waldNebel({ welt: 2, linie: WEG_LINIE, von: 0.1, bis: 0.62, farbe: 0xb4c2cf });
   // Lichterketten zwischen den vordersten Baeumen um die Lichtung (etwas Weihnachtsschmuck an den Baeumen)
   const rand = baeume.filter(b => Math.hypot(b.x - LICHTUNG.x, b.z - LICHTUNG.z) < WALD_AB + 5 && b.z < LICHTUNG.z + 8)
     .sort((a, b) => Math.atan2(a.z - LICHTUNG.z, a.x - LICHTUNG.x) - Math.atan2(b.z - LICHTUNG.z, b.x - LICHTUNG.x));
@@ -963,9 +988,59 @@ function waldTonTakt(n){
   // mehr, ton.an wurde nie zurueckgesetzt)
   story.spaeter(a + Math.random() * (b - a), () => { if(!ton.an || !e2()){ ton.an = false; return; } waldTon(n); waldTonTakt(n); });
 }
+// Nach der Hoehle (Live-Wunsch 22.10.2026): der Wald ist hell – kein Nebel, kein Schatten auf dem Weg, nicht dunkler; statt
+// Uhu und Knacken zwitschern Voegel
+// ---- Rueckkehr mit dem Bananenkorb (Live-Wunsch 22.10.2026, freiwillig) -------------------------------------------------
+// Ist Joshi nach der Hoehle wieder an der Lichtung und hat den Korb im Inventar, ist ueber dem Tisch wieder ein Y: Joshi
+// erzaehlt, warum der Gorilla die Bananen genommen hat – die Tiere sind betroffen, freuen sich und wollen ihn gleich besuchen
+// (das sieht man nicht). Danach steht der Korb auf dem Tisch und ist nicht mehr im Inventar. Wer es nicht tut, behaelt den Korb.
+const TEXT_KORB_JOSHI = ['Ich weiß jetzt, wer die Bananen genommen hat. Es war der Gorilla.',
+  'Er war ganz doll traurig, weil sein Holzentchen kaputt war. Und niemand war da, mit dem er reden konnte.',
+  'Er lässt sich bei euch entschuldigen. Hier sind eure Bananen.'];
+const TEXT_KORB_HASE = ['Oh nein, der arme Gorilla! Das wussten wir ja gar nicht.'];
+const TEXT_KORB_EULE = ['Hu-huu. Wir hätten mal nach ihm sehen sollen.'];
+const TEXT_KORB_ELCH = ['Wie schön, dass die Bananen wieder da sind!'];
+const TEXT_KORB_BESUCH = ['Wir gehen ihn gleich mal besuchen.'];
+function korbAngebot(){
+  if(wi.korbInter || wi.korbZurueck || !wi.hell || !(story.ausruestung && story.ausruestung.bananen) || !tierGruppe.children.length) return;
+  wi.korbInter = story.interaktion(tierGruppe, { name: 'Bananen zurückbringen', welt: 2, x: 0, z: VORN, r: 1.6, yx: 0, yz: TISCH.z,
+    yHoehe: TISCH.H + 1.15, einmal: true, entdeckt: true, aktion: (o) => korbZurueckgeben(o) });
+}
+function korbZurueckgeben(o){
+  o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; o.spricht = true;
+  gespraech([['joshi', TEXT_KORB_JOSHI], ['tierW', TEXT_KORB_HASE, 'hase'], ['tierM', TEXT_KORB_EULE, 'eule'], ['tierM', TEXT_KORB_ELCH, 'elch'], ['tierW', TEXT_KORB_BESUCH, 'hase']], () => { o.spricht = false; });
+  // der Korb wandert aus dem Rucksack auf den Tisch, sobald Joshi ihn uebergibt (nach seinen Saetzen)
+  story.spaeter(TEXT_KORB_JOSHI.reduce((s, x) => s + 0.6 + x.length / 14, 0), () => {
+    if(story.ausruestung) story.ausruestung.bananen = false; wi.korbZurueck = true;
+    if(story.bananenModell){ const k = story.bananenModell(); k.scale.multiplyScalar(0.9); k.position.set(TISCH.x + 0.6, ISLAND_Y + TISCH.H, TISCH.z); k.rotation.y = 0.4; story.welt(2).add(k); }
+  });
+}
+function waldHell(){
+  if(wi.hell) korbAngebot();
+  if(!story.e3Besucht || wi.hell) return; wi.hell = true; ton.an = false;
+  if(wi.nebel && wi.nebel.aus) wi.nebel.aus();
+  for(const o of wi.dunkel || []) if(o) o.visible = false;
+}
+// Vogelgezwitscher: "birds singing" von oliviaaydin (Pixabay, voegel_snd.js), 19,6 s in Schleife, weich ein- und ausgeblendet
+const VOEGEL_VOL = 0.8, VOEGEL_BLENDE = 1.2;
+const vogel = { buf: null, laedt: false, src: null, gain: null };
+function voegel(an){
+  if(an && !vogel.buf && !vogel.laedt && window.VOEGEL_SND && typeof decodeSound === 'function' && audioCtx){ vogel.laedt = true;   // global-ok: Engine
+    decodeSound(window.VOEGEL_SND).then(b => { vogel.buf = b; }).catch(e => console.warn('Voegel', e)); }
+  if(!audioCtx) return;                                               // global-ok: Engine
+  const t = audioCtx.currentTime;
+  if(an && !vogel.src && vogel.buf && soundOn && audioCtx.state === 'running'){   // global-ok: Engine
+    const q = audioCtx.createBufferSource(), g = audioCtx.createGain(); q.buffer = vogel.buf; q.loop = true;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(VOEGEL_VOL, t + VOEGEL_BLENDE);
+    q.connect(g); g.connect(audioCtx.destination); q.start(); vogel.src = q; vogel.gain = g;
+  } else if(!an && vogel.src){ const q = vogel.src, g = vogel.gain; vogel.src = null; vogel.gain = null;
+    g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + VOEGEL_BLENDE);
+    try { q.stop(t + VOEGEL_BLENDE + 0.1); } catch(e){} }
+}
 function updateWaldTon(){
   const drin = !!(eva && abstandZumWeg(eva.group.position.x, eva.group.position.z) < 4.5 && Math.hypot(eva.group.position.x - WEG.x, eva.group.position.z - WEG.z) < 60
     && eva.group.position.z < WEG.z + 1.5);                         // ab dem Eingang des Wegs (am Wegweiser) in den Wald hinein
+  if(wi.hell){ ton.an = false; voegel(drin && e2()); return; }
   if(drin) waldTonLaden();
   if(drin && !ton.an){ ton.an = true; story.spaeter(0.3, () => { if(ton.an && e2()) waldTon('eule'); }); story.spaeter(2.2, () => { if(ton.an && e2()) waldTon('holz'); });
     waldTonTakt('eule'); waldTonTakt('holz'); }
@@ -981,6 +1056,7 @@ story.updateE2 = function(dt){
   if(wi.schale) schaleAnimieren(wi.schale, wi.t);                  // die Ameisen krabbeln (aus der Naehe gerade so zu sehen)
   updateWeg();
   if(story.gestartet) waldTonLaden();
+  waldHell();                                                      // nach der Hoehle: heller Wald, Korb zurueckbringen
   updateWaldTon();
   // Lichterketten funkeln leicht
   const geaendert = new Set();
@@ -1033,7 +1109,7 @@ function hookLicht(){
     if(e2() && locale === 'earth' && spaceBlend < 0.05){
       // im Wald (Live-Wunsch 21.10.2026: "ab hinter der Lichterkette langsam abblendend etwas dunkler"): wald 0..1 nach dem
       // Weg, den Joshi schon im Wald ist (ab WALD_DUNKEL.ab m hinter dem Eingang, voll nach WALD_DUNKEL.lang m) – sanft
-      const d = eva ? wegTiefe(eva.group.position.x, eva.group.position.z) : 0;
+      const d = eva && !wi.hell ? wegTiefe(eva.group.position.x, eva.group.position.z) : 0;   // heller Wald: nicht dunkler
       const ziel = Math.max(0, Math.min(1, (d - WALD_DUNKEL.ab) / WALD_DUNKEL.lang));
       wi.wald += (ziel - wi.wald) * 0.05;
       const k = wi.wald * wi.wald * (3 - 2 * wi.wald);
@@ -1045,6 +1121,19 @@ function hookLicht(){
     return r;
   };
 }
+// ---- Die Waldinsel ist gross (Live-Wunsch 22.10.2026) ---------------------------------------------------------------------
+// Etappe 2 und 3 liegen auf derselben Insel (eine Karte, hoehle.js MITTE_Z / insel.js etappeMitte): hier der Strand mit der
+// Lichtung, landeinwaerts der dichte Wald, dahinter Berg, Piste und Hoehle. Joshi geht nicht durch den Wald hinaus (nur ueber
+// den Waldweg): WALD_GRENZE um die Lichtung, landeinwaerts.
+const WALD_GRENZE = 86, WALD_GRENZE_Z = 55;          // m ab der Mitte, landeinwaerts (z kleiner als WALD_GRENZE_Z)
+function hookLand(){
+  // nicht ueber den Waldrand hinaus landeinwaerts
+  const evaOrig = updateEva;                                         // global-ok: Engine
+  updateEva = function(){ const r = evaOrig.apply(this, arguments);
+    if(e2() && eva && !eva.boat){ const p = eva.group.position, d = Math.hypot(p.x, p.z);
+      if(d > WALD_GRENZE && p.z < WALD_GRENZE_Z){ const k = WALD_GRENZE / d; p.x *= k; p.z *= k; } }
+    return r; };
+}
 const hookVorher = window.STORY_HOOK;
-window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookWald(); hookLicht(); };
+window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookWald(); hookLicht(); hookLand(); };
 })();

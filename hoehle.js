@@ -15,29 +15,41 @@ const e3 = () => story.etappe === 3;
 
 // ---- Ort -------------------------------------------------------------------------------------
 const INSEL_R = 230;                                  // m Grasflaeche (Engine-Startinsel: 260)
-const START = { x: 0, z: 62, blick: { x: 0, z: 0 } };  // Waldausgang, Blick nach Norden (-z) auf den Berg
+// EINE Karte der Waldinsel (Live-Wunsch 22.10.2026): Etappe 2 (Lichtung, Strand, Steg) und Etappe 3 (Berg, Hoehle, Piste)
+// liegen auf derselben grossen Insel. Die Lichtung bleibt an ihren Koordinaten; die grosse Insel (INSEL_R) liegt mit ihrer
+// Mitte bei MITTE_Z, ihr Suedstrand faellt genau auf den Strand der Lichtung (z 98,6 – Steg und Boot stehen unveraendert).
+// Alle Orte dieser Etappe sind daher um MITTE_Z verschoben (Z(z)); entworfen wurden sie um die Inselmitte.
+const MITTE_Z = 98.6 - INSEL_R * 1.12, Z = (z) => z + MITTE_Z;
+const E2_WALD = 86;                                   // m um die Lichtung: dort steht der Wald von Etappe 2 (waldinsel.js)
+const START = { x: 0, z: Z(62), blick: { x: 0, z: Z(0) } };  // Waldausgang, Blick nach Norden (-z) auf den Berg
 // Live-Wunsch 22.10.2026: der Berg naeher an Joshi (vorher 80 m bis zur Hoehle, jetzt ~46 m), der Eingang groesser
-const HOEHLE = { x: 0, z: 16, B: 7.3, H: 6.0 };       // Eingang im Fuss des Bergs, Joshi gegenueber (22.10.: +30 %)
-const BERG = { z: -6, links: -22, rechts: 170, hoch: 72, gipfel: 112 };    // links endet er vor der Piste; Gipfel ueber der Hoehle, zieht weit nach rechts (+x)
+const HOEHLE = { x: 0, z: Z(16), B: 7.3, H: 6.0 };       // Eingang im Fuss des Bergs, Joshi gegenueber (22.10.: +30 %)
+const BERG = { z: Z(-6), links: -22, rechts: 170, hoch: 72, gipfel: 112 };    // links endet er vor der Piste; Gipfel ueber der Hoehle, zieht weit nach rechts (+x)
 // Piste quer vor Joshi nach links (Westen, -x): Schotterbahn laengs x zwischen Wiese und Bergfuss
-const PISTE = { x: -118, z: 40, L: 190, B: 12 };      // von x -23 bis -213
+const PISTE = { x: -118, z: Z(40), L: 190, B: 12 };      // von x -23 bis -213
 // Mustang am Ostende der Piste (vorn links von Joshi gut zu sehen), Nase nach Westen: gestartet wird nach links, vom Berg
 // weg, ueber den Wald zum Meer (~180 m Startstrecke)
-const MUSTANG = { x: -32, z: 40 };
+const MUSTANG = { x: -32, z: Z(40) };
 // Das Ziel (roter Punkt): Richtung Wueste, weit im Suedwesten; kommt entgegen, wenn man darauf zuhaelt (wie beim Segeln)
 const FLUGZIEL = { x: -1400, z: 2600, r: 160 };     // am Suedende der Piste geparkt, Nase nach Norden (die Bahn hinauf)
-const WALDRAND = { z: 66 };                           // der Wald hinter Joshi (aus ihm kommt er)
+const WALDRAND = { z: Z(66) };                           // der Wald hinter Joshi (aus ihm kommt er)
 const MUSTANG_YAW = Math.PI / 2;                      // Engine: Nase bei yaw 0 = -z; nach Westen (-x) = yaw PI/2
 // Das Ende des Waldwegs (Live-Wunsch 21.10.2026): derselbe Weg wie auf der Lichtung – dunkle Gasse, Aeste, Schatten, ohne
 // Schnee –, hier von Sueden (tief im Wald) bis vor Joshi; vorn laeuft er sanft in die Wiese aus
 // Die Linie beginnt vor Joshi (dort waechst er aus der Wiese, waldinsel.js baueWeg: Anfang = schmal und blass) und
 // laeuft in den Wald, wo er im Schatten verschwindet.
-const WEG3 = [{ x: 0, z: 52 }, { x: 0, z: 64 }, { x: 1, z: 78 }, { x: 2, z: 96 }, { x: -3, z: 118 }, { x: 2, z: 140 }];
+// ... und endet genau am Ende des Waldwegs der Lichtung (waldinsel.js WEG_LINIE, letzter Punkt 8/-34): ein durchgehender Weg
+const WEG3 = [{ x: 0, z: 52 }, { x: 0, z: 64 }, { x: 1, z: 78 }, { x: 2, z: 96 }, { x: -3, z: 118 }, { x: 8, z: -34 - MITTE_Z }].map(p => ({ x: p.x, z: Z(p.z) }));
+// Zurueck zur Lichtung (nach dem Gorilla, der Weg ist hell): ab hier auf dem Waldweg die Schwarzblende (wie in die Hoehle)
+// Live-Wunsch 23.10.2026 ("die Blende muss viel frueher kommen, genauso wie beim ersten Mal hinein"): wie auf der Lichtung
+// (WEG_REIN ~15 m nach dem Beginn der Waldgasse) – die Gasse beginnt hier bei ~z 70, also bei 86 statt 104
+const WEG3_ZURUECK = { z: Z(86), r: 5 };
 const WEG3_AUS = { anfang: 0.16, ende: 0.3 };
 // Gasse und Aeste erst ~10 m hinter Joshi (Live-Pruefung: sonst hing die Kamera hinter ihm in den Aesten); Weglaenge ~92 m
 const WEG3_GASSE = { von: 0.2, bis: 0.92 };
 story.hoehle = { insel: INSEL_R, start: START, eingang: HOEHLE, piste: PISTE, mustang: MUSTANG };
-story.etappeR = Object.assign(story.etappeR || {}, { 3: INSEL_R });   // insel.js: Radius je Etappe
+story.etappeR = Object.assign(story.etappeR || {}, { 2: INSEL_R, 3: INSEL_R });   // insel.js: Radius je Etappe
+story.etappeMitte = Object.assign(story.etappeMitte || {}, { 2: { x: 0, z: MITTE_Z }, 3: { x: 0, z: MITTE_Z } });   // ... und Mitte
 
 const TEXT_ANKUNFT = ['Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle.',
   'Dort wohnt bestimmt der Gorilla. Hörst du ihn?'];
@@ -193,12 +205,13 @@ function baue(){
     if(Math.abs(x - START.x) < 7 && z < START.z && z > HOEHLE.z) return false;                             // Blick zur Hoehle frei
     if(x > -70 && x < 18 && z > HOEHLE.z + 8 && z < WALDRAND.z - 3) return false;                           // Wiese vor Joshi bis zur Mustang frei
     if(Math.hypot(x - MUSTANG.x, z - MUSTANG.z) < 14) return false;
+    if(Math.hypot(x, z) < E2_WALD + 2) return false;                                                       // dort steht der Wald der Lichtung
     return true;
   };
   for(let i = 0; i < 9000 && baeume.length < 620; i++){
-    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * INSEL_R * 0.95, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * INSEL_R * 0.95, x = Math.cos(a) * r, z = MITTE_Z + Math.sin(a) * r;
     // nur dort, wo Wald sein soll: hinter Joshi (Sueden), links hinter der Piste, rechts neben/hinter dem Berg
-    const wald = z > WALDRAND.z - 4 || x < -70 || (x < BERG.links - 4 && z < PISTE.z) || x > BERG.rechts - 30 || (x > 18 && z > BERG.z + 22 && z < 40);
+    const wald = z > WALDRAND.z - 4 || x < -70 || (x < BERG.links - 4 && z < PISTE.z) || x > BERG.rechts - 30 || (x > 18 && z > BERG.z + 22 && z < PISTE.z);
     if(!wald || !frei(x, z)) continue;
     const eng = z > WALDRAND.z ? 2.3 : 3.6;                         // hinter Joshi dicht an dicht
     if(baeume.some(b => Math.hypot(b.x - x, b.z - z) < eng)) continue;
@@ -258,9 +271,10 @@ function waldKulisse(){
   for(let x = -10; x < 1034; x += 9 + rnd() * 8){ const h = 40 + rnd() * 55, b = 9 + rnd() * 7; g.fillStyle = rnd() < 0.5 ? '#1f3a2a' : '#25432f';
     g.beginPath(); g.moveTo(x, 128 - h - 10); g.lineTo(x - b, 80); g.lineTo(x + b, 80); g.fill(); g.fillRect(x - b, 78, 2 * b, 50); }
   const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(14, 1);
-  const R = INSEL_R * 0.93, H = 22;
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 96, 1, true), new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }));
-  m.position.y = ISLAND_Y + H / 2 - 0.5; m.userData.deko = true; return m;
+  // um die Inselmitte; zur Lichtung (Sueden, +z, Winkel 0) offen – dort steht der echte Wald der Lichtung und der Strand
+  const R = INSEL_R * 0.93, H = 22, offen = 0.75;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 96, 1, true, offen, Math.PI * 2 - 2 * offen), new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }));
+  m.position.set(0, ISLAND_Y + H / 2 - 0.5, MITTE_Z); m.userData.deko = true; return m;
 }
 // Mustang = das Flugzeug der Engine (wie in Trip to Japan): aktuelles Modell, geparkt am Ostende der Piste, Joshi steht
 // als Figur daneben (eva.planeAt). Einsteigen mit Y erst, wenn der Gorilla sie geliehen hat (e3MustangFrei) – vorher kein Y.
@@ -356,13 +370,14 @@ function setzeStart(){
 }
 function los(){ if(hw.angekommen) return; hw.angekommen = true;
   story.spaeter(1.2, () => story.sprich(TEXT_ANKUNFT)); story.spaeter(4, () => brummen()); brummTakt(); }
-story.e3StartSzene = function(){ baue(); mustangParken(); setzeStart(); };
+// (danach einmal vorwaermen – sonst ruckelte es beim ersten Einsteigen in die Mustang: Engine szeneVorwaermen)
+story.e3StartSzene = function(){ story.e3Besucht = true; baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); story.spaeter(0.3, () => { if(typeof szeneVorwaermen === 'function') szeneVorwaermen(); }); };
 story.e3Los = los;
 // Vom Waldweg der Waldinsel (globus.js, im Schwarzen): umschalten ohne Neuladen
 story.e3Wechsel = function(){
-  story.etappe = 3; story.ziel = null;
+  story.etappe = 3; story.ziel = null; story.e3Besucht = true;
   if(story.etappeWechsel) story.etappeWechsel(3);
-  hookTag(); baue(); mustangParken(); setzeStart(); los();
+  hookTag(); baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); los();
 };
 story.e3Hinweis = () => TEXT_HINWEIS;                     // hoehle_innen.js ersetzt das (drinnen/draussen, je nach Stand)
 
@@ -433,9 +448,41 @@ story.e3Draussen = function(){
 };
 
 // ---- Jedes Bild ------------------------------------------------------------------------------------------------
+// ---- Lichtung <-> Hoehle auf derselben Insel (Live-Wunsch 22.10.2026) -------------------------------------------------
+// Wie in die Hoehle oder aus der Huette: kurze Schwarzblende, dann ist Joshi am anderen Ort. Hin beim ersten Mal ueber den
+// Globus (waldinsel.js -> globusReise -> e3Wechsel), danach nur die Blende. Zurueck zur Lichtung, wenn der Weg hell ist
+// (nach dem Gorilla): am Ende des Waldwegs (WEG3_ZURUECK).
+const iw = { t: 0, ziel: 0, gesetzt: false, an: false, el: null };
+function inselBlende(w){ if(!iw.el){ iw.el = document.createElement('div'); iw.el.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:25;'; document.body.appendChild(iw.el); } iw.el.style.opacity = String(w); }
+story.waldinselWechsel = function(ziel){ if(iw.an || !eva) return; Object.assign(iw, { t: 0, ziel, gesetzt: false, an: true }); };
+story.waldinselWechselt = () => iw.an;
+(function wechselTakt(){
+  requestAnimationFrame(wechselTakt);
+  if(!iw.an) return;
+  const jetzt = performance.now(); iw.dt = Math.min(0.1, (jetzt - (iw.vor || jetzt)) / 1000); iw.vor = jetzt; iw.t += iw.dt;
+  if(iw.t < 0.35){ inselBlende(iw.t / 0.35); return; }
+  if(!iw.gesetzt){ iw.gesetzt = true;
+    if(iw.ziel === 3){ if(story.e2Voegel) story.e2Voegel(false); story.etappe = 3; story.ziel = null; setzeStart(); }
+    else if(story.e2Zurueck) story.e2Zurueck(); }
+  inselBlende(Math.max(0, 1 - (iw.t - 0.35) / 0.45));
+  if(iw.t > 0.8){ iw.an = false; iw.vor = 0; inselBlende(0); }
+})();
+// Abstand zum Waldweg dieser Etappe
+function abstandWeg3(x, z){ let d = Infinity; for(let i = 0; i + 1 < WEG3.length; i++){ const a = WEG3[i], b = WEG3[i + 1], dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz;
+  const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l2)); d = Math.min(d, Math.hypot(x - a.x - dx * t, z - a.z - dz * t)); } return d; }
+function waldwegZurueck(){
+  if(!eva || eva.boat || iw.an || (story.innen && story.innen.drin)) return;
+  const p = eva.group.position, amWeg = abstandWeg3(p.x, p.z) < 5;
+  // nicht in den Wald der Lichtung hinueber (er ist von hier aus nicht gebaut zu sehen): nur ueber den Waldweg
+  if(p.z > WALDRAND.z + 6 && !amWeg){ p.z = WALDRAND.z + 6; }
+  if(hw.hell && amWeg && p.z > WEG3_ZURUECK.z){
+    if(story.aktionLaeuft && story.aktionLaeuft()) p.z = WEG3_ZURUECK.z;       // waehrend einer Aktion: nicht weiter (wie eine Wand)
+    else story.waldinselWechsel(2); }
+}
 story.updateE3 = function(dt){
   if(!e3()) return;
   baue(); hw.t += dt;
+  waldwegZurueck();
   if(story.gestartet) gorillaLaden();
   if(hw.eingang && hw.eingang.userData.flammen){ const t = hw.t, fl = hw.eingang.userData.flammen;
     fl.children.forEach((f, i) => { f.scale.y = 0.8 + 0.35 * Math.abs(Math.sin(t * (7 + i * 2.3) + i)); f.rotation.z = Math.sin(t * 5 + i) * 0.12; });

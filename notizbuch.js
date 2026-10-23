@@ -510,7 +510,7 @@ function signatur(o, W, H, rnd, anteil){
 // ---- Ablauf: Gegenstand raus, Bild zeigen, Klick/Kritzeln, Bild in den Rucksack, ins Notizbuch ----------------------
 const ab = { mesh: null, cv: null, tex: null, phase: null, t: 0, bild: null, s: null, blitz: null };
 function starte(s){
-  zustand.aktiv = s;
+  zustand.aktiv = s; zustand.verstaut = null;
   zustand.gemacht[s.id] = true;                                    // geht nur einmal
   ab.s = s;
   if(s.modell){ szeneStarten(s); return; }                         // Schnitzen, Lupe: 3D-Szene statt Bild
@@ -594,6 +594,9 @@ function bZeigen(an){
   bEl.style.display = an ? 'block' : 'none';
 }
 story.bildEbeneAktiv = () => !!(ab.phase || zustand.aktiv);
+// Vollbild (Live-Wunsch 23.10.2026): von Y bis das Ergebnis im Rucksack ist – danach laeuft nur noch die Ansage, Joshi darf
+// laufen (Y und Weltwechsel bleiben bis zum Ende gesperrt: story.aktionLaeuft ueber bildEbeneAktiv)
+story.notizVollbild = () => !!(ab.phase || sz.phase || (zustand.aktiv && zustand.verstaut !== zustand.aktiv));
 story.bildEbene = function(dt, szene, pause){
   if(!pause){ scheitSetzen(); updateMarken(dt); updateDetektiv(); updateMuetze(dt); updateHuette(dt); updateSchwarm(dt); }
   updateSzene(dt, pause);
@@ -638,7 +641,7 @@ story.bildEbene = function(dt, szene, pause){
     ab.mesh.position.set(zx * k, zy * k + Math.sin(k * Math.PI) * 0.3, 1.2);
     ab.mesh.scale.set(fw * (1 - k * 0.95), h * (1 - k * 0.95), 1); ab.mesh.material.opacity = 1 - k * 0.3;
     if(ab.t >= T_WEG){
-      ab.mesh.visible = false; ab.phase = null; ab.klick = false;
+      ab.mesh.visible = false; ab.phase = null; ab.klick = false; zustand.verstaut = ab.s;   // im Rucksack: Joshi darf wieder laufen
       // ins Notizbuch: Skizzen mit dem J; dazu der Ort, an dem die Seite entstanden ist (Symbol neben der Seitenzahl)
       zustand.seiten.push({ art: ab.s.art, bild: ab.s.art === 'foto' ? ab.bild : mitSignatur(ab.bild), name: ab.s.name, ort: ab.s.ort || 'insel',
         dreh: (zustand.seiten.length % 2 ? 0.03 : -0.025) });
@@ -840,7 +843,7 @@ function updateSzene(dt, pause){
     for(const p of sz.spaene) grp.remove(p.m);
     if(sz.t >= T_WEG){
       E.szene.remove(grp); if(sz.mx) story.stoppe(sz.mx); sz.mx = sz.falterMx = null;
-      const s = sz.s; sz.phase = null; sz.spaene = [];
+      const s = sz.s; sz.phase = null; sz.spaene = []; zustand.verstaut = s;          // im Rucksack: Joshi darf wieder laufen
       zustand.seiten.push({ art: 'skizze', bild: sz.skizze, name: s.name, ort: s.ort || 'insel', dreh: (zustand.seiten.length % 2 ? 0.03 : -0.025) });
       fertigInHuette(s);
       if(story.arbeiten) story.arbeiten(false);                    // steht wieder auf

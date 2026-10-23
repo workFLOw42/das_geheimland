@@ -31,7 +31,9 @@ function hookInsel(){
   _islandInfoCalc = function(cx, cz){
     const i = infoOrig.apply(this, arguments);
     // Radius je Etappe (hoehle.js: Etappe 3 ist die grosse andere Seite der Waldinsel), sonst die kleine Insel
-    if(i && cx === 0 && cz === 0) i.radius = (story.etappeR && story.etappeR[story.etappe]) || ISEL_R;
+    if(i && cx === 0 && cz === 0){ i.radius = (story.etappeR && story.etappeR[story.etappe]) || ISEL_R;
+      // ... und Mitte je Etappe (hoehle.js: die grosse Waldinsel liegt mit ihrer Mitte landeinwaerts, Etappe 2 und 3)
+      const m = story.etappeMitte && story.etappeMitte[story.etappe]; if(m){ i.wx = m.x; i.wz = m.z; } }
     return i;
   };
   // Keine Bauten der Engine auf der Insel: Haeuser, Hafen, Rakete, Vorfeld, geparkter X-Wing

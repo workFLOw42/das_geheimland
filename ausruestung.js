@@ -185,7 +185,11 @@ const GROSS = 1.25;               // so gross (Ebene, Bildhoehe 2,68) wird ein D
 // ---- Ein Ding zeigen: auftauchen (in der Welt) -> gross -> drehen -> klein in den Rucksack -------------------------
 const T_AUF = 0.55, T_GROSS = 0.7, T_DREH = 1.5, T_WEG = 0.8, T_REIN = 0.22;
 const flug = { liste: [], akt: null, fertig: null };
-story.szeneLaeuft = () => !!flug.akt || !!(typeof raus !== 'undefined' && raus.akt) || !!(story.bildEbeneAktiv && story.bildEbeneAktiv());   // story.js: keine Gitarre, nicht laufen
+story.szeneLaeuft = () => !!flug.akt || !!(typeof raus !== 'undefined' && raus.akt) || !!(story.bildEbeneAktiv && story.bildEbeneAktiv());   // story.js: keine Gitarre, kein Knien, Aktion laeuft
+// Vollbild (Live-Wunsch 23.10.2026): solange etwas gross im Bild ist – ein eingesammeltes Ding fliegt (bis es im Rucksack ist), ein
+// Werkzeug kommt heraus, Foto/Skizze/Lupe/Schnitzen bis das Ergebnis eingepackt ist (notizbuch.js notizVollbild). Dabei steht Joshi
+// still; die Ansage danach laeuft weiter, und er darf laufen (Y und Weltwechsel bleiben bis zu ihrem Ende gesperrt: aktionLaeuft)
+story.vollbildLaeuft = () => !!(flug.akt && !flug.akt.fertigAnim) || !!(typeof raus !== 'undefined' && raus.akt) || !!(story.notizVollbild && story.notizVollbild());
 function zeige(dinge){
   ebene();
   flug.liste.push(...dinge.filter(d => d && d.obj));

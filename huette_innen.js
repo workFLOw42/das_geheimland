@@ -233,7 +233,9 @@ function imRaum(x, z){ return Math.abs(x - RAUM.x) < RAUM.B / 2 + HUELLE && Math
 function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z;
   let t = Math.max(0, Math.abs(lx) - (RAUM.B / 2 - KOERPER), -RAUM.T / 2 + KOERPER - lz);
-  if(lz > RAUM.T / 2 - KOERPER && !(Math.abs(lx) < TUER_B / 2 - 0.15 && lz < RAUM.T / 2 + 0.6)) t = Math.max(t, lz - (RAUM.T / 2 - KOERPER), 1e-3);   // nur durch die Tuer
+  // nur durch die Tuer – und die ist zu, solange eine Aktion laeuft (story.aktionLaeuft, Live-Wunsch 23.10.2026)
+  const tuerAuf = !(story.aktionLaeuft && story.aktionLaeuft());
+  if(lz > RAUM.T / 2 - KOERPER && !(tuerAuf && Math.abs(lx) < TUER_B / 2 - 0.15 && lz < RAUM.T / 2 + 0.6)) t = Math.max(t, lz - (RAUM.T / 2 - KOERPER), 1e-3);
   return t;
 }
 function raumFrei(x, z){
@@ -353,11 +355,12 @@ function updateInnen(dt){
   // Sicherheitsnetz: aus dem Raum gefallen (Huelle verlassen) -> zurueck an die Tuer
   if(innen.drin && (!imRaum(p.x, p.z) || p.y < BODEN_Y - 1)){ setzeUm('innen'); return; }
   if(!innen.drin){
-    // in der Tueroeffnung der Huette (aussen) -> hinein
-    if(Math.abs(p.x - H.x) < 0.5 && p.z < H.z + H.T / 2 + 0.05 && p.z > H.z + H.T / 2 - 0.6) wechsle('innen');
+    // in der Tueroeffnung der Huette (aussen) -> hinein; waehrend einer Aktion bleibt er davor stehen (die Tuer ist zu)
+    if(Math.abs(p.x - H.x) < 0.5 && p.z < H.z + H.T / 2 + 0.05 && p.z > H.z + H.T / 2 - 0.6){
+      if(story.aktionLaeuft && story.aktionLaeuft()) p.z = H.z + H.T / 2 + 0.05; else wechsle('innen'); }
   } else {
     // innen durch die Tuer hinaus
-    if(Math.abs(p.x - RAUM.x) < 0.6 && p.z > RAUM.z + RAUM.T / 2 - 0.05) wechsle('aussen');
+    if(Math.abs(p.x - RAUM.x) < 0.6 && p.z > RAUM.z + RAUM.T / 2 - 0.05 && !(story.aktionLaeuft && story.aktionLaeuft())) wechsle('aussen');
   }
 }
 story.updateInnen = updateInnen;

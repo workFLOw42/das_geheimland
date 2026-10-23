@@ -50,7 +50,16 @@ story.etappeWechsel = function(n){
   _islandCache.clear();                                          // global-ok
   hinweisStand.xSatz = 0; hinweisStand.aussenGeschaut = false; hinweisStand.innenGeschaut = false; story.allesGesagt = false;
   for(const h of story.etappeWechselHooks) h(n);
+  // Engine: alles fuer den alten Ort Berechnete verwerfen (Unterwasser, Wale, Fische, Schiffe – nach der Wasser-Definition
+  // neu); innerhalb derselben Insel (Etappe 2 und 3, eine Karte) nicht noetig
+  const gleich = story.inselVon(n) === story.inselVon(n - 1);
+  if(!gleich && typeof ortNeuBerechnen === 'function') ortNeuBerechnen();   // global-ok: Engine
+  // Speicher (Live-Wunsch 22.10.2026: "immer nicht Benoetigtes freigeben"): fruehere Orte weg – nicht die derselben Insel
+  // (zwischen Lichtung und Hoehle kann man hin und her)
+  for(let k = 1; k < n; k++) if(story.inselVon(k) !== story.inselVon(n)) weltEntsorgen(k);
 };
+// Welche Etappen liegen auf derselben Insel (eine Karte, beide Welten bleiben geladen)?
+story.inselVon = (n) => ({ 2: 'waldinsel', 3: 'waldinsel' })[n] || ('etappe' + n);
 // Welche Etappen es schon gibt (globus.js: zu einer, die fehlt, wird nicht neu geladen)
 story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene);
 story.spielstandMerken = function(naechste){
@@ -122,8 +131,10 @@ function welt(n){
   }
   return welten.get(n);
 }
+// Sichtbar: die Welt der Etappe – und beim Fliegen auch die Nachbarwelt auf derselben Insel (von oben sieht man alles:
+// Lichtung, Steg und Boot ebenso wie Berg und Piste). Zu Fuss nur die eigene (spart Zeichnen; der Wald trennt sie).
 function weltenSichtbar(){
-  for(const [n, g] of welten) g.visible = n === story.etappe && locale === 'earth';
+  for(const [n, g] of welten) g.visible = locale === 'earth' && (n === story.etappe || (!eva && story.inselVon && story.inselVon(n) === story.inselVon(story.etappe)));
 }
 function weltEntsorgen(n){
   const g = welten.get(n);
@@ -292,11 +303,12 @@ function hookFigur(){
   const updateEvaOrig = function(){ figurSchritt = true; try { return updateEvaRoh.apply(this, arguments); } finally { figurSchritt = false; } };
   updateEva = function(dt, inp){
     if(!eva) return updateEvaOrig(dt, inp);
-    if(sw.aktiv && steuerbar()){ schwimmUpdate(dt, inp); return; }
+    if(sw.aktiv && story.gestartet){ schwimmUpdate(dt, inp); return; }   // auch waehrend einer Aktion (story.aktionLaeuft)
     const roh = -(inp.pitch || 0), a = Math.abs(roh), dreh = Math.abs(inp.yaw || 0);
     if(a > 0.05 || dreh > 0.05){ figur.steht = 0; if(figur.cur === 'guitar'){ gitarreMusik(false); figurAnim('idle', 0.2); } }
-    if(figur.kniet && (a > 0.3 || dreh > 0.5) && steuerbar()) aufstehen();
+    if(figur.kniet && (a > 0.3 || dreh > 0.5) && story.gestartet) aufstehen();
     if(figur.aktion === 'look' && (a > 0.15 || dreh > 0.3)) figur.aktion = null;   // Stick bricht das Umschauen ab
+    if(figur.schuetteln && (a > 0.15 || dreh > 0.3)) schuettelEnde();              // ... und das Schuetteln
     if(figur.aktion === 'roll'){
       // Sprungrolle: gleichmaessiger Schwung aus dem Lauf (die Hueftkurve des Clips stockt in der Mitte
       // und sah ruckelig aus). Gegen Ende: Stick gehalten -> nahtlos weiterlaufen, sonst ausbremsen.
@@ -306,7 +318,9 @@ function hookFigur(){
       const v = figur.rollV * (a > 0.3 ? 1 : 1 - 0.8 * k * k * (3 - 2 * k));
       return updateEvaOrig(dt, { pitch: -klemme(v / EVA_SPEED, 0, 1), yaw: (inp.yaw || 0) * 0.3 });
     }
-    if(!steuerbar() || figur.kniet || figur.aktion === 'jump' || figur.aktion === 'look'){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
+    // Laufen geht auch waehrend einer Erklaer- oder Erkundungsaktion (Gespraech, Einsammeln – Live-Wunsch 23.10.2026); nur vor
+    // dem Start und bei Vollbild-Aktionen (Lupe, Schnitzen, Foto, Skizze: story.vollbildLaeuft) steht er still
+    if(!story.gestartet || (story.vollbildLaeuft && story.vollbildLaeuft()) || figur.kniet || figur.aktion === 'jump' || figur.aktion === 'look' || figur.schuetteln){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
     figur.ausschlag = a;
     const f = a <= 0.5 ? a / 0.5 * GEH_MAX : GEH_MAX + (a - 0.5) / 0.5 * (1 - GEH_MAX);
     figur.tempo = f * EVA_SPEED;
@@ -445,6 +459,56 @@ function umschauen(){
   figurAnim('look', 0.25, 1);
   fuchsSuche();                                   // Suchblick: der Fuchs schnueffelt nach Interaktionsobjekten
 }
+// ---- Schuetteln wie ein Hund (Live-Wunsch 23.10.2026): kommt Joshi aus dem Wasser und bleibt zum ersten Mal an Land stehen,
+// schuettelt er sich – das Umschauen (look), schneller und SCHUETTEL_MAL hintereinander – und Wassertropfen spritzen weg.
+// Der Stick bricht es ab (wie das Umschauen); danach ist er trocken bis zum naechsten Schwimmen.
+const SCHUETTEL_TEMPO = 2.5, SCHUETTEL_MAL = 2;   // Live-Wunsch 23.10.2026: zweimal reicht
+const TROPFEN_N = 90, TROPFEN_PRO_S = 60, TROPFEN_DAUER = 0.9;
+const tropfen = { pts: null, pos: null, v: [], life: [], frei: 0, rest: 0 };
+function tropfenBauen(){
+  if(tropfen.pts) return;
+  tropfen.pos = new Float32Array(TROPFEN_N * 3).fill(-9999);
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(tropfen.pos, 3));
+  tropfen.pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xd8efff, size: 0.07, transparent: true, opacity: 0.9, depthWrite: false }));
+  tropfen.pts.frustumCulled = false; tropfen.pts.userData.deko = true; scene.add(tropfen.pts);   // global-ok: Engine-Szene
+  for(let i = 0; i < TROPFEN_N; i++){ tropfen.v.push(new THREE.Vector3()); tropfen.life.push(0); }
+}
+function tropfenUpdate(dt){
+  if(!tropfen.pts) return;
+  const P = tropfen.pos;
+  if(figur.schuetteln && eva){
+    tropfen.rest += TROPFEN_PRO_S * dt;
+    const g = eva.group.position;
+    while(tropfen.rest >= 1){ tropfen.rest -= 1;
+      const i = tropfen.frei; tropfen.frei = (i + 1) % TROPFEN_N;
+      const a = Math.random() * Math.PI * 2, h = FIGUR_H * (0.55 + Math.random() * 0.4), sp = 2 + Math.random() * 2.5;
+      P[i * 3] = g.x + Math.cos(a) * 0.15; P[i * 3 + 1] = g.y + h; P[i * 3 + 2] = g.z + Math.sin(a) * 0.15;
+      tropfen.v[i].set(Math.cos(a) * sp, 0.8 + Math.random() * 1.8, Math.sin(a) * sp); tropfen.life[i] = TROPFEN_DAUER * (0.6 + Math.random() * 0.4);
+    }
+  }
+  for(let i = 0; i < TROPFEN_N; i++){
+    if(tropfen.life[i] <= 0) continue;
+    tropfen.life[i] -= dt; const v = tropfen.v[i]; v.y -= 9.81 * dt;
+    P[i * 3] += v.x * dt; P[i * 3 + 1] += v.y * dt; P[i * 3 + 2] += v.z * dt;
+    if(tropfen.life[i] <= 0 || P[i * 3 + 1] < evaFootY(P[i * 3], P[i * 3 + 2])){ tropfen.life[i] = 0; P[i * 3 + 1] = -9999; }   // global-ok: Engine
+  }
+  tropfen.pts.geometry.attributes.position.needsUpdate = true;
+}
+function schuettelStart(){
+  if(!figur.acts.look) { figur.nass = false; return; }
+  figur.nass = false; figur.schuetteln = SCHUETTEL_MAL; figur.schuettelT = 0;
+  tropfenBauen();
+  figurAnim('look', 0.15, SCHUETTEL_TEMPO); figur.acts.look.reset().play();
+}
+function schuettelEnde(){ figur.schuetteln = 0; figurAnim('idle', 0.3, 1); }
+function schuettelSchritt(dt){
+  const a = figur.acts.look; figur.schuettelT += dt; figur.steht = 0;
+  if(figur.cur !== 'look'){ figur.schuetteln = 0; return; }     // eine Szene hat Joshi eine andere Bewegung gegeben
+  if(figur.schuettelT < a.getClip().duration / SCHUETTEL_TEMPO - 0.05) return;
+  figur.schuettelT = 0;
+  if(--figur.schuetteln > 0){ a.timeScale = SCHUETTEL_TEMPO; a.reset().play(); }
+  else schuettelEnde();
+}
 function hinknien(){
   if(!figur.acts.kneel) return;
   figur.kniet = true;
@@ -497,7 +561,9 @@ function updateFigur(dt){
     return;
   }
   figur.mixer.update(dt);
+  tropfenUpdate(dt);
   if(!eva) return;
+  if(figur.schuetteln){ if(sw.aktiv || figur.aktion || figur.kniet) figur.schuetteln = 0; else { schuettelSchritt(dt); return; } }
   if(figur.aktion){
     figur.aktT += dt;
     const clip = figur.acts[figur.aktion].getClip();
@@ -511,7 +577,7 @@ function updateFigur(dt){
   if(figur.kniet) return;
   // Arbeiten (z. B. Schnitzen, notizbuch.js – story.arbeiten): Joshi hockt sich hin, dieselbe Pose wie Knien, aber OHNE
   // figur.kniet – der Fuchs kommt dann nicht zum Spielen (Live-Wunsch 16.10.). Fuer jede kuenftige Arbeit wiederverwendbar.
-  if(figur.arbeitet){ figurAnim('kneel', 0.35, 1); figur.steht = 0; return; }
+  if(figur.arbeitet && figur.ausschlag <= 0.05){ figurAnim('kneel', 0.35, 1); figur.steht = 0; return; }
   if(sw.aktiv){ figurAnim('swim', 0.3, 0.6 + figur.ausschlag * 0.6); figur.steht = 0; return; }
   const v = figur.tempo;
   if(figur.ausschlag > 0.5){ figurAnim('run', 0.2, klemme(v / 5.2, 0.8, 1.3)); figur.steht = 0; }
@@ -520,6 +586,11 @@ function updateFigur(dt){
     // Waehrend die Stimme spricht (oder eine Szene laeuft) gilt Stillstand nicht als "idle": keine Gitarre (Live-Befund
     // 16.10.: sie fing mitten in der Erklaerung an). Die Zeit beginnt danach von vorn.
     // ... und nicht, waehrend der Fuchs gerade markiert (Live-Wunsch 16.10.)
+    // nass aus dem Wasser und zum ersten Mal an Land stehen geblieben (nicht in der Watzone): schuetteln – sofort und immer,
+    // auch waehrend die Erzaehlerin spricht oder eine Szene laeuft (Live-Wunsch 23.10.2026: sonst erst ~5 s nach ihrem Satz).
+    // Pausierbar von selbst: in der Pause laeuft updateFigur nicht (Hauptschleife) – Clip, Zaehler und Tropfen stehen still
+    if(figur.nass && eva.onGround){ const p = eva.group.position;
+      if(watGrund(p.x, p.z) === null && !isOpenWater(p.x, p.z)){ schuettelStart(); return; } }
     if(sprichtGerade || sprichWarte.length || (story.szeneLaeuft && story.szeneLaeuft()) || fuchs.modus === 'schnueffeln'){
       figur.steht = 0;
       if(figur.cur === 'guitar'){ gitarreMusik(false); fuchsTanzEnde(); }
@@ -671,8 +742,11 @@ function schwimmUpdate(dt, inp){
   const nz = g.position.z - Math.cos(eva.yaw) * v * dt;
   figur.ausschlag = Math.abs(inp.pitch || 0); figur.tempo = 0;
   // Ans Ufer: wieder zu Fuss
-  if(evaSolid(nx, nz) && !isOpenWater(nx, nz) || isOnBeach(nx, nz) || isOnLand(nx, nz) || watGrund(nx, nz) !== null){
-    sw.aktiv = false;
+  // Watzone nur zum Ufer hin (Grund wird flacher) – sonst pendelt die Figur gleich nach dem Hineingehen zwischen Schwimmen
+  // und Waten und laeuft auf der Stelle (Live-Befund in Trip to Japan 23.10.2026)
+  const zumUfer = seabedY(nx, nz) >= seabedY(g.position.x, g.position.z) - 0.005;
+  if(evaSolid(nx, nz) && !isOpenWater(nx, nz) || isOnBeach(nx, nz) || isOnLand(nx, nz) || zumUfer && watGrund(nx, nz) !== null){
+    sw.aktiv = false; figur.nass = true;                        // kommt nass heraus: an Land schuettelt er sich (schuettelStart)
     g.position.set(nx, evaFootY(nx, nz), nz);
     eva.vy = 0; eva.onGround = true;
     return;
@@ -684,14 +758,16 @@ function schwimmUpdate(dt, inp){
   const t = tauchEingabe();
   let y = g.position.y + t * TAUCH_V * dt;
   if(t === 0 && y < oben) y = Math.min(oben, y + 0.4 * dt);     // ohne Eingabe treibt sie nach oben
-  g.position.y = Math.max(unten, Math.min(oben, y));
+  // die Oberflaeche geht vor (sonst schwimmt sie im flachen Wasser ueber der Linie, Live-Befund in Trip to Japan 23.10.2026)
+  g.position.y = Math.min(oben, Math.max(unten, y));
   eva.onGround = true;
   state.pos.copy(eva.planeAt);
   evaKmh = Math.abs(v) * 3.6;
 }
 // Waten: am Sandrand ist das Wasser auf den ersten WAT_W m flach. Dort steht die Figur auf dem
 // Grund; erst wo es tiefer als WAT_TIEF ist, schwimmt sie (Koerper dann etwa zur Haelfte im Wasser).
-const WAT_W = 12, WAT_TIEF = 0.6;
+// Watzone: WAT_W m Flachwasser am Strand (Live-Wunsch 22.10.2026: 6 m, vorher 12), dort steht Joshi beim Schwimmen
+const WAT_W = 6, WAT_TIEF = 0.6;
 function watAbstand(x, z){
   if(isOnLand(x, z) || isOnBeach(x, z)) return 0;
   for(let r = 2; r <= WAT_W; r += 2){
@@ -708,6 +784,7 @@ function hookSchwimmen(){
   evaSolid = function(x, z){ if(solidOrig.apply(this, arguments)) return true; return locale === 'earth' && watGrund(x, z) !== null; };
   evaFootY = function(x, z){ if(locale === 'earth'){ const g = watGrund(x, z); if(g !== null) return g; } return fussOrig.apply(this, arguments); };
   // Meeresboden in der Watzone flach (sonst sieht man unter Wasser einen Sockel)
+  // (das Kuestenprofil – 10 m am Ende des Stegs, dann steiler – kommt seit 22.10.2026 aus der Engine: kuesteTiefe)
   seabedY = function(x, z, islands){ const r = bedOrig.apply(this, arguments);
     if(islands || locale !== 'earth') return r;
     const g = watGrund(x, z); return g !== null ? Math.min(r, g) : r; };
@@ -1280,7 +1357,7 @@ function updateInteraktion(dt){
   for(const o of interListe){
     if(o.glow > 0){ o.glow = Math.max(0, o.glow - dt); setGlow(o, Math.max(0, Math.sin((1 - o.glow / o.glowDauer) * Math.PI))); }
     // Waehrend eine Erklaerung laeuft (Live-Wunsch 16.10.), braucht es kein Y – es kommt danach wieder
-    const zeigen = o === nah && !o.spricht;
+    const zeigen = o === nah && !o.spricht && !story.aktionLaeuft();
     if(zeigen && !o.zeichen){ o.zeichen = yZeichen(); welt(o.welt).add(o.zeichen); }
     // yx/yz: das Y steht ueber einer anderen Stelle als der Standplatz (Tiere am Festtisch: Joshi steht davor, das Y ueber dem Tier)
     if(o.zeichen){ o.zeichen.visible = zeigen; if(zeigen) o.zeichen.position.set(o.yx !== undefined ? o.yx : o.x, (o.innen ? INNEN_BODEN : ISLAND_Y) + o.yHoehe + Math.sin(interT * 3) * 0.07, o.yz !== undefined ? o.yz : o.z); }
@@ -1797,6 +1874,20 @@ function testStarten(z){
 // Laufen, springen, knien, umschauen: erst nach dem Start – und nicht, waehrend etwas in den Rucksack gesteckt wird
 // (Live-Befund 16.10.: man konnte waehrend der Einpack-Animation weglaufen)
 function steuerbar(){ return story.gestartet && !(story.szeneLaeuft && story.szeneLaeuft()); }
+// ---- Laufende Aktion (Live-Wunsch 23.10.2026: im ganzen Spiel einheitlich) --------------------------------------------
+// Solange eine Aktion laeuft – jemand spricht (Erzaehlerin, Joshi, Tiere, Funk; auch ein angehaltener Satz), ein Ding wird
+// gezeigt oder kommt aus dem Rucksack, Foto/Skizze/Lupe, Joshi arbeitet (Schnitzen), ein Y-Objekt spricht noch – kann Joshi
+// FREI HERUMLAUFEN, aber kein weiteres Y geht, und er kommt durch keine Tuer und keinen Durchgang (Huette, Hoehle, Waldweg)
+// hinein oder hinaus. Kurze Pausen zwischen zwei Saetzen zaehlen mit (AKTION_NACHLAUF). Weitere Quellen: story.aktionMelden(f).
+const AKTION_NACHLAUF = 0.6;
+const aktionQuellen = [];
+let aktionZuletzt = -1e9;
+story.aktionMelden = (f) => { aktionQuellen.push(f); };
+function aktionRoh(){
+  return !!sprichtGerade || !!gehalten || sprichWarte.length > 0 || !!(story.szeneLaeuft && story.szeneLaeuft()) || !!figur.arbeitet
+    || interListe.some(o => o.spricht) || aktionQuellen.some(f => { try { return !!f(); } catch(e){ return false; } });
+}
+story.aktionLaeuft = function(){ const t = performance.now() / 1000; if(aktionRoh()) aktionZuletzt = t; return t - aktionZuletzt < AKTION_NACHLAUF; };
 
 // ---- Etappe 1: Start am Lagerfeuer, Kurbel-Funkgeraet daneben --------------------------------
 // Die Insel selbst (Huette, Palmen, Feuer, Moewen) baut insel.js. Hier: Funkgeraet, Startplatz, Durchsage.
@@ -2021,7 +2112,10 @@ story.pauseWechsel = pauseWechsel;
 function hookLoop(){
   const loopOrig = loop;
   let tPrev = performance.now();
+  let ySperreDrin = false;
   loop = function(){
+    // Y waehrend einer Aktion: nichts (aeusserste Huelle um alle Y-Hooks – Interaktion, Foto, Steg/Boot, Fahrzeuge)
+    if(!ySperreDrin){ ySperreDrin = true; const yAlle = buttonY; buttonY = function(){ if(story.aktionLaeuft()) return; return yAlle.apply(this, arguments); }; }
     const now = performance.now();
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
     const p = hilfeOffen();

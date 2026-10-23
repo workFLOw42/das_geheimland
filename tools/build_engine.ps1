@@ -77,7 +77,8 @@ foreach($n in $modelle.Keys){
 # eule, holz: Waldgeraeusche der Waldinsel (Pixabay: freesound_community 'owl', Dragon Studio 'breaking wood')
 # gorilla: Brummen aus der Hoehle (Pixabay: flutie8211 'silverback gorilla roar')
 # schnitzen: Schnitzgeraeusch (Pixabay: pineframestudios 'carving wood')
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen')){
+# voegel: Vogelgezwitscher im hellen Waldweg (Pixabay: oliviaaydin 'birds singing')
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)

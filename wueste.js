@@ -380,11 +380,17 @@ function kroeteLaden(win, lang, clip, lauf, fertig){
       const b = new THREE.Box3().setFromPoints(orcaPunkte(o)); mx.stopAllAction(); mx.uncacheRoot(o); return b; };   // global-ok: Engine
     const s = mess(clip).getSize(new THREE.Vector3());
     o.scale.multiplyScalar(lang / Math.max(0.001, s.x, s.z));
-    const lift = Math.max(0, -mess(lauf).min.y);
+    // je Clip die tiefste Stelle ueber die ganze Animation (Live-Befund 23.10.2026: Babys mit dem Hinterteil im Boden)
+    const liftJe = {};
+    for(const c of g.animations || []){ const mx = new THREE.AnimationMixer(o); mx.clipAction(c).play(); let lo = Infinity;
+      for(let i = 0; i < 10; i++){ mx.setTime(c.duration * i / 10); lo = Math.min(lo, new THREE.Box3().setFromPoints(orcaPunkte(o)).min.y); }   // global-ok: Engine
+      mx.stopAllAction(); mx.uncacheRoot(o); liftJe[c.name.split('|').pop()] = Math.max(0, -lo); }
+    const lift = liftJe[lauf] !== undefined ? liftJe[lauf] : Math.max(0, -mess(lauf).min.y);
     o.traverse(m => { if(m.isMesh){ m.castShadow = false; m.frustumCulled = false; } });
     const wrap = new THREE.Group(); wrap.add(o); story.welt(4).add(wrap);
     const mx = new THREE.AnimationMixer(o), acts = {};
-    const k = { o: wrap, mx, lift, a: 0, cur: null, x: 0, z: 0 };
+    const k = { o: wrap, mx, lift, liftJe, a: 0, cur: null, x: 0, z: 0 };
+    k.liftNun = () => (k.cur && k.liftJe[k.cur] !== undefined) ? k.liftJe[k.cur] : k.lift;
     k.spiele = (n, blend) => { if(k.cur === n) return; const c = clipVon(n); if(!c) return; const a = acts[n] || (acts[n] = mx.clipAction(c));
       const alt = k.cur && acts[k.cur]; a.reset().play(); if(alt) alt.crossFadeTo(a, blend || 0.5, false); k.cur = n; };
     k.spiele(clip);
@@ -404,7 +410,7 @@ function hinZu(k, zx, zz, v, dt){
 function kroeteY(k, schwimmt, tief){
   const imW = imSee(k.x, k.z);
   if(schwimmt && imW && seeTiefe(k.x, k.z) > 0.8) return Math.max(seeBoden(k.x, k.z) + 0.5, seeY() - tief);
-  return (imW ? seeBoden(k.x, k.z) : ISLAND_Y) + k.lift;                                 // global-ok: Engine
+  return (imW ? seeBoden(k.x, k.z) : ISLAND_Y) + k.liftNun();                            // global-ok: Engine
 }
 function kroetenBauen(){
   if(tiere.kroeten) return; tiere.kroeten = {};
@@ -465,7 +471,7 @@ function kroetenUpdate(dt){
       b.x = SEE.x + Math.cos(b.a) * BABY.r; b.z = SEE.z + Math.sin(b.a) * BABY.r;
       dreheZu(b.o, Math.atan2(Math.sin(b.a) * b.r, -Math.cos(b.a) * b.r), 2 * dt);
     }
-    b.o.position.set(b.x, ISLAND_Y + b.lift, b.z); b.mx.update(dt);                  // global-ok: Engine
+    b.o.position.set(b.x, ISLAND_Y + b.liftNun(), b.z); b.mx.update(dt);             // global-ok: Engine
   }
   if(g) grosseUpdate(g, b, dt);
 }

@@ -287,7 +287,18 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | einsteigen | Erzählerin | Steig ein. Mit dem rechten Stick gibst du Gas, mit dem linken lenkst du. |
 | in der Luft | Erzählerin | Super, du fliegst! Flieg zum roten Punkt auf dem Radar. |
 | nach einem Absturz | Erzählerin | Hoppla! Versuch es gleich noch einmal. |
-| nach dem Globus | Erzählerin | Joshi fliegt zum Hamster in die Wüste. Wie es weitergeht, erfährst du bald. |
+| nach dem Globus | – | *(weiter in Etappe 4: Joshi fliegt allein auf die Wüste zu)* |
+
+## Etappe 4 – Die Wüste mit der Oase des Hamsters *(im Code, alles **Entwurf**)*
+
+| Wann | Stimme | Text |
+|---|---|---|
+| nach dem Globus, das Flugzeug kreist über der Oase (über ihm ein rotes B) | Erzählerin | Du bist über dem Ziel angekommen. Du kannst jederzeit abspringen, wenn Du bereit bist. Das Flugzeug fliegt dann automatisch zum Gorilla zurück. |
+| noch nicht gesprungen (nach 40 s) | Erzählerin | Drück B, dann springst du ab! |
+| gelandet (und nach dem Neuladen) | Erzählerin | Super gelandet! Du bist am Observatorium angekommen. Hier wohnt der Hamster. |
+| Hinweis-Taste draußen | Erzählerin | Schau doch mal, ob du ins Observatorium kommst. |
+| Y am See | Erzählerin | Ein kleiner See mitten in der Wüste. Das Wasser ist ganz klar. |
+| durch die offene Tür (Blende, vorerst Ende) | Erzählerin | Joshi ist im Observatorium beim Hamster. Wie es weitergeht, erfährst du bald. |
 
 ---
 

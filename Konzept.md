@@ -197,15 +197,16 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 **Draußen:** Jetzt kann Joshi in die **Mustang** einsteigen und von der Piste starten.
 
 ### Etappe 4 – zum Hamster in die Wüste
-- **Warum Wüste:** Der Hamster mag es warm und kalt, und er beobachtet gerne die Sterne und den Mond. Nirgends geht das besser als in der Wüste, weil es dort nachts nie Wolken gibt. Er wohnt **mitten in der Wüste in einer Oase mit Planetarium**.
+- **Warum Wüste:** Der Hamster mag es warm und kalt, und er beobachtet gerne die Sterne und den Mond. Nirgends geht das besser als in der Wüste, weil es dort nachts nie Wolken gibt. Er wohnt **mitten in der Wüste in einer Oase mit Observatorium**.
 - **Hinkommen nur mit dem Fallschirm:** Joshi startet beim Gorilla, fliegt Richtung **roter Punkt** → Blende, Globus, Blende → Joshi fliegt **noch ein Stück allein**. Dann die Erzählerin: Jetzt **mit B abspringen**, der **Autopilot bringt das Flugzeug zum Gorilla zurück**. Das wird nur **gesagt**, nicht gezeigt – der Rückflug wird nicht gebaut.
-- **Freier Fall** wie in *Trip to Japan* (Fuji-Sprung), der **Fallschirm geht automatisch auf**, **Landung vor dem Planetarium**. Es ist **Tag**.
+- **Freier Fall** wie in *Trip to Japan* (Fuji-Sprung), der **Fallschirm geht automatisch auf**, **Landung vor dem Observatorium**. Es ist **Tag**.
 - **Die Oase** (Blick von der Landestelle):
   - **Ein kleiner See** von der Mitte bis an den rechten Rand, mit einem **kleinen Strand** und ein paar **Palmen** drumherum.
-  - **Eine Wiese mit Palmen**, darauf das **Planetarium** (nicht zu riesig).
+  - **Eine Wiese mit Palmen**, darauf das **Observatorium** (nicht zu riesig).
   - Daneben ein **Parkplatz mit einem X-Wing** – noch **nicht benutzbar** (vielleicht für eine spätere Etappe, z. B. zum Mond).
   - **Um die ganze Oase ein Ring aus Palmen**: Er markiert die Grenze zur Wüste mit Sand.
-- **Im Planetarium** (Innenraum = eigene Welt):
+- **Gebaut am 23.10.2026 (Außenbereich, `wueste.js`):** Globus-Punkt in der Mitte der Wüsteninsel; nach dem Globus kreist die Mustang von selbst in 300 m Höhe über der Oase (rotes B über dem Flugzeug), Ansage, B → freier Fall, Schirm, Landung vor dem Observatorium. Wüsteninsel 650 m Sand, Oase in der Mitte: Wiese (46 m) mit Palmen, rechts ein See (8 m tief, mit Strand im Wüstensand; Joshi watet hinein, schwimmt und taucht bis zum Grund; Seegras, Schwämme und Korallen; darin nur Fische, eine Meeresschildkröte, zwei Seeloewen am Ufer, ein Schildkröten-Baby, das am Strand krabbelt, und ein Manta – kein Wal, keine Moewen), das Observatorium („Welcome to the Observatory“, 10 m) mit offener Tür (kein Y: hindurchlaufen → Blende, vorerst „Fortsetzung folgt“), ein Feldweg vom Palmenring bis zur Tür, Parkplatz mit X-Wing (Grenzen, noch nicht benutzbar, kein Y), Palmenring. Hinweis-Taste draußen: „Schau doch mal, ob du ins Observatorium kommst.“ Neu laden: `?etappe=4`. *Noch offen:* der Innenraum mit dem Hamster, Dünen in der Wüste.
+- **Im Observatorium** (Innenraum = eigene Welt):
   1. Joshi sieht den **Hamster an einem Paket nagen**. Spricht Joshi ihn an (Y), sagt der Hamster genervt, dass er die **Schnur nicht aufbekommt**, weil er gerade so dolle **Zahnschmerzen** hat.
   2. **Taschenmesser:** Joshi schneidet die Schnur auf. Der Hamster sagt danke.
   3. **X (umschauen) →** auf dem Boden der **braune Lupenring** mit einem **Fußabdruck**. Unter der Lupe: die **Spur des Hamsters**.
@@ -217,7 +218,7 @@ Ausrüstung, Detektiv-Kreise, Funkspruch („Hallo Joshi... Bitte hilf' uns. Wir
 ### Offen
 - **Wie geht es nach dem Hamster weiter** – wie kommt Joshi zum Eichhörnchen, und warum hat es das Essen genommen?
 - **Auflösung, Weihnachtsessen am Ende, Trophäe.**
-- **Modelle:** siehe **Modelle für Fall 1** unten; dazu Paket mit Schnur, Holzentchen (heil und zerbrochen), Bananenkorb, Weihnachtsbaum und -schmuck, Nadelbäume, Planetarium, Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer. Gebaut (aus Grundformen): Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck.
+- **Modelle:** siehe **Modelle für Fall 1** unten; dazu Paket mit Schnur, Holzentchen (heil und zerbrochen), Bananenkorb, Weihnachtsbaum und -schmuck, Nadelbäume, Observatorium (gefunden: „Welcome to the Observatory“), Palmen (Oase). Vorhanden: X-Wing (Engine), Eichhörnchen (`squirrel_animation_by_blam`), Mustang (Engine), Lagerfeuer. Gebaut (aus Grundformen): Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck.
 - **Aus *Trip to Japan* übernehmbar** (gleiche Engine): Wüste mit Oase (dortige Etappe 2), Absprung, freier Fall und Fallschirm (Finale).
 
 ### Modelle für Fall 1
@@ -226,14 +227,14 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 | Rolle | Modell | Animationen (Auswahl) | Hinweis |
 |---|---|---|---|
 | **Gorilla** (statt Bär, wohnt in der Höhle) | `gorilla_-_animated_low_poly_by_WildPoly3D` | `sit` (zusammengesunken, traurig), `sleep` (eingerollt), `Look`, **`ChestDrum`** (vor Freude auf die Brust trommeln), `eat`, `walk`, `climb` | passt sehr gut; grau mit hellem Bauch |
-| **Hamster** | `hamster_by_josephineburns` | `Hamster_run_loop`, `Hamster_Stand_Snify_anim` (schnüffeln, fürs Nagen), 2× Stehenbleiben – je ~1 s | **ganz weiß, ohne Material** – selbst färben (Rücken braun, Bauch/Backen creme, Ohren/Pfoten rosa; UV vorhanden). Sehr schlichte Form (verformter Würfel): erst im Planetarium testen, sonst Ersatz suchen |
+| **Hamster** | `hamster_by_josephineburns` | `Hamster_run_loop`, `Hamster_Stand_Snify_anim` (schnüffeln, fürs Nagen), 2× Stehenbleiben – je ~1 s | **ganz weiß, ohne Material** – selbst färben (Rücken braun, Bauch/Backen creme, Ohren/Pfoten rosa; UV vorhanden). Sehr schlichte Form (verformter Würfel): erst im Observatorium testen, sonst Ersatz suchen |
 | **Eichhörnchen** (Täter, rotes Fell) | `squirrel_-_animated_low_poly_by_WildPoly3D` oder das ältere `squirrel_animation_by_blam` | `Idle`, `lookaround`, `run`, `sleep`, `snow` | das WildPoly-Eichhörnchen ist **weiß-creme** → für das rote Fell **rot umfärben** |
 | **Tiere am Festtisch** (Auswahl) | Hase, Hasenbaby, Eule, Elch, Ente, Reh (Gazelle), zwei kleine Vögel (`bird_3` blau-gelb, `bird_4` Meise), Waschbär | Hase: fressen, putzen, umschauen · Eule: Kopf drehen · Elch: sitzen · Ente: 15 Clips | passen in den Nadelwald |
 | **nicht verwenden** | Tiger (leere Augen), Balu (`u_baloo`) und Simba (Disney-Figuren – das Spiel ist öffentlich) | | |
 
 - **Stil:** Die WildPoly3D-Tiere sind einfarbiges Low-Poly ohne Texturen (Farbe am Material) – einheitlich und lieb; Umfärben ist leicht.
 - **Lizenzen:** WildPoly3D und Giraffe CC-BY-NC-4.0 · Natural History Museum of Los Angeles County CC-BY-NC-SA-4.0 · Hamster (josephineburns) CC-BY-4.0. Beim Einbauen in die Quellenliste.
-- **Noch zu besorgen/bauen:** Holzentchen (heil und zerbrochen), Bananenkorb und Bananenschale, Paket mit Schnur, Planetarium. *(Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck: gebaut am 21.10.2026 in `waldinsel.js`.)*
+- **Noch zu besorgen/bauen:** Holzentchen (heil und zerbrochen), Bananenkorb und Bananenschale, Paket mit Schnur. *(Observatorium: „Welcome to the Observatory“ von XelaDoesArt, eingebaut 23.10.2026.)* *(Festtisch, Nadelbäume, Weihnachtsbaum und -schmuck: gebaut am 21.10.2026 in `waldinsel.js`.)*
 
 ## 🎓 8. Lerneffekte
 
@@ -253,7 +254,7 @@ Geprüft am 20.10.2026 (Animationen, Größe, Aussehen gerendert). Alle liegen i
 
 ## 📚 Quellen
 
-Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Hase, Hasenbaby, Eule, Elch, Gazelle (als Reh) und zwei kleine Vögel (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Gitarren-Loop von idoberg (Pixabay) · „Wooden Duck Toy“ von Ujjwal Chauhan (Sketchfab) · Gorilla („silverback gorilla roar“) von flutie8211 · Eulenruf („owl“) von freesound_community und Holzknacken („breaking wood“) von Dragon Studio (Pixabay) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
+Mixamo (Rigging, Animationen) · „Fox“ von pxltiger (CC-BY-4.0) · „Wooden Fox Kit Figure“ von Yogensia (CC-BY-NC-SA-4.0) · „Ulysses Butterfly“ von eb78 (CC-BY-SA-4.0) · Ausrüstung siehe README · „Stage Campfire“ von daedaljs (CC-BY-4.0) · „Ring-Billed Gull“ von Oregon State University Ecampus (CC-BY-4.0) · Orca, Seelöwe und Robbe (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · „Low Poly Rainbow Trout“ vom Natural History Museum of Los Angeles County (CC-BY-NC-SA-4.0) · „T-65 X-Wing Starfighter“ von Quiznos323 (CC-BY-NC-SA-4.0) · Hase, Hasenbaby, Eule, Elch, Gazelle (als Reh) und zwei kleine Vögel (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Gitarren-Loop von idoberg (Pixabay) · „Wooden Duck Toy“ von Ujjwal Chauhan (Sketchfab) · Gorilla („silverback gorilla roar“) von flutie8211 · Eulenruf („owl“) von freesound_community und Holzknacken („breaking wood“) von Dragon Studio (Pixabay) · „Welcome to the Observatory“ von XelaDoesArt (CC-BY-4.0) · Meeresschildkröte und Schildkröten-Baby (Low Poly, animiert) von WildPoly3D (CC-BY-NC-4.0) · Modelle/Töne der Flugspiel-Engine. Modelle liegen in `3d Modelle\Spiele`, Töne in `Software\Musik`.
 
 ---
 

@@ -19,7 +19,8 @@ const ORTE = [
   // Hoehle des Gorillas im hinteren Drittel der Insel, noch klar im Wald. Die Insel selbst: WALDINSEL (groesser, mit Wald).
   { name: 'Die Waldinsel', lat: 32.0, lon: 16.0 },                   // Fall 1, Etappe 2 (waldinsel.js)
   { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (hoehle.js)
-  { name: 'Die Wüste', lat: 8, lon: 58, folgt: '🐹', satz: 'Joshi fliegt zum Hamster in die Wüste. Wie es weitergeht, erfährst du bald.' },   // Etappe 4 (folgt)
+  // Live-Wunsch 23.10.2026: der Ankunftspunkt liegt in der Mitte der Wuesteninsel (WUESTE) – dort ist die Oase (wueste.js)
+  { name: 'Die Wüste', lat: 6, lon: 66 },                              // Fall 1, Etappe 4 (wueste.js)
 ];
 // Inseln der Geheimland-Welt (lat, lon, Groesse in Grad) – Joshis Insel ist die erste
 const WALDINSEL = [36, 24, 9];
@@ -252,16 +253,18 @@ function update(dt){
 }
 // Ende des bisher Gebauten: schwarz, Satz, Knopf "Nochmal" (laedt die letzte Etappe neu, mit ihrem Spielstand)
 const TEXT_FOLGT = ['Joshi ist auf dem Weg zum Gorilla. Wie es weitergeht, erfährst du bald.'];
-function fortsetzungFolgt(){
-  gl.aktiv = false; gl.unterwegs = false; gl.textEl.style.opacity = '0';
+function fortsetzungFolgt(symbol, satz){
+  gl.aktiv = false; gl.unterwegs = false; if(gl.textEl) gl.textEl.style.opacity = '0';
   const el = document.createElement('div');
   el.style.cssText = 'position:absolute;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font:700 34px system-ui,sans-serif;';
-  const ort = ORTE[gl.nach] || {};
+  const ort = symbol ? { folgt: symbol, satz } : (ORTE[gl.nach] || {});
   el.innerHTML = '<div style="font-size:64px">' + (ort.folgt || '🦍') + '</div><div style="margin-top:12px">Fortsetzung folgt …</div>';
   document.body.appendChild(el);
   tonBlende(1, 0.5);
   setTimeout(() => story.sprich(ort.satz ? [ort.satz] : TEXT_FOLGT), 600);
 }
+// Ende des Gebauten mitten in einer Etappe (wueste.js: durch die Tuer des Observatoriums)
+story.fortsetzungFolgt = (symbol, satz) => fortsetzungFolgt(symbol, satz);
 // Am Ziel des ersten Falls (segeln.js ruft story.zielErreicht): kurzer Satz, dann der Globus
 // Sofort die Blende (Live-Befund: vorher erst der Satz, und waehrenddessen segelte man weiter); der Satz kommt im Globus
 story.zielErreicht = function(){

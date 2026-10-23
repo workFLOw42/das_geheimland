@@ -41,9 +41,9 @@ const MUSTANG_YAW = Math.PI / 2;                      // Engine: Nase bei yaw 0 
 // ... und endet genau am Ende des Waldwegs der Lichtung (waldinsel.js WEG_LINIE, letzter Punkt 8/-34): ein durchgehender Weg
 const WEG3 = [{ x: 0, z: 52 }, { x: 0, z: 64 }, { x: 1, z: 78 }, { x: 2, z: 96 }, { x: -3, z: 118 }, { x: 8, z: -34 - MITTE_Z }].map(p => ({ x: p.x, z: Z(p.z) }));
 // Zurueck zur Lichtung (nach dem Gorilla, der Weg ist hell): ab hier auf dem Waldweg die Schwarzblende (wie in die Hoehle)
-// Live-Wunsch 23.10.2026 ("die Blende muss viel frueher kommen, genauso wie beim ersten Mal hinein"): wie auf der Lichtung
-// (WEG_REIN ~15 m nach dem Beginn der Waldgasse) – die Gasse beginnt hier bei ~z 70, also bei 86 statt 104
-const WEG3_ZURUECK = { z: Z(86), r: 5 };
+// Live-Wunsch 23.10.2026 (zweimal): nicht laenger als der Hinweg (Lichtung: Wegeingang bis Ausloeser gemessen ~15,6 m) – hier ab dem
+// Waldrand (WALDRAND z 66) 14 m, vorher 20 m (z 86) bzw. 38 m (z 104)
+const WEG3_ZURUECK = { z: Z(80), r: 5 };
 const WEG3_AUS = { anfang: 0.16, ende: 0.3 };
 // Gasse und Aeste erst ~10 m hinter Joshi (Live-Pruefung: sonst hing die Kamera hinter ihm in den Aesten); Weglaenge ~92 m
 const WEG3_GASSE = { von: 0.2, bis: 0.92 };
@@ -371,11 +371,11 @@ function setzeStart(){
 function los(){ if(hw.angekommen) return; hw.angekommen = true;
   story.spaeter(1.2, () => story.sprich(TEXT_ANKUNFT)); story.spaeter(4, () => brummen()); brummTakt(); }
 // (danach einmal vorwaermen – sonst ruckelte es beim ersten Einsteigen in die Mustang: Engine szeneVorwaermen)
-story.e3StartSzene = function(){ story.e3Besucht = true; baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); story.spaeter(0.3, () => { if(typeof szeneVorwaermen === 'function') szeneVorwaermen(); }); };
+story.e3StartSzene = function(){ story.e3Besucht = true; if(story.standSetzen) story.standSetzen('e3Besucht', true); baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); story.spaeter(0.3, () => { if(typeof szeneVorwaermen === 'function') szeneVorwaermen(); }); };
 story.e3Los = los;
 // Vom Waldweg der Waldinsel (globus.js, im Schwarzen): umschalten ohne Neuladen
 story.e3Wechsel = function(){
-  story.etappe = 3; story.ziel = null; story.e3Besucht = true;
+  story.etappe = 3; story.ziel = null; story.e3Besucht = true; if(story.standSetzen) story.standSetzen('e3Besucht', true);
   if(story.etappeWechsel) story.etappeWechsel(3);
   hookTag(); baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); los();
 };
@@ -410,7 +410,7 @@ function updateFlug(dt){
   const vor = new THREE.Vector3(0, 0, -1).applyQuaternion(state.quat), cos = (vor.x * dx + vor.z * dz) / Math.max(1, d) / Math.max(0.01, Math.hypot(vor.x, vor.z));
   const v = state.vel.length();
   if(!state.onGround && cos > 0.75 && d > z.r * 1.5){ const w = Math.min(v * 1.2 * dt, d - z.r); z.x -= dx / d * w; z.z -= dz / d * w; }
-  if(d < z.r && !state.onGround){ flug.ende = true; state.throttle = 0; if(story.globusReise) story.globusReise(3); }   // Ort 3 = die Wueste (globus.js)
+  if(d < z.r && !state.onGround){ flug.ende = true; state.throttle = 0; if(story.globusReise) story.globusReise(3, story.e4Wechsel ? () => story.e4Wechsel() : null); }   // Ort 3 = die Wueste (globus.js); weiter ohne Neuladen (wueste.js)
 }
 function hookFlug(){
   // B im Flug: in Etappe 3 nichts (kein Schleudersitz der Engine – der fuehrerlose Flieger stuerzte ab, und der Pilot blieb
@@ -468,6 +468,7 @@ story.waldinselWechselt = () => iw.an;
   if(iw.t > 0.8){ iw.an = false; iw.vor = 0; inselBlende(0); }
 })();
 // Abstand zum Waldweg dieser Etappe
+story.e3Erde = (x, z) => abstandWeg3(x, z) < 1.8 || abstandPiste(x, z) < 0.5;   // Waldweg und Schotterpiste: Erde (Staub, waldinsel.js)
 function abstandWeg3(x, z){ let d = Infinity; for(let i = 0; i + 1 < WEG3.length; i++){ const a = WEG3[i], b = WEG3[i + 1], dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz;
   const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l2)); d = Math.min(d, Math.hypot(x - a.x - dx * t, z - a.z - dz * t)); } return d; }
 function waldwegZurueck(){

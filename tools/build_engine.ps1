@@ -51,6 +51,13 @@ foreach($ln in $lines[0..($start-1)]){
   if($ln -match '<link rel="manifest"'){ $head += '<link rel="manifest" href="manifest.json">'; $head += '<link rel="apple-touch-icon" href="icon-192.png">'; continue }
   if($ln -match '<link rel="apple-touch-icon"'){ continue }
   $ln = $ln -replace '<meta name="theme-color" content="[^"]*">', '<meta name="theme-color" content="#0e1a3a">'
+  # Engine-Modelle, die dieses Spiel nie zeigt (Analyse 23.10.2026: kein Weltall, kein Modellwechsel ...) - nicht mitliefern,
+  # dann passen auch die Danksagungen (README) genau zu dem, was im Spiel ist. Alle Lader der Engine pruefen, ob die Datei da ist.
+  if($ln -match '<script src="([a-z0-9_]+)_glb\.js"></script>' -and (' canadair alphajet airbus transall parachute falcon astronaut dinghy ford harbor xwing_alt earth crater mars sun spacedrive asteroid marsground moonbase iss shuttle razor serenity rover lunar destroyer enterprise rocket pad ' -match (' ' + $Matches[1] + ' '))){ continue }
+  # Todesstern (Lizenz CC-BY-NC-ND): gehoert nicht zu diesem Spiel - die Datei wird gar nicht erst kopiert (story.js ohneTodesstern)
+  if($ln -match '<script src="deathstar_glb\.js"></script>'){ continue }
+  # Hangar: in diesem Spiel landet man nirgends im Hangar (story.js ohneTodesstern) - das Modell wird nicht kopiert
+  if($ln -match '<script src="hangar_glb\.js"></script>'){ continue }
   if($ln -match '<script src="([^"]+)"></script>'){ $assets += $Matches[1]; $head += ($ln -replace 'src="', 'src="engine/'); continue }
   $ln = $ln -replace '<title>Flugspiel</title>', '<title>Das Geheimland</title>'
   $ln = $ln -replace 'content="Flugspiel"', 'content="Das Geheimland"'
@@ -63,7 +70,11 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              notizbuch = 'NOTIZBUCH_GLB'; stift = 'STIFT_GLB'; kompass = 'KOMPASS_GLB'; messer = 'MESSER_GLB'; lupe = 'LUPE_GLB'; kamera = 'KAMERA_GLB'; rucksack = 'RUCKSACK_GLB';
              holzfuchs = 'HOLZFUCHS_GLB'; schmetterling = 'SCHMETTERLING_GLB';
              # Waldinsel (Etappe 2): Tiere am Festtisch (WildPoly3D, nur die gebrauchten Clips - C:\tmp\gt\tiere.mjs)
-             gorilla = 'GORILLA_GLB'; entchen = 'ENTCHEN_GLB'; hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB' }
+             gorilla = 'GORILLA_GLB'; entchen = 'ENTCHEN_GLB'; hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB';
+             # Wueste (Etappe 4): das Observatorium des Hamsters ("Welcome to the Observatory" von XelaDoesArt, CC-BY-4.0)
+             observatorium = 'OBSERVATORIUM_GLB';
+             # See der Oase: Meeresschildkroete und Baby (Low Poly, animiert, WildPoly3D, CC-BY-NC-4.0)
+             meeresschildkroete = 'MEERESSCHILDKROETE_GLB'; meeresschildkroete_baby = 'MEERESSCHILDKROETE_BABY_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
@@ -78,7 +89,8 @@ foreach($n in $modelle.Keys){
 # gorilla: Brummen aus der Hoehle (Pixabay: flutie8211 'silverback gorilla roar')
 # schnitzen: Schnitzgeraeusch (Pixabay: pineframestudios 'carving wood')
 # voegel: Vogelgezwitscher im hellen Waldweg (Pixabay: oliviaaydin 'birds singing')
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel')){
+# wuestenwind: leichter Wind in der Oase, Etappe 4 (Pixabay: tanweraman 'Desert Wind 2', wie Trip to Japan Etappe 2)
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel', 'wuestenwind')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)
@@ -106,6 +118,7 @@ $skripte += 'waldinsel.js'
 $skripte += 'hoehle.js'
 $skripte += 'hoehle_innen.js'
 $skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Hamster)
+$skripte += 'wueste.js'          # Etappe 4: die Wueste mit der Oase des Hamsters
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
 $ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()

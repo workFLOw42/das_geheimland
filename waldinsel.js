@@ -729,11 +729,20 @@ function updateWeg(){
     const ux = dx * vx + dz * vz > 0 ? dx / l : vx / vl, uz = dx * vx + dz * vz > 0 ? dz / l : vz / vl;   // immer zur Lichtung hin hinaus
     p.x = WEG_REIN.x + ux * WEG_REIN.r; p.z = WEG_REIN.z + uz * WEG_REIN.r; return; }
   // schon einmal bei der Hoehle gewesen: der Waldweg fuehrt mit einer kurzen Schwarzblende hinueber (dieselbe Insel)
-  if(wi.reise){ if(drin && story.e3Besucht && story.waldinselWechsel) story.waldinselWechsel(3); return; }
+  // schon einmal bei der Hoehle (auch vor einem Neuladen: story.e3Besucht im Spielstand) – der Globus kommt nur beim ersten Mal
+  if(wi.reise || story.e3Besucht){ if(drin && story.e3Besucht && story.waldinselWechsel) story.waldinselWechsel(3); return; }
   if(!drin){ wi.amWeg = false; return; }
   if(wi.wegFrei){ wi.reise = true; story.globusReise(2, story.e3Wechsel ? () => story.e3Wechsel() : null); return; }   // hoehle.js: Etappe 3
   if(!wi.amWeg){ wi.amWeg = true; story.sprich(wi.gorillaGesagt ? TEXT_ERST_FOTO : TEXT_WEG_NOCH_NICHT); }
 }
+// Untergrund (Engine untergrundAt): die Waldinsel liegt unter Schnee, nur der Waldweg ist Erde (Etappe 3: dazu Weg und Piste,
+// hoehle.js story.e3Erde); Strand und Wasser kennt die Engine selbst
+if(story.untergrundHook) story.untergrundHook((x, z) => {
+  if(story.etappe !== 2 && story.etappe !== 3) return undefined;
+  if(!isOnLand(x, z)) return undefined;                                            // global-ok: Engine
+  if(abstandZumWeg(x, z) < 1.8 || (story.e3Erde && story.e3Erde(x, z))) return 'erde';
+  return 'schnee';
+});
 const ZURUECK = { x: 11.2, z: 45.5 };                // zwischen Wegeingang (WEG) und WEG_REIN
 // Die Lichtung gibt es auch, wenn man in Etappe 3 neu geladen hat (Fliegen: von oben zu sehen; zurueckgehen): dann wird sie
 // nachgebaut, und alles dort gilt als erledigt (Joshi war ja schon da)

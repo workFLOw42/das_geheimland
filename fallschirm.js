@@ -24,6 +24,7 @@ const FALL_MAX = 55, SINK_SCHIRM = 7;          // m/s: freier Fall hoechstens, a
 const GLEIT_FALL = 30, GLEIT_SCHIRM = 16;      // m/s waagerecht hoechstens (zum Landepunkt)
 const LANDE_FREI = 30;           // m: so weit verschiebt der linke Stick den Landepunkt
 const FLUG_WEG = 14;             // s, dann ist die Flugzeug-Kopie weg
+const ZIEH_AB = 60;              // m ueber dem Landeplatz: ab hier zieht der Schirm sanft genau dorthin
 const _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0), _Z = new THREE.Vector3(0, 0, 1);
 const fs = story.fallschirm = { schritt: null, g: null, mitte: null, v: new THREE.Vector3(), yaw: 0, t: 0, opt: null, flieger: null,
   lande: null, rolle: 0, salto: 0 };
@@ -149,7 +150,10 @@ function schritt(dt){
     fs.g.rotation.set(0, fs.yaw, Math.sin(fs.t * 1.3) * 0.06, 'YXZ');
   }
   p.addScaledVector(fs.v, dt);
-  if(fs.schritt === 'schirm' && p.y - O.boden(lx, lz) < 25){ const k = Math.min(1, dt * 3); p.x += (lx - p.x) * k; p.z += (lz - p.z) * k; }
+  // am Schirm sanft genau ueber den Landeplatz ziehen (Live-Wunsch 23.10.2026: "etwas sanfter, etwas frueher beginnen"): ab ZIEH_AB m
+  // Hoehe ganz leicht, zum Boden hin staerker (vorher erst ab 25 m und gleich kraeftig)
+  if(fs.schritt === 'schirm'){ const h = p.y - O.boden(lx, lz), f = Math.max(0, Math.min(1, 1 - (h - 3) / ZIEH_AB));
+    if(f > 0){ const k = Math.min(1, dt * (0.25 + 2.0 * f * f)); p.x += (lx - p.x) * k; p.z += (lz - p.z) * k; } }
   if(fs.schritt === 'fall') freiflugPose();
   // Engine-Kamera, Radar und Schatten folgen state.pos
   state.pos.copy(p); state.vel.copy(fs.v); state.onGround = false; state.throttle = 0;   // global-ok: Engine
@@ -185,10 +189,16 @@ function kamera(){
     camera.up.set(0, 1, 0); camera.lookAt(p.x + fx * 2, p.y + hy + 0.6, p.z + fz * 2);
     if(sideView !== 0) return;
   }
-  const fall = fs.schritt === 'fall', hinten = fall ? 10 : 16, hoch = fall ? 7 : 4;
+  // wie die Sprung-Kamera in Trip to Japan (finale.js), auf Joshi verkleinert (1,20 statt 1,55 m): in der Hoehe folgt sie SOFORT,
+  // waagerecht weich (Live-Befund 23.10.2026: mit lerp in allen Richtungen blieb sie im freien Fall – bis 55 m/s – weit oben
+  // zurueck, Joshi wurde winzig und es wirkte, als stuerze er ab); der Blick geht etwas unter ihn
+  const fall = fs.schritt === 'fall', hinten = fall ? 6 : 11, hoch = fall ? 3.5 : 2.6;
   _cp.set(p.x - fx * hinten, p.y + hoch, p.z - fz * hinten);
-  camera.position.lerp(_cp, 0.15); camera.up.set(0, 1, 0);   // global-ok: Engine
-  camera.lookAt(p.x + fx * 6, p.y + (fall ? 0 : 2), p.z + fz * 6);
+  camera.up.set(0, 1, 0);                                        // global-ok: Engine
+  const w = fall ? 0.35 : 0.12;                                  // im Fall gleitet er bis 30 m/s waagerecht: dort dichter dran
+  camera.position.x += (_cp.x - camera.position.x) * w; camera.position.z += (_cp.z - camera.position.z) * w;
+  camera.position.y = Math.max(_cp.y, fs.opt.boden(camera.position.x, camera.position.z) + 3);
+  camera.lookAt(p.x + fx * 5, p.y - (fall ? 3.5 : 0.6), p.z + fz * 5);
 }
 // ---- Einhaengen: waehrend des Sprungs keine Flugphysik (das Flugzeug ist weg), eigene Kamera, keine Fluganzeigen ---------
 const hookVorher = window.STORY_HOOK;

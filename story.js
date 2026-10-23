@@ -36,8 +36,15 @@ story.spielstand = (function(){
     if(q && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
   } catch(e){ stand = null; }
   if(stand && stand.etappe > 1) story.etappe = stand.etappe;
+  if(stand && stand.e3Besucht) story.e3Besucht = true;          // schon bei der Hoehle gewesen: der Waldweg fuehrt per Blende hin
   return stand;
 })();
+// Einen Wert im gemerkten Spielstand nachtragen (ohne Neuladen; Live-Befund 23.10.2026: nach dem Neuladen kam zur Hoehle wieder
+// der Globus, weil der Spielstand nicht wusste, dass Joshi schon dort war)
+story.standSetzen = function(k, v){
+  try { const st = JSON.parse(sessionStorage.getItem(SPIELSTAND) || 'null') || { etappe: story.etappe, reise: story.reise || [0] };
+    st[k] = v; sessionStorage.setItem(SPIELSTAND, JSON.stringify(st)); } catch(e){}
+};
 // Etappenwechsel OHNE Neuladen (Live-Wunsch 21.10.2026: wie in Trip to Japan – nach dem Globus gleich am neuen Ort, kein
 // Startbildschirm). Die neue Etappe setzt story.etappe und ruft das hier: die Inselzelle 0, 0 der Engine wird entsorgt und
 // im naechsten Bild neu gebaut (insel.js waehlt die Wiese nach story.etappe), der Hinweis-Stand faengt neu an, und jede
@@ -61,7 +68,7 @@ story.etappeWechsel = function(n){
 // Welche Etappen liegen auf derselben Insel (eine Karte, beide Welten bleiben geladen)?
 story.inselVon = (n) => ({ 2: 'waldinsel', 3: 'waldinsel' })[n] || ('etappe' + n);
 // Welche Etappen es schon gibt (globus.js: zu einer, die fehlt, wird nicht neu geladen)
-story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene);
+story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene) || (n === 4 && !!story.e4StartSzene);
 story.spielstandMerken = function(naechste){
   const A = story.ausruestung || {}, rucksack = {};
   for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen']) rucksack[n] = !!A[n];
@@ -69,7 +76,7 @@ story.spielstandMerken = function(naechste){
     let bild = null; try { bild = s.bild && s.bild.toDataURL ? s.bild.toDataURL('image/png') : null; } catch(e){}
     return { art: s.art, name: s.name, ort: s.ort, dreh: s.dreh, bild };
   });
-  const stand = { etappe: naechste, reise: story.reise ? story.reise.slice() : [0], rucksack, seiten };
+  const stand = { etappe: naechste, reise: story.reise ? story.reise.slice() : [0], rucksack, seiten, e3Besucht: !!story.e3Besucht };
   try { sessionStorage.setItem(SPIELSTAND, JSON.stringify(stand)); }
   catch(e){ stand.seiten = []; try { sessionStorage.setItem(SPIELSTAND, JSON.stringify(stand)); } catch(e2){} console.warn('Spielstand ohne Notizbuch-Seiten (zu gross)', e); }
 };
@@ -601,75 +608,28 @@ function updateFigur(dt){
     else figurAnim('idle', 0.3, 1);
   }
 }
-// ---- Staub beim Laufen (Live-Wunsch 15.10.): hebt sich ein Fuss vom Sand/Gras, wirbelt dort ein kleines Woelkchen auf
-// (Kontrast zum kleineren, blasseren Schatten). Erkannt am Zehenknochen: war er unten und steigt ueber STAUB_HOCH -> Woelkchen.
-// Nicht auf dem Steg, im Wasser, beim Schwimmen oder im Innenraum.
-const STAUB_UNTEN = 0.08, STAUB_HOCH = 0.12, STAUB_DAUER = 0.8, STAUB_MAX = 30;
-const staub = { teile: [], tex: null, fuesse: null, frei: 0 };
-function staubTextur(){
-  const c = document.createElement('canvas'); c.width = c.height = 64;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 30);
-  gr.addColorStop(0, 'rgba(255,255,255,.9)'); gr.addColorStop(0.5, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(c);
+// ---- Staub und Wasserspuren (seit 23.10.2026 Engine-Standard: untergrundAt, spurQuelle) ------------------------------
+// Die Engine macht Staub je Untergrund und Ringe/Gischt im Wasser, fuer Joshi von selbst. Hier nur: welcher Untergrund wo liegt
+// (Huette und Steg Holz wie Beton, die Hoehle Erde; Etappen-Dateien melden ihre Orte mit story.untergrundHook) und wer sonst
+// Spuren macht (Fuchsi). Im Segelboot keine Spuren (das Boot zieht seine eigenen: wasserspuren.js).
+const untergrundHooks = [];
+story.untergrundHook = (f) => { untergrundHooks.push(f); };
+function hookUntergrund(){
+  if(typeof untergrundAt !== 'function') return;
+  const orig = untergrundAt;                                                       // global-ok: Engine
+  untergrundAt = function(x, z, y){
+    if(locale !== 'earth') return orig.apply(this, arguments);
+    if(story.innen && story.innen.drin) return story.innen.wo === 'hoehle' ? 'erde' : 'steg';
+    if(story.aufSteg && story.aufSteg(x, z) && !sw.aktiv) return 'steg';
+    for(const f of untergrundHooks){ const a = f(x, z, y); if(a !== undefined) return a; }
+    return orig.apply(this, arguments);
+  };
 }
-function staubPuff(p, stark){
-  if(!staub.tex) staub.tex = staubTextur();
-  let t = staub.teile.find(q => q.alter >= STAUB_DAUER);
-  if(!t){
-    if(staub.teile.length >= STAUB_MAX) return;
-    // nachts kein leuchtendes Beige: gedecktes Sandgrau (Sprites sind unbeleuchtet)
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: staub.tex, color: 0xc2b694, transparent: true, depthWrite: false, opacity: 0 }));
-    sp.renderOrder = 3; welt(1).add(sp);
-    t = { sp, alter: STAUB_DAUER }; staub.teile.push(t);
-  }
-  t.alter = 0; t.stark = stark; t.sp.visible = true;
-  t.sp.position.set(p.x + (Math.random() - 0.5) * 0.06, p.y + 0.03, p.z + (Math.random() - 0.5) * 0.06);
-  t.dx = (Math.random() - 0.5) * 0.12; t.dz = (Math.random() - 0.5) * 0.12;
+function spurenTakt(){
+  if(typeof spurQuelle !== 'function') return;                                    // global-ok: Engine
+  if(fuchs.obj){ spurQuelle(fuchs.obj, { groesse: 0.7 }); fuchs.obj.userData.keineSpur = fuchs.modus === 'boot' || !fuchs.aktiv; }
+  if(eva) eva.keineSpur = !!(story.imBoot && story.imBoot());
 }
-const _fp = new THREE.Vector3();
-function updateStaub(dt){
-  for(const t of staub.teile){
-    if(t.alter >= STAUB_DAUER){ t.sp.visible = false; continue; }
-    t.alter += dt; const k = Math.min(1, t.alter / STAUB_DAUER);
-    t.sp.position.x += t.dx * dt; t.sp.position.z += t.dz * dt; t.sp.position.y += 0.18 * dt * (1 - k);
-    t.sp.scale.setScalar(0.14 + 0.4 * Math.sqrt(k) * t.stark);
-    t.sp.material.opacity = 0.55 * t.stark * (1 - k) * Math.min(1, t.alter / 0.08);
-  }
-  if(!figur.obj || !eva || locale !== 'earth') return;
-  if(!staub.fuesse){
-    staub.fuesse = [];
-    figur.obj.traverse(o => { if(o.isBone && /ToeBase$/.test(o.name)) staub.fuesse.push({ bone: o, unten: true }); });
-  }
-  const g = eva.group.position;
-  const geht = figur.ausschlag > 0.05 && eva.onGround && !figur.kniet && !sw.aktiv && !(story.innen && story.innen.drin)
-    && !(story.imBoot && story.imBoot()) && !(story.aufSteg && story.aufSteg(g.x, g.z)) && watGrund(g.x, g.z) === null
-    && (isOnLand(g.x, g.z) || isOnBeach(g.x, g.z));
-  for(const f of staub.fuesse){
-    f.bone.getWorldPosition(_fp);
-    const h = _fp.y - evaFootY(_fp.x, _fp.z);
-    if(h < STAUB_UNTEN) f.unten = true;
-    else if(f.unten && h > STAUB_HOCH){ f.unten = false; if(geht) staubPuff({ x: _fp.x, y: evaFootY(_fp.x, _fp.z), z: _fp.z }, figur.ausschlag > 0.5 ? 1 : 0.65); }
-  }
-  fuchsStaub(dt);
-}
-// Fuchsi wirbelt auch Staub auf (Live-Wunsch 18.10.2026): laeuft er schneller als FUCHS_STAUB_V, steigt in kurzen
-// Abstaenden hinter ihm ein kleineres Woelkchen auf (er ist klein und leicht) – nur auf Gras und Sand, nicht auf dem
-// Steg, im Wasser, im Boot oder im Innenraum.
-const FUCHS_STAUB_V = 0.3, _ffp = new THREE.Vector3();
-function fuchsStaub(dt){
-  const F = fuchs; if(!F.obj || !F.aktiv || !F.obj.visible || F.modus === 'boot' || (story.innen && story.innen.drin) || dt <= 0) return;
-  const p = F.obj.position, v = staub.fuchsVor ? Math.hypot(p.x - staub.fuchsVor.x, p.z - staub.fuchsVor.z) / dt : 0;
-  const rx = staub.fuchsVor ? p.x - staub.fuchsVor.x : 0, rz = staub.fuchsVor ? p.z - staub.fuchsVor.z : 0;
-  staub.fuchsVor = (staub.fuchsVor || _ffp).set(p.x, p.y, p.z);
-  if(v < FUCHS_STAUB_V || v > 20){ staub.fuchsT = Math.min(staub.fuchsT || 0, 0.08); return; }
-  if((staub.fuchsT = (staub.fuchsT || 0) - dt) > 0) return;
-  staub.fuchsT = 0.18 + 0.22 / (0.6 + Math.min(1.5, v / 3)) + Math.random() * 0.06;
-  if((story.aufSteg && story.aufSteg(p.x, p.z)) || watGrund(p.x, p.z) !== null || !(isOnLand(p.x, p.z) || isOnBeach(p.x, p.z))) return;
-  const l = Math.hypot(rx, rz) || 1;
-  staubPuff({ x: p.x - rx / l * 0.25, y: evaFootY(p.x, p.z), z: p.z - rz / l * 0.25 }, Math.min(0.6, 0.35 + v / 15));
-}
-story.staub = staub;
 
 // ---- Figur-Absicherung + Diagnose (?debug) – wie kenjiWache in Spiel_SFG -----------------------
 // Gemeldet: die Figur verschwindet nach einer Weile Gitarrespielen (lokal im Test nicht nachstellbar).
@@ -709,7 +669,7 @@ function nebenFigur(vor, links){
 // Stick bewegt und dreht, rechter Stick vor taucht ab, zurueck taucht auf (Tastatur: E / Q). An Land steht sie wieder.
 const SCHWIMM_V   = 1.6;     // m/s
 const TAUCH_V     = 1.2;     // m/s auf und ab
-const SCHWIMM_TIEF = 0.35;   // m: so tief liegt der Koerper an der Oberflaeche im Wasser (Figur 1,20 m; Swim-Clip liegt waagerecht)
+const SCHWIMM_TIEF = 0.45;   // m: so tief liegt der Koerper an der Oberflaeche im Wasser (Figur 1,20 m; Swim-Clip liegt waagerecht; Live-Wunsch 23.10.2026: 10 cm tiefer)
 const sw = story.schwimm = { aktiv: false };
 function schwimmStart(x, z){
   sw.aktiv = true;
@@ -775,7 +735,8 @@ function watAbstand(x, z){
   }
   return Infinity;
 }
-function watGrund(x, z){ const d = watAbstand(x, z); if(d === 0 || d === Infinity) return null; return seaYAt(x, z) - WAT_TIEF * (d / WAT_W) * 0.98; }
+// story.watAus(x, z): dort gilt die Watzone der Meeresufer nicht (der See der Oase hat sein eigenes Flachwasser, wueste.js)
+function watGrund(x, z){ if(story.watAus && story.watAus(x, z)) return null; const d = watAbstand(x, z); if(d === 0 || d === Infinity) return null; return seaYAt(x, z) - WAT_TIEF * (d / WAT_W) * 0.98; }
 story.watGrund = watGrund;
 function hookSchwimmen(){
   // Ins Wasser = schwimmen (statt Schlauchboot der Engine)
@@ -797,6 +758,11 @@ function hookSchwimmen(){
       const k = klemme((tief - 0.5) / 2, 0, 1);
       const dist = 5 - 1.6 * k, hoch = 1.9 - 1.5 * k;
       const soll = new THREE.Vector3(p.x + Math.sin(yaw) * dist, p.y + hoch, p.z + Math.cos(yaw) * dist);
+      // nie im Boden (Live-Befund 23.10.2026: im See der Oase hing sie beim Tauchen hinter Joshi unter der Wiese fest): naeher heran,
+      // bis sie im Wasser ueber dem Grund steht; zur Not ueber den Grund
+      const grund = (x, z) => isOpenWater(x, z) ? seabedY(x, z) : evaFootY(x, z);
+      for(let d = dist; d > 1.2 && soll.y < grund(soll.x, soll.z) + 0.35; d -= 0.3){ soll.x = p.x + Math.sin(yaw) * (d - 0.3); soll.z = p.z + Math.cos(yaw) * (d - 0.3); }
+      soll.y = Math.max(soll.y, grund(soll.x, soll.z) + 0.35);
       if(sideView !== 0){
         const qx = Math.cos(eva.yaw), qz = -Math.sin(eva.yaw);
         soll.set(p.x + qx * 5 * sideView, p.y + 0.5 + 0.5 * (1 - k), p.z + qz * 5 * sideView);
@@ -1490,6 +1456,7 @@ function hinweisGeben(){
   else if(story.detektivPhase && story.detektivPhase()) satz = HINWEIS.detektiv;      // Markierungen offen (notizbuch.js)
   else if(radio.fall1 === 'ruft') satz = HINWEIS.funk;
   else if(story.etappe === 3 && story.e3Hinweis) satz = story.e3Hinweis();   // vor der Hoehle (hoehle.js)
+  else if(story.etappe === 4 && story.e4Hinweis && story.e4Hinweis()) satz = story.e4Hinweis();   // Oase (wueste.js)
   else if(story.etappe === 2){                                      // Waldinsel: eine Welt, keine Huette
     const hier = interListe.filter(o => o.welt === 2), e2 = story.e2Hinweis && story.e2Hinweis();
     if(e2){ satz = e2; if(story.e2HinweisFuchs) story.e2HinweisFuchs(); }   // Spur am Tisch (waldinsel.js); der Fuchs zeigt den Ring
@@ -1978,6 +1945,7 @@ function updateRadio(dt){
 function startSzene(){
   if(story.etappe === 2 && story.e2StartSzene){ story.e2StartSzene(); return; }   // Waldinsel: im Boot am Steg (waldinsel.js)
   if(story.etappe === 3 && story.e3StartSzene){ story.e3StartSzene(); return; }   // vor der Hoehle (hoehle.js)
+  if(story.etappe === 4 && story.e4StartSzene){ story.e4StartSzene(); return; }   // Oase in der Wueste (wueste.js)
   const I = story.insel, H = I.huette, F = I.feuer;
   story.baueInsel();
   // Funkgeraet auf einer Kiste rechts neben dem Feuer, Lautsprecher zum Startplatz
@@ -2108,6 +2076,15 @@ function pauseWechsel(an){
 }
 story.pauseWechsel = pauseWechsel;
 
+// Der Todesstern (Lizenz CC-BY-NC-ND) gehoert nicht zu diesem Spiel (Live-Wunsch 23.10.2026): tools/build_engine.ps1 laesst die
+// Datei weg, und hier faellt er auch als Himmelskoerper der Engine heraus – sonst stuende er unsichtbar im All, mit Hangar-Landung.
+function ohneTodesstern(){
+  if(typeof bodies === 'undefined' || typeof BODY_DEFS === 'undefined') return;   // global-ok: Engine
+  for(const L of [bodies, BODY_DEFS]){ const i = L.findIndex(b => (b.def ? b.def.key : b.key) === 'death'); if(i >= 0) L.splice(i, 1); }
+  // ... und nirgends im Hangar landen (Live-Wunsch 23.10.2026): weder am Todesstern noch an Star Destroyer oder ISS, auch kein
+  // Start im Hangar. Das Hangar-Modell laesst build_engine.ps1 ebenfalls weg.
+  if(typeof enterHangar === 'function') enterHangar = function(){ return false; };   // global-ok: Engine
+}
 // ---- Hauptschleife ---------------------------------------------------------------------------
 function hookLoop(){
   const loopOrig = loop;
@@ -2115,7 +2092,10 @@ function hookLoop(){
   let ySperreDrin = false;
   loop = function(){
     // Y waehrend einer Aktion: nichts (aeusserste Huelle um alle Y-Hooks – Interaktion, Foto, Steg/Boot, Fahrzeuge)
-    if(!ySperreDrin){ ySperreDrin = true; const yAlle = buttonY; buttonY = function(){ if(story.aktionLaeuft()) return; return yAlle.apply(this, arguments); }; }
+    // Ausnahme: im Flug richtet Y das Flugzeug gerade (Engine geradeMoeglich) – das ist keine Objekt-Aktion (Live-Wunsch 23.10.2026)
+    if(!ySperreDrin){ ySperreDrin = true; const yAlle = buttonY;
+      buttonY = function(){ const gerade = !eva && typeof geradeMoeglich === 'function' && geradeMoeglich();   // global-ok: Engine
+        if(story.aktionLaeuft() && !gerade) return; return yAlle.apply(this, arguments); }; }
     const now = performance.now();
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
     const p = hilfeOffen();
@@ -2126,7 +2106,7 @@ function hookLoop(){
     figurTasten();
     updateFigur(dt);
     figurWache(dt);
-    updateStaub(dt);
+    spurenTakt();                                  // Staub/Wasserspuren macht die Engine (untergrundAt, spurQuelle)
     // X-Wing nur sichtbar, wenn man drin sitzt; vor der Hoehle (Etappe 3) steht die Mustang des Gorillas immer da
     planeGroup.visible = !eva || (story.etappe === 3 && !(story.innen && story.innen.drin));
     updateFuchs(dt);
@@ -2134,6 +2114,7 @@ function hookLoop(){
     if(story.updateE1) story.updateE1(dt);
     if(story.updateE2) story.updateE2(dt);         // waldinsel.js: Tiere, Lichterketten
     if(story.updateE3) story.updateE3(dt);         // hoehle.js: vor der Hoehle des Gorillas
+    if(story.updateE4) story.updateE4(dt);         // wueste.js: Anflug, Sprung, Oase
     if(story.updateHoehleInnen) story.updateHoehleInnen(dt);   // hoehle_innen.js: in der Hoehle
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
     if(story.updateSteg) story.updateSteg(dt);     // steg.js: Steg, Segelboot, einsteigen
@@ -2194,6 +2175,8 @@ window.STORY_HOOK = function(){
   hookWelt();
   hookInteraktion();
   hookHinweis();
+  ohneTodesstern();
+  hookUntergrund();
   hookNacht();
   hookFigur();
   hookSchwimmen();
@@ -2209,6 +2192,7 @@ window.STORY_START = function(){
   // startbildschirm(() => spaeter(2.0, durchsage));
   // Waldinsel: nach dem Start steigen Joshi und der Fuchs aus dem Boot, dann die Erzaehlerin (waldinsel.js)
   startbildschirm(() => { if(story.etappe === 2){ if(story.stegAussteigen) spaeter(0.6, story.stegAussteigen); if(story.e2Los) story.e2Los(); }
-    if(story.etappe === 3 && story.e3Los) story.e3Los(); });
+    if(story.etappe === 3 && story.e3Los) story.e3Los();
+    if(story.etappe === 4 && story.e4Los) story.e4Los(); });
 };
 })();

@@ -45,15 +45,25 @@ function hookInsel(){
     const info = islandInfo(cx, cz);
     if(!info) return null;
     const g = new THREE.Group();
-    const sand = new THREE.Mesh(new THREE.CircleGeometry(info.radius * BEACH_FACTOR, 48), sandMat);
+    // Wueste (Etappe 4): der Strand nur als Ring am Rand – die volle Scheibe lag unter dem Loch des Sees ueber dem Wasser
+    const ring = story.etappe === 4 && story.wuesteLoch;
+    const sand = new THREE.Mesh(ring ? new THREE.RingGeometry(info.radius - 2, info.radius * BEACH_FACTOR, 96) : new THREE.CircleGeometry(info.radius * BEACH_FACTOR, 48), sandMat);
     sand.rotation.x = -Math.PI / 2; sand.position.y = ISLAND_Y - 0.05; g.add(sand);
-    const geo = new THREE.CircleGeometry(info.radius, 48);
+    // Wueste (Etappe 4): mit einem Loch fuer den See der Oase (wueste.js story.wuesteLoch) – darunter liegt sein Grund
+    const L = story.etappe === 4 && story.wuesteLoch;
+    let geo;
+    if(L){ const sh = new THREE.Shape(); sh.absarc(0, 0, info.radius, 0, Math.PI * 2, false);
+      const h = new THREE.Path(); h.absarc(L.x - info.wx, -(L.z - info.wz), L.r, 0, Math.PI * 2, true); sh.holes.push(h);
+      geo = new THREE.ShapeGeometry(sh, 96); }
+    else geo = new THREE.CircleGeometry(info.radius, 48);
     const uv = geo.attributes.uv, p = geo.attributes.position;
     // Waldinsel (Etappe 2, waldinsel.js): Winterwiese ohne Blumen statt der Gras-Kachel der Engine
-    const winter = story.etappe >= 2 && story.winterGras, kachel = winter ? story.winterGrasKachel : GRASS_TILE_M;   // Waldinsel und Hoehle
+    const winter = (story.etappe === 2 || story.etappe === 3) && story.winterGras;   // Waldinsel und Hoehle
+    const wueste = story.etappe === 4 && story.wuesteBoden;                             // Wuestensand (wueste.js)
+    const kachel = winter ? story.winterGrasKachel : wueste ? story.wuesteKachel : GRASS_TILE_M;
     for(let i = 0; i < uv.count; i++) uv.setXY(i, (p.getX(i) + info.wx) / kachel, (p.getY(i) + info.wz) / kachel);
     // Die Gras-Kachel der Engine hat Blumen – nur im Inneren; zum Rand hin wird es sandig (Vertex-Farben)
-    const gras = new THREE.Mesh(geo, winter ? story.winterGras() : grassMat);
+    const gras = new THREE.Mesh(geo, winter ? story.winterGras() : wueste ? story.wuesteBoden() : grassMat);
     gras.rotation.x = -Math.PI / 2; gras.position.y = ISLAND_Y; g.add(gras);
     g.position.set(info.wx, 0, info.wz);
     return g;

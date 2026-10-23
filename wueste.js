@@ -83,11 +83,11 @@ function baue(){
   const sg = new THREE.RingGeometry(SEE.r, SEE.r + SEE.strand, 64, 2), su = sg.attributes.uv, sp = sg.attributes.position;
   for(let i = 0; i < su.count; i++) su.setXY(i, (sp.getX(i) + SEE.x) / story.wuesteKachel, (sp.getY(i) - SEE.z) / story.wuesteKachel);
   const strand = new THREE.Mesh(sg, story.wuesteBoden()); strand.rotation.x = -Math.PI / 2; strand.position.set(SEE.x, ISLAND_Y + 0.025, SEE.z); w.add(deko(strand));
-  // Seegrund: eine Schuessel in der Form von seeBoden (am Ufer flach, dann bis SEE.tief), Sand
+  // Seegrund: eine Schuessel in der Form von seeBoden (am Ufer flach, dann bis SEE.tief), Sand – etwas dunkler (unter Wasser war er zu hell)
   const rg = new THREE.RingGeometry(0.05, SEE.r + 0.3, 72, 28), rp = rg.attributes.position;
   for(let i = 0; i < rp.count; i++){ const x = rp.getX(i), y = rp.getY(i); rp.setXYZ(i, SEE.x + x, Math.min(ISLAND_Y - 0.02, seeBoden(SEE.x + x, SEE.z - y)), SEE.z - y); }
   rg.computeVertexNormals();
-  w.add(deko(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: 0x9a8862, side: THREE.DoubleSide })   // etwas dunkler (Live-Wunsch: unter Wasser zu hell))));
+  w.add(deko(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: 0x9a8862, side: THREE.DoubleSide }))));
   const wasser = new THREE.Mesh(new THREE.CircleGeometry(SEE.r + 0.1, 64), new THREE.MeshLambertMaterial({ color: 0x3f97c4, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false }));
   wasser.rotation.x = -Math.PI / 2; wasser.position.set(SEE.x, seeY(), SEE.z); wasser.renderOrder = 3; w.add(deko(wasser));
   // Am Seegrund ein paar Pflanzen und Korallen (Live-Wunsch 23.10.2026) – die Bausteine der Engine (Seegras, Schwamm,

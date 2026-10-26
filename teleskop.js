@@ -314,7 +314,8 @@ function steuern(dt){
   else if(tk.sperre <= 0 || e.x !== alt.x || e.y !== alt.y){ schritt = { x: e.x, y: e.y }; tk.sperre = e.x === alt.x && e.y === alt.y ? 0.45 : 0.6; }
   else tk.sperre -= dt;
   tk.eingabe = e;
-  if(kante.b){ zu(); return; }                                    // B: hinaus, auch mitten in einer Erklaerung
+  // B: aus der Nahansicht eines Objekts erst zurueck zur Auswahl (Live-Wunsch 26.10.2026), dort hinaus – auch mitten in einer Erklaerung
+  if(kante.b){ if(tk.nahO){ nahWeg(); if(story.stimmeStopp) story.stimmeStopp(); tk.spricht = false; } else zu(); return; }
   if(schritt){ const n = schritt.x ? imKreis(schritt.x) : nachbar(0, schritt.y);
     if(n >= 0){ tk.wahl = n; nahWeg(); sprechen([tk.objekte[n].name]); } }
   if(kante.a){ const o = tk.objekte[tk.wahl]; if(tk.nahO === o) { nahWeg(); sprechen([o.name]); } else nahZeigen(o); }

@@ -953,6 +953,8 @@ function fuchsTanz(dt, fp){
       T.naechste = 1.4 + Math.random() * 1.2;
       return;
     }
+    // zu eng zum Hin-und-her (fuchsWaechter): nur auf der Stelle drehen und hopsen, dazwischen zu Joshi schauen
+    if(T.eng){ fuchsSchaue(dt, g.x, g.z, 3); if(fuchs.cur !== FA.stehen) fuchsAnim(FA.stehen, 0.3); return; }
     // quer vor der Figur hin und her: Ziel abwechselnd links / rechts der Mitte
     const z = nebenFigur(ab, T.seite * TANZ_BREIT);
     const d = fuchsLaufe(dt, z.x, z.z, 2.6);
@@ -1146,7 +1148,7 @@ function updateFuchs(dt){
   } else if(fuchs.modus === 'kommen' && eva){
     // vor die Figur, leicht zur Seite versetzt (1,1 m vor, 0,35 m links) – sonst verdeckte Joshi ihn fuer die Kamera
     const v = nebenFigur(1.1, 0.35);
-    const d = fuchsLaufe(dt, v.x, v.z, Math.hypot(v.x - fp.x, v.z - fp.z) > 3 ? 6.5 : 2.5);
+    const d = fuchsGeheZu(dt, v.x, v.z, Math.hypot(v.x - fp.x, v.z - fp.z) > 3 ? 6.5 : 2.5);   // mit Wegsuche (Stuehle, Tisch)
     // Ziel im Wasser (Figur watet): am Ufer bleiben und von dort aus spielen
     if(d < 0.2 || fuchs.blockiert){
       fuchs.modus = 'spielen'; fuchs.spielI = 0;
@@ -1187,14 +1189,18 @@ function updateFuchs(dt){
       else fuchsGeheZu(dt, h.x, h.z, 7.5);
       fuchs.ziel = null; fuchs.warte = 0.5; fuchs.tun = null;
     } else if(fuchs.ziel){
-      const d = fuchsLaufe(dt, fuchs.ziel.x, fuchs.ziel.z, fuchs.ziel.tempo);
-      if(d < 0.3){ fuchs.ziel = null; fuchs.warte = 1.5 + Math.random() * 4; fuchs.tun = fuchsLaune(); }
+      // mit Wegsuche (Live-Befund 26.10.2026: zwischen den Stuehlen in der Huette und hinter dem Festtisch zwischen den Tieren
+      // lief er sich fest und drehte sich im Kreis) – und spaetestens nach 8 s ist das Ziel egal
+      const d = fuchsGeheZu(dt, fuchs.ziel.x, fuchs.ziel.z, fuchs.ziel.tempo);
+      if((fuchs.ziel.t = (fuchs.ziel.t || 0) + dt) > 8 && d >= 0.3){ fuchs.ziel = null; fuchs.warte = 0.5; }
+      else if(d < 0.3){ fuchs.ziel = null; fuchs.warte = 1.5 + Math.random() * 4; fuchs.tun = fuchsLaune(); }
     } else {
       fuchs.warte -= dt;
       fuchsBeschaeftigt(dt, zu);
       if(fuchs.warte <= 0) fuchsNeuesZiel(zu);
     }
   }
+  fuchsWaechter(dt, fp);
   fp.y = evaFootY(fp.x, fp.z);
   // Pivot-Hopser: der Clip dreht den Fuchs nicht (nur 14 Grad) – die halbe Drehung macht der Code, weich mit dem Hopser
   let dreh = 0;
@@ -1238,6 +1244,22 @@ function fuchsBeschaeftigt(dt, zu){
   }
 }
 // Neues Ziel: ein Punkt im Umkreis der Figur, bevorzugt vor ihr (da, wo sie hinlaeuft)
+// Festgelaufen? (Live-Befund 26.10.2026: er drehte sich zwischen Stuehlen und Tieren im Kreis.) Laeuft er (Geh-/Renn-Clip),
+// kommt aber in 2 s keine 0,4 m weit: aufgeben, was er gerade wollte – streifen: neues Ziel; kommen: dort spielen;
+// hinsetzen: dort setzen; Tanz: dort tanzen. Die Wegsuche wird neu angefangen.
+function fuchsWaechter(dt, fp){
+  const w = fuchs.wacht || (fuchs.wacht = { t: 0, x: fp.x, z: fp.z });
+  const laeuft = (fuchs.cur === FA.gehen || fuchs.cur === FA.rennen) && ['streifen', 'kommen', 'hinsetzen', 'tanzen'].includes(fuchs.modus);   // Foto/Absuchen fuehren ihn selbst
+  if(!laeuft || Math.hypot(fp.x - w.x, fp.z - w.z) > 0.4){ w.t = 0; w.x = fp.x; w.z = fp.z; return; }
+  if((w.t += dt) < 2) return;
+  w.t = 0; fuchs.weg = null; fuchs.ziel = null; fuchs.umSeite = 0;
+  if(fuchs.modus === 'kommen'){ fuchs.modus = 'spielen'; fuchs.spielI = 0; fuchsAnim(FA.spielen[0], 0.15); }
+  else if(fuchs.modus === 'hinsetzen' && !fuchs.sitzt){ fuchs.sitzt = true; fuchs.sitzT = 0; fuchsAnim(FA.setzen, 0.25); }
+  else if(fuchs.modus === 'tanzen' && fuchs.tanz){ const T = fuchs.tanz;
+    if(T.phase === 'hin'){ T.phase = 'tanz'; T.t = 0; } else if(T.phase === 'tanz') T.eng = true;
+    else if(!fuchs.sitzt){ fuchs.sitzt = true; fuchs.sitzT = 0; fuchsAnim(FA.setzen, 0.25); } }
+  else { fuchs.warte = 1; fuchsAnim(FA.stehen, 0.3); }
+}
 function fuchsNeuesZiel(zu){
   const fp = fuchs.obj.position;
   for(let i = 0; i < 12; i++){
@@ -1707,7 +1729,7 @@ function startbildschirm(weiter){
     requestAnimationFrame(warte);
   })();
   function start(test){
-    if(los || !bereit) return; los = true;
+    if(los || !bereit || story.updateLaedt) return; los = true;   // story.updateLaedt: erst die neue Version (pwa.js)
     // Ton freischalten: Knopf und Taste fangen das Ereignis ab (stopPropagation), die Engine bekam es nie (wie in Trip to Japan)
     if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
     el.remove();
@@ -1954,6 +1976,26 @@ story.sichtTeile = function(o, an){
     if(!an){ if(n.userData.sichtVorher === undefined){ n.userData.sichtVorher = n.visible; n.visible = false; } }
     else if(n.userData.sichtVorher !== undefined){ n.visible = n.userData.sichtVorher; delete n.userData.sichtVorher; } });
 };
+// Gemaltes Draussen hinter einer Tuer der schwebenden Innenraeume: ein vorn offener Kasten statt eines Bildes hinter der Wand
+// (Live-Befund 26.10.2026: schraeg durch die Tuer sah man am Bild vorbei aufs Meer). Hinten das Bild, Seiten, Decke und Boden
+// ziehen seine Randfarben nach vorn – aus jedem Winkel sieht man nur in den Kasten. Oeffnung bei z = 0 (x -b/2..b/2, y 0..h),
+// nach +z tiefe Meter tief; die Kanten vorn gehoeren in Wand/Rahmen.
+story.tuerKasten = function(tex, b, h, tiefe){
+  const x0 = b / 2, ecken = [[-x0, 0], [x0, 0], [x0, h], [-x0, h]], pos = [], uv = [];
+  const punkt = (x, y, z) => { pos.push(x, y, z); uv.push((x0 - x) / b, y / h); };   // u wie beim um 180 Grad gedrehten Bild
+  const viereck = (a, c, e, f) => { for(const q of [a, c, e, a, e, f]) punkt(...q); };
+  viereck(...ecken.map(([x, y]) => [x, y, tiefe]));                                     // hinten: das Bild
+  for(let i = 0; i < 4; i++){ const [ax, ay] = ecken[i], [bx, by] = ecken[(i + 1) % 4];   // Boden, rechts, Decke, links
+    viereck([ax, ay, 0], [bx, by, 0], [bx, by, tiefe], [ax, ay, tiefe]); }
+  // ohne Mipmaps: Decke und Boden sieht man flach von der Seite, dort griff sonst die kleinste Stufe (der Mittelwert des ganzen
+  // Bildes) – sie wurden grau
+  // und am Rand festgeklemmt (eine wiederholte Textur mischte an Decke und Boden die oberste mit der untersten Zeile: grau)
+  tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping; tex.repeat.set(1, 1); tex.offset.set(0, 0); tex.needsUpdate = true;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, fog: false, side: THREE.DoubleSide }));
+  m.userData.deko = true; m.userData.keinKoerper = true; return m;
+};
 // Funkgeraete in den anderen Etappen (Live-Wunsch 26.10.2026): eine Kopie von dem am Lagerfeuer – auf der Kiste (welt, x, z,
 // dreh; innen: y = Boden des Innenraums) oder ohne Kiste auf einem Moebel (eltern + lokal: z. B. der Schreibtisch im Observatorium).
 // Ohne Y und ohne Entdecken-Text (Live-Wunsch 26.10.2026: den braucht es nur an Joshis Huette); beim Rauschen wackeln und
@@ -2099,6 +2141,10 @@ function pauseWechsel(an){
   // Satz bleibt dann stumm, bis zufaellig wieder resume() kommt (nachgestellt in echtem Chrome, C:/tmp/jfg/test/tts_echt.js).
   // speechSynthesis.paused meldet das nicht zuverlaessig (es stand auf false). Darum: pause() nur bei laufendem Satz,
   // resume() danach immer – und sprich() ruft vor jedem neuen Satz resume() (siehe dort).
+  // Inventar und Pause: den laufenden Spielsatz halten wie fuer eine Inventar-Erklaerung (Live-Befund 26.10.2026: das Lama sprach im
+  // Inventar einfach weiter – synth.pause() ueberhoert Chrome bei manchen Stimmen). Beim Schliessen kommt er von vorn (fortsetzen).
+  // Nicht im Teleskop: dort spricht die Ansicht selbst.
+  if(an && (pause.art === 'inventar' || pause.art === 'hilfe') && sprichtGerade && sprichtGerade.rolle !== 'inventar') halten();
   const synth = window.speechSynthesis;
   if(synth){ if(an){ if(synth.speaking){ synth.pause(); story.stimmePausiert = true; } } else { synth.resume(); story.stimmePausiert = false; } }
   // Ton: in der Pause ganz aus, im Inventar bleibt das Hintergrundgeraeusch (Meer, Moewen) – Live-Wunsch 16.10.; danach
@@ -2239,7 +2285,7 @@ function pauseTonSchritt(){
   const p = hilfeOffen() && pause.art === 'hilfe';                    // nur die echte Pause – im Inventar und im Teleskop wird gesprochen
   if(p === pauseTonAn) return; pauseTonAn = p;
   const ctx = typeof audioCtx !== 'undefined' ? audioCtx : null;                                       // global-ok: Engine
-  if(p){ if(ctx && ctx.state === 'running'){ ctx.suspend(); pauseTonUns = true; } try { speechSynthesis.pause(); } catch(e){} }
+  if(p){ if(ctx && ctx.state === 'running'){ ctx.suspend(); pauseTonUns = true; } try { if(speechSynthesis.speaking) speechSynthesis.pause(); } catch(e){} }   // ohne Satz nie pause() (Chrome haengt, s. pauseWechsel)
   else { if(ctx && pauseTonUns && ctx.state === 'suspended') ctx.resume(); pauseTonUns = false; try { speechSynthesis.resume(); } catch(e){} }
 }
 function hookPauseTon(){ const loopOrig = loop; loop = function(){ const r = loopOrig.apply(this, arguments); pauseTonSchritt(); return r; }; }   // global-ok: Engine

@@ -739,17 +739,29 @@ function updateWeg(){
   if(!eva || (story.imBoot && story.imBoot())) return;
   const p = eva.group.position, drin = Math.hypot(p.x - WEG_REIN.x, p.z - WEG_REIN.z) < WEG_REIN.r;
   // waehrend einer Aktion (story.aktionLaeuft) geht es nicht weiter in den Wald: wie an einer Wand zurueck an den Rand des
-  // Ausloesers (und auf dem Weg nicht daran vorbei)
-  if(drin && (wi.reise || wi.wegFrei) && story.aktionLaeuft && story.aktionLaeuft()){
+  // Ausloesers (und auf dem Weg nicht daran vorbei). Ebenso, solange der Weg noch nicht frei ist (Live-Befund 26.10.2026: waehrend
+  // die Tiere vom Gorilla erzaehlten, lief Joshi am Ausloeser vorbei tief in den Wald bis auf eine fremde Lichtung, und auf dem
+  // Rueckweg startete dann mitten im Wald die Reise zur Hoehle). Wer durch den Wald geht, kommt so nur beim Gorilla heraus.
+  const zu = !wi.reise && !wi.wegFrei && !story.e3Besucht;
+  if(!drin && zu && wegTiefe(p.x, p.z) > wegTiefe(WEG_REIN.x, WEG_REIN.z)){ p.x = WEG_REIN.x; p.z = WEG_REIN.z; }   // schon dahinter: zurueck
+  if(drin && (zu || (wi.reise || wi.wegFrei) && story.aktionLaeuft && story.aktionLaeuft())){
+    if(zu) wegSagen();
     const dx = p.x - WEG_REIN.x, dz = p.z - WEG_REIN.z, l = Math.hypot(dx, dz) || 1, vx = ZURUECK.x - WEG_REIN.x, vz = ZURUECK.z - WEG_REIN.z, vl = Math.hypot(vx, vz);
     const ux = dx * vx + dz * vz > 0 ? dx / l : vx / vl, uz = dx * vx + dz * vz > 0 ? dz / l : vz / vl;   // immer zur Lichtung hin hinaus
     p.x = WEG_REIN.x + ux * WEG_REIN.r; p.z = WEG_REIN.z + uz * WEG_REIN.r; return; }
   // schon einmal bei der Hoehle gewesen: der Waldweg fuehrt mit einer kurzen Schwarzblende hinueber (dieselbe Insel)
   // schon einmal bei der Hoehle (auch vor einem Neuladen: story.e3Besucht im Spielstand) – der Globus kommt nur beim ersten Mal
   if(wi.reise || story.e3Besucht){ if(drin && story.e3Besucht && story.waldinselWechsel) story.waldinselWechsel(3); return; }
-  if(!drin){ wi.amWeg = false; return; }
+  if(!drin){ if(Math.hypot(p.x - WEG_REIN.x, p.z - WEG_REIN.z) > WEG_REIN.r + 1.5) wi.amWeg = false; return; }   // erst ein Stueck weg: neu sagen
   if(wi.wegFrei){ wi.reise = true; story.globusReise(2, story.e3Wechsel ? () => story.e3Wechsel() : null); return; }   // hoehle.js: Etappe 3
-  if(!wi.amWeg){ wi.amWeg = true; story.sprich(wi.gorillaGesagt ? TEXT_ERST_FOTO : TEXT_WEG_NOCH_NICHT); }
+}
+// Am noch gesperrten Waldweg einmal sagen, was fehlt: erzaehlen die Tiere gerade, nichts (es kommt gleich); fehlt nach dem Gespraech das
+// Foto, das Foto (Live-Befund 26.10.2026: "vorher noch ein Foto" kam, obwohl es laengst gemacht war – es hing nur am Gespraech)
+function wegSagen(){
+  if(wi.amWeg) return; wi.amWeg = true;
+  if(wi.gorillaGesagt && !wi.gorillaBesprochen) return;
+  if(wi.gorillaBesprochen && story.stelleZustand && story.stelleZustand('tisch_foto') !== 'fertig') story.sprich(TEXT_ERST_FOTO);
+  else if(!wi.gorillaGesagt) story.sprich(TEXT_WEG_NOCH_NICHT);
 }
 // Untergrund (Engine untergrundAt): die Waldinsel liegt unter Schnee, nur der Waldweg ist Erde (Etappe 3: dazu Weg und Piste,
 // hoehle.js story.e3Erde); Strand und Wasser kennt die Engine selbst
@@ -832,7 +844,7 @@ function baue(){
   {  // synchron (bau ist kein Promise): die Laempchen muessen vor zusammenfassen() in wi.lichter sein
     const d = story.setze('tanne', 2, { x: BAUM.x, z: BAUM.z, h: BAUM.h, schmuck: 'gross', farbe: 2, fest: true });
     d.obj.traverse(o => { if(o.userData.lichterkette) wi.lichter.push(o); });
-    story.interaktion(d.obj, { name: 'Weihnachtsbaum', welt: 2, x: BAUM.x, z: BAUM.z, r: 1.6, yHoehe: BAUM.h + 0.6, einmal: true, text: TEXT_BAUM }); }
+    story.interaktion(d.obj, { name: 'Weihnachtsbaum', welt: 2, x: BAUM.x, z: BAUM.z, r: 1.6, yHoehe: 3.2, einmal: true, text: TEXT_BAUM }); }   // Y auf halber Hoehe (Live-Befund 26.10.2026: ueber der Spitze lag es nah am Baum ueber dem Bildrand; es wird ohnehin vor allem gezeichnet)
   // Nadelwald rundherum: dicht ab WALD_AB, nicht auf dem Sand, nicht am Steg; ein paar einzelne naeher an der Lichtung
   let s = 23; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const baeume = [];

@@ -116,8 +116,9 @@ function baueRaum(){
   ag.fillStyle = ah; ag.fillRect(0, 0, 128, 128);
   for(let i = 0; i < 9; i++){ const x = 6 + i * 14 + rnd() * 6, hh = 30 + rnd() * 26; ag.fillStyle = '#3f6a4a'; ag.beginPath(); ag.moveTo(x, 82 - hh); ag.lineTo(x - 7, 84); ag.lineTo(x + 7, 84); ag.fill(); }
   // fog: false (Live-Befund 26.10.2026: von drinnen sah man im Ausgang nur Schwarz – der dunkle Hoehlennebel schluckte das Bild)
-  const bild = new THREE.Mesh(new THREE.PlaneGeometry(AUSGANG.B + 0.4, AUSGANG.H + 0.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aus), fog: false }));
-  bild.position.set(0, AUSGANG.H / 2, R + 1.2); bild.rotation.y = Math.PI; bild.userData.deko = true; g.add(bild);
+  // als Kasten (story.tuerKasten, Live-Befund 26.10.2026): vorn in Laibung und Sturz, die Seiten knapp in den Laibungsfelsen
+  const bild = story.tuerKasten(new THREE.CanvasTexture(aus), AUSGANG.B + 0.04, AUSGANG.H + 0.03, 2.4);
+  bild.position.set(0, 0, R - 0.39); g.add(bild);
   for(const sx of [-1, 1]){ const w = new THREE.Mesh(new THREE.BoxGeometry(0.6, AUSGANG.H + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x4f4a44 }));
     w.position.set(sx * (AUSGANG.B / 2 + 0.3), AUSGANG.H / 2, R + 0.4); w.userData.keinKoerper = true; g.add(w); }   // Laibung (Grenze: raumTiefe)
   const licht = document.createElement('canvas'); licht.width = licht.height = 64; const lg = licht.getContext('2d'), lr = lg.createRadialGradient(32, 32, 0, 32, 32, 32);

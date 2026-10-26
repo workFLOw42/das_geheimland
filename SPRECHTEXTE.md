@@ -318,8 +318,8 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | Lupe: Spur im Staub | Erzählerin | Schau mal, Spuren im Staub. Die kommen in dein Notizbuch. · Vergleich sie doch mal mit der Spur vom Tatort. |
 | Hinweis-Taste nach der Lupe | Erzählerin | Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A. |
 | A auf der Spurseite im Notizbuch | Erzählerin | Schau mal genau hin ... |
-| … Spur liegt auf der Eichhörnchenspur (roter Rahmen) | Erzählerin | Zu den Spuren mit den langen Zehen passt sie nicht. |
-| … Spur liegt auf der Lamaspur (grüner Rahmen) | Erzählerin | Die Spuren passen genau zusammen! Das Lama war also am Festtisch der Tiere. · Frag es doch mal, was es dort gemacht hat. |
+| … Spur liegt auf der Eichhörnchenspur (roter Rahmen) | Erzählerin | Diese Spuren stimmen nicht mit denen aus dem Observatorium überein. |
+| … Spur liegt auf der Lamaspur (grüner Rahmen) | Erzählerin | Aber diese hier passen ganz genau! Das Lama war also am Festtisch der Tiere. · Frag es doch mal, was es dort gemacht hat. |
 | Y beim Lama – Joshi | `joshi` | Lama, deine Spur ist auf dem Festtisch der Tiere! Wie kommt sie dahin? Was hast du dort gemacht? |
 | … Lama | `tierW` | Ach das! Die Post hat mein Paket aus Versehen auf die Waldinsel gebracht. · Als ich es abholen wollte, war der Tisch schon ganz verwüstet. Niemand war da, nur der Uhu hat geschlafen. · Da bin ich einfach über den Tisch gestakst. Wie sollte ich denn sonst an mein Paket kommen? |
 | Lupe am Packpapier | Erzählerin | Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder rotes Fell! · Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem. · Aber wem gehören sie – und das rote Fell? |

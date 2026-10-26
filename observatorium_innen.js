@@ -47,6 +47,7 @@ const T = {
   hinweisUmschauen: ['Schau dich noch einmal ganz genau um. Drück dafür X.'],
   spur: ['Schau mal, Spuren im Staub. Die kommen in dein Notizbuch.'],
   hinweisSpur: ['Die Spur kommt dir bekannt vor, oder? Schau doch mal in dein Notizbuch.'],
+  fuchsFund: ['Schau mal, dein Fuchs hat noch etwas gefunden.'],     // wie in Etappe 2 (waldinsel.js TEXT_FUCHS_FUND)
 };
 story.obsText = T;
 
@@ -112,8 +113,9 @@ function baueRaum(){
   // draussen die Oase bei Nacht (ein Bild ein Stueck hinter der Oeffnung – hinkommen kann man nur durch die Tuer)
   // groesser und naeher an der Wand, ohne Nebel (Live-Befund 26.10.2026: an den Raendern schimmerte es – zwischen Wandausschnitt und
   // Rahmen sah man am Bild vorbei ins Leere); die runde Wand verdeckt den Ueberstand
-  const draussen = new THREE.Mesh(new THREE.PlaneGeometry(TUER.B + 2.4, TUER.H + 1.4), new THREE.MeshBasicMaterial({ map: nachtTex(true), fog: false }));
-  draussen.position.set(0, TUER.H / 2 + 0.3, R + 0.5); draussen.rotation.y = Math.PI; draussen.userData.deko = true; g.add(draussen);
+  // seit dem Abend als Kasten (story.tuerKasten: auch schraeg sieht man nicht mehr daran vorbei), vorn in Pfosten und Sturz
+  const draussen = story.tuerKasten(nachtTex(true), TUER.B + 0.04, TUER.H + 0.03, 1.6);
+  draussen.position.set(0, 0, R - 0.3); g.add(draussen);
   // Holzpfosten an der Wand (wie die Balken aussen) und ein Gesims oben, auf dem die Kuppel ruht
   for(let i = 0; i < 16; i++){ const a = (i + 0.5) / 16 * Math.PI * 2; if(Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.35) continue;
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, H, 0.3), M.holz); p.position.set(Math.sin(a) * (R - 0.15), H / 2, Math.cos(a) * (R - 0.15)); p.rotation.y = a; p.userData.keinKoerper = true; g.add(p); }
@@ -153,6 +155,24 @@ function baueRaum(){
   lamaLaden();
 }
 // Kuppel: Schalen-Dreiecke einer Kugel (flacher, KUPPEL_Y), ohne die im Spalt; Rippen und Spaltkanten aus Messing-Holz
+// Grund der Schale ueber dem Spalt: oben (v = 1, Scheitel) tiefes Nachtblau, zum Fuss etwas heller, ein Hauch Milchstrasse. Die Sterne
+// selbst sind Punkte (sternPunkte) – gemalt verschmierten sie zum Scheitel hin zu Strichen
+function sternPunkte(r){
+  let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, pos = [], farbe = [];
+  for(let i = 0; i < 700; i++){ const a = rnd() * Math.PI * 2, e = Math.asin(rnd()), h = 0.45 + 0.55 * rnd();
+    pos.push(Math.sin(a) * Math.cos(e) * r, Math.sin(e) * r * KUPPEL_Y, Math.cos(a) * Math.cos(e) * r); farbe.push(h, h, h * (0.88 + 0.12 * rnd())); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(farbe, 3));
+  const m = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, vertexColors: true, fog: false }));
+  m.userData.deko = true; m.userData.keinKoerper = true; return m;
+}
+function sternSchaleTex(){
+  const W = 2048, Hh = 512, c = document.createElement('canvas'); c.width = W; c.height = Hh; const g = c.getContext('2d');
+  const hg = g.createLinearGradient(0, 0, 0, Hh); hg.addColorStop(0, '#040817'); hg.addColorStop(1, '#14244c'); g.fillStyle = hg; g.fillRect(0, 0, W, Hh);
+  let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for(let i = 0; i < 40; i++){ const x = rnd() * W, y = Hh * (0.25 + 0.5 * rnd()), r = 60 + rnd() * 90, m = g.createRadialGradient(x, y, 0, x, y, r);
+    m.addColorStop(0, 'rgba(170,180,230,.07)'); m.addColorStop(1, 'rgba(170,180,230,0)'); g.fillStyle = m; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; return t;
+}
 function baueKuppel(g){
   const R = RAUM.R, H = RAUM.H, M = material();
   const kugel = new THREE.SphereGeometry(R, 64, 20, 0, Math.PI * 2, 0, Math.PI / 2).toNonIndexed();
@@ -168,6 +188,11 @@ function baueKuppel(g){
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geo.computeVertexNormals();
   const kt = kuppelTex(); kt.wrapS = kt.wrapT = THREE.RepeatWrapping; kt.repeat.set(10, 3);
   const kuppel = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: kt, side: THREE.BackSide })); kuppel.position.y = H; kuppel.userData.keinKoerper = true; g.add(kuppel);
+  // Ueber dem Spalt ein gemalter Sternenhimmel (Live-Wunsch 26.10.2026, wie die Kaesten hinter den Tueren): eine Schale knapp ueber der
+  // Kuppel – zu sehen nur durch den Spalt, unabhaengig vom Himmel der Engine
+  const himmel = new THREE.Mesh(new THREE.SphereGeometry(R + 0.6, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ map: sternSchaleTex(), fog: false, side: THREE.BackSide }));
+  himmel.scale.y = KUPPEL_Y; himmel.position.y = H; himmel.userData.deko = true; himmel.userData.keinKoerper = true; g.add(himmel);
+  const sterne = sternPunkte(R + 0.5); sterne.position.y = H; g.add(sterne);
   // Rippen: Meridiane der Kuppel (nicht durch den Spalt), dazu zwei Ringe
   const punkt = (a, e, r) => new THREE.Vector3(Math.sin(a) * Math.cos(e) * r, H + Math.sin(e) * r * KUPPEL_Y, Math.cos(a) * Math.cos(e) * r);
   for(let i = 0; i < 16; i++){
@@ -506,6 +531,24 @@ function schnipp(){
   const q = audioCtx.createBufferSource(); q.buffer = b; const f = audioCtx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500;
   const gn = audioCtx.createGain(); gn.gain.value = 0.35; q.connect(f); f.connect(gn); gn.connect(audioCtx.destination); q.start();
 }
+// Hinausgehen (Live-Wunsch 26.10.2026, wie in Etappe 2): ist draussen etwas Neues frei (Skizzenring, Holzscheit am Parkplatz), sagt die
+// Erzaehlerin "Schau mal, dein Fuchs hat noch etwas gefunden", und der Fuchs laeuft alle noch offenen Ringe draussen ab
+const DRAUSSEN = ['obs_skizze', 'schluessel_schnitzen'];
+function draussenZeigen(){
+  const fertig = (id) => story.stelleZustand && story.stelleZustand(id) === 'fertig';
+  const offen = DRAUSSEN.filter(id => story.obsStelleFrei && story.obsStelleFrei(id) && !fertig(id));
+  const neu = offen.filter(id => !(oi.gezeigt || (oi.gezeigt = {}))[id]);
+  if(!neu.length) return;
+  oi.skizzeZeigen = false;
+  story.spaeter(1.2, () => {
+    if(oi.drin || !eva || !story.fuchsRundgang) return;
+    const ks = offen.map(id => story.kreisZielVon && story.kreisZielVon(id)).filter(Boolean); if(!ks.length) return;
+    for(const id of neu) oi.gezeigt[id] = true;
+    ks.forEach(k => { k.frei = true; });
+    story.sprich(T.fuchsFund);
+    story.spaeter(0.6, () => { if(!oi.drin && eva) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0, true, q => ks.includes(q)); });
+  });
+}
 function fuchsZu(id){
   const k = story.kreisZielVon && story.kreisZielVon(id); if(!k) return;
   k.frei = true;
@@ -567,8 +610,8 @@ const T2 = {
   nochEineSpur: ['Vergleich sie doch mal mit der Spur vom Tatort.'],   // direkt nach "Schau mal, Spuren im Staub" (keine Wiederholung)
   hinweisVergleich: ['Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A.'],
   vergleichStart: ['Schau mal genau hin ...'],
-  vergleichFalsch: ['Zu den Spuren mit den langen Zehen passt sie nicht.'],
-  vergleichPasst: ['Die Spuren passen genau zusammen! Das Lama war also am Festtisch der Tiere.', 'Frag es doch mal, was es dort gemacht hat.'],
+  vergleichFalsch: ['Diese Spuren stimmen nicht mit denen aus dem Observatorium überein.'],   // Live-Wunsch 26.10.2026
+  vergleichPasst: ['Aber diese hier passen ganz genau! Das Lama war also am Festtisch der Tiere.', 'Frag es doch mal, was es dort gemacht hat.'],
   hinweisFragen: ['Sprich noch einmal mit dem Lama.'],
   joshiSpur: ['Lama, deine Spur ist auf dem Festtisch der Tiere! Wie kommt sie dahin? Was hast du dort gemacht?'],   // nicht "unserem" (Live-Wunsch 26.10.2026)
   lamaTisch: ['Ach das! Die Post hat mein Paket aus Versehen auf die Waldinsel gebracht.',
@@ -645,7 +688,7 @@ story.obsPapierSeite = function(){
 // jetzt das Lama als Skizze, auf derselben Seite.
 // ausruestung.js ruft story.buchA (A im offenen Buch), story.buchSperre, story.buchTick (jedes Bild) und story.buchUeber (malt).
 const SPURSEITE = 'Die Spur des Lamas', FOTOSEITE = 'Der Festtisch';
-const VG = { flug: 1.6, rot: 1.8, gruen: 2.2, weg: 0.6 };
+const VG = { flug: 1.6, rot: 3.4, gruen: 2.2, weg: 0.6 };   // rot 3,4 s: der laengere Satz dazu (26.10.2026) soll ausgesprochen sein, bevor es weiterwandert
 let spurOverlay = null;
 const seitenIndex = (name) => story.notizSeiten().findIndex(s => s.name === name);
 story.buchSperre = () => !!(oi.vergleich && !oi.vergleich.fertig);
@@ -932,6 +975,9 @@ function setzeUm(ziel){
     g.position.set(x, BODEN_Y, z); eva.yaw = 0.25;                                        // Blick in den Saal, leicht nach rechts (Tisch, Lama)
     oi.drin = true; story.innen.drin = true; story.innen.wo = 'observatorium';
     if(!oi.warDrin){ oi.warDrin = true; story.spaeter(1.0, () => story.sprich(T.ankunft)); }
+    // die Tuer draussen (wueste.js, "Observatorium") ist damit gefunden – sonst verlangte das Spiel beim Hinausgehen noch X
+    // (Live-Befund 26.10.2026: wer gleich hineinlief, sollte draussen X druecken, obwohl die Ringe schon da waren)
+    for(const o of story.interListe || []) if(o.welt === 4 && o.name === 'Observatorium' && !o.innen) o.erledigt = true;
     if(story.teleskopTest && story.teleskopAuf) story.spaeter(2.5, () => { if(oi.drin) story.teleskopAuf(); });
   } else {
     himmel(false); innenZeigen(false);
@@ -940,7 +986,7 @@ function setzeUm(ziel){
     oi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(Z) Z.drin = false;
     story.spaeter(0.1, () => { if(typeof szeneVorwaermen === 'function' && !oi.drin) szeneVorwaermen(); });
-    if(oi.skizzeZeigen && story.stelleZustand && story.stelleZustand('obs_skizze') === 'offen'){ oi.skizzeZeigen = false; story.spaeter(1.2, () => { if(!oi.drin) fuchsZu('obs_skizze'); }); }
+    draussenZeigen();
   }
   g.rotation.y = eva.yaw; evaOrbit = 0; evaPitch = 0;
   const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));
@@ -1015,6 +1061,10 @@ function hookObs(){
   updateCamera = function(){
     if(!(oi.drin && eva)) return camOrig.apply(this, arguments);
     if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+    // nach oben schauen (Live-Wunsch 26.10.2026: durch den Kuppelspalt die Sterne) – wie draussen mit dem rechten Stick hoch/runter
+    if(Math.abs(lookY) > 0.01) evaPitch = Math.max(-0.2, Math.min(1.2, evaPitch + lookY * EVA_LOOK_SPEED * 0.6 * dtCam));   // global-ok: Engine
+    else evaPitch += (0 - evaPitch) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+    const hoch = Math.max(0, Math.sin(evaPitch));
     const p = eva.group.position, yaw = eva.yaw + evaOrbit, max = RAUM.R - 0.9;
     let best = null;
     for(const dw of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4]){
@@ -1023,9 +1073,9 @@ function hookObs(){
       if(best) break;
     }
     if(!best){ const dx = p.x - RAUM.x, dz = p.z - RAUM.z, d = Math.hypot(dx, dz) || 1; best = { cx: RAUM.x - dx / d * 2.5, cz: RAUM.z - dz / d * 2.5, L: 2.8 }; }
-    _soll.set(best.cx, BODEN_Y + 1.7 + best.L * 0.22, best.cz);
+    _soll.set(best.cx, BODEN_Y + 1.7 + best.L * 0.22 - hoch * 1.5, best.cz);
     if(oi.kamSofort){ camera.position.copy(_soll); oi.kamSofort = false; } else camera.position.lerp(_soll, Math.min(1, 6 * dtCam));
-    camera.up.set(0, 1, 0); camera.lookAt(p.x, p.y + 0.9, p.z);
+    camera.up.set(0, 1, 0); camera.lookAt(p.x, p.y + 0.9 + hoch * 8, p.z);
   };
 }
 const hookVorher = window.STORY_HOOK;

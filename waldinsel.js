@@ -122,10 +122,13 @@ story.winterGras = function(){
   g.lineWidth = 1.4;
   for(let i = 0; i < 90; i++){ const y0 = rnd() * N, x0 = rnd() * N, L = 40 + rnd() * 110, w = (rnd() - 0.5) * 0.4;
     for(const [dy, farbe] of [[0, 'rgba(255,255,255,0.6)'], [1.6, 'rgba(140,160,186,0.3)']]){
-      g.strokeStyle = farbe; g.beginPath();
-      for(let k = 0; k <= 12; k++){ const x = x0 + L * k / 12, y = y0 + dy + Math.sin(k * 0.9 + i) * 2.2 + (x - x0) * w;
-        k ? g.lineTo(x % N, (y + N) % N) : g.moveTo(x % N, (y + N) % N); }
-      g.stroke(); } }
+      // nahtlos wie die Flecken: an allen neun Nachbarlagen zeichnen (Live-Befund 26.10.2026 vor der Hoehle: mit x % N sprang ein Rippel
+      // am Kachelrand quer ueber die ganze Kachel – gerade Kanten wie Plattenfugen, der Schnee sah gemalt aus)
+      g.strokeStyle = farbe;
+      for(const ox of [-N, 0, N]) for(const oy of [-N, 0, N]){ g.beginPath();
+        for(let k = 0; k <= 12; k++){ const x = x0 + L * k / 12, y = y0 + dy + Math.sin(k * 0.9 + i) * 2.2 + (x - x0) * w;
+          k ? g.lineTo(x + ox, y + oy) : g.moveTo(x + ox, y + oy); }
+        g.stroke(); } } }
   // ein paar Halme, die aus dem Schnee schauen, und Glitzer
   for(let i = 0; i < 160; i++){ const x = rnd() * N, y = rnd() * N; g.strokeStyle = rnd() < 0.6 ? 'rgba(110,122,88,0.55)' : 'rgba(140,120,84,0.5)';
     g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 3, y - 3 - rnd() * 5); g.stroke(); }

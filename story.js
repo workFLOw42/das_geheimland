@@ -1947,6 +1947,9 @@ story.baueFunkgeraet = () => baueRadio();
 // die Zahl der Lichter, und three.js uebersetzt beim Betreten jedes Material neu – Live-Befund 26.10.2026: es ruckelte). Was vorher
 // schon unsichtbar war (z. B. die durchgeschnittene Schnur), bleibt es beim Wiederzeigen.
 story.sichtTeile = function(o, an){
+  // Joshi und der Fuchs nie (Live-Befund 26.10.2026: der Fuchs stand beim Hinausgehen noch in der Hoehle, wurde mit ausgeblendet und
+  // blieb unsichtbar – beim Wiederbetreten war er gerade draussen). Waren sie schon versteckt: wieder zeigen.
+  if(o === (story.fuchs && story.fuchs.obj) || (typeof eva !== 'undefined' && eva && o === eva.group)) an = true;   // global-ok: Engine
   o.traverse(n => { if(n.isLight || n.isGroup || n === o && !n.isMesh) return;
     if(!an){ if(n.userData.sichtVorher === undefined){ n.userData.sichtVorher = n.visible; n.visible = false; } }
     else if(n.userData.sichtVorher !== undefined){ n.visible = n.userData.sichtVorher; delete n.userData.sichtVorher; } });

@@ -114,7 +114,8 @@ function baueEingang(){
   const basic = (tex, extra) => Object.assign(new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }), extra || {});
   const fels = basic(verlaufTex('#5d574f', 0.85, 0.25, 260)), erde = basic(verlaufTex('#5a4a38', 0.9, 0.3, 400));
   // Boden: flache Flaeche von der Oeffnung nach hinten (-z), knapp ueber dem Gras
-  const boden = new THREE.Mesh(new THREE.PlaneGeometry(B * 0.95, TIEF), erde);
+  // breiter als die Roehre (Live-Befund 26.10.2026: links und rechts schaute der Inselschnee darunter hervor), die Waende verdecken den Rand
+  const boden = new THREE.Mesh(new THREE.PlaneGeometry(B * 1.15, TIEF + 1), erde);
   boden.rotation.x = -Math.PI / 2; boden.position.set(0, 0.03, -TIEF / 2 - 0.4); boden.userData.keinKoerper = true; g.add(boden);
   // Waende und Decke: eine Halbroehre (Zylinder halb), die nach hinten enger wird
   const roehre = new THREE.CylinderGeometry(B / 2, B / 2 * 0.7, TIEF, 18, 1, true, -Math.PI / 2, Math.PI);
@@ -122,7 +123,7 @@ function baueEingang(){
   const rm = new THREE.Mesh(roehre, fels); rm.position.set(0, 0, -TIEF / 2 - 0.4); rm.userData.keinKoerper = true; g.add(rm);
   // die UVs des Zylinders laufen laengs entlang v: vorn hell, hinten dunkel (wie beim Boden)
   // Rueckwand: dunkel
-  const rueck = new THREE.Mesh(new THREE.CircleGeometry(B / 2 * 0.72, 18, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x0b0806 }));
+  const rueck = new THREE.Mesh(new THREE.CircleGeometry(B / 2 * 0.95, 18, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x0b0806 }));   // groesser als das Roehrenende: dahinter schaute Schnee durch
   rueck.scale.y = H / (B / 2); rueck.position.set(0, 0, -TIEF - 0.35); rueck.userData.keinKoerper = true; g.add(rueck);
   // Feuerschein ganz hinten: warmer, weicher Fleck an der Rueckwand und ein Lichtkegel auf dem Boden davor
   const c = document.createElement('canvas'); c.width = c.height = 128; const cg = c.getContext('2d'), rg = cg.createRadialGradient(64, 64, 2, 64, 64, 64);

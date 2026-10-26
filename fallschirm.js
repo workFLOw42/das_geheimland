@@ -25,6 +25,10 @@ const GLEIT_FALL = 30, GLEIT_SCHIRM = 16;      // m/s waagerecht hoechstens (zum
 const LANDE_FREI = 30;           // m: so weit verschiebt der linke Stick den Landepunkt
 const FLUG_WEG = 14;             // s, dann ist die Flugzeug-Kopie weg
 const ZIEH_AB = 60;              // m ueber dem Landeplatz: ab hier zieht der Schirm sanft genau dorthin
+// Schirm auf Joshis Haende (Live-Befund 26.10.2026: "etwas weiter rechts, die Schnuere enden ueber Joshis Haenden"): die Engine
+// setzt die Leinen-Unterkante auf 0,9 x ASTRONAUT_H (1,71 m, fuer den Erwachsenen im Raumanzug). Gemessen in der Haltung
+// 'hang': Joshis Haende auf 1,21 m, Mitte x -0,01 / z 0,05; die Leinen laufen bei x 0,035 / z 0,08 zusammen
+const SCHIRM_VERSATZ = { x: -0.045, y: -0.49, z: -0.035 };
 const _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0), _Z = new THREE.Vector3(0, 0, 1);
 const fs = story.fallschirm = { schritt: null, g: null, mitte: null, v: new THREE.Vector3(), yaw: 0, t: 0, opt: null, flieger: null,
   lande: null, rolle: 0, salto: 0 };
@@ -114,6 +118,7 @@ function schirmAuf(){
   if(fs.schritt !== 'fall') return;
   fs.schritt = 'schirm';
   const w = fs.g.parent, g = makeParachute();                // global-ok: Engine (Schirm mit Joshi darunter)
+  const pc = g.children[1]; if(pc) pc.position.add(SCHIRM_VERSATZ);   // [0] ist Joshi, [1] der Schirm (makeParachute)
   g.position.copy(fs.mitte); g.position.y -= 0.8;
   w.remove(fs.g); w.add(g); fs.g = g; fs.mitte = null; fs.rolle = 0; fs.salto = 0; windAus();
   if(story.figurAnim) story.figurAnim('hang', 0.3);
@@ -164,6 +169,11 @@ function gelandet(p){
   const w = fs.g.parent, x = p.x, z = p.z;
   if(w) w.remove(fs.g);
   fs.schritt = null; fs.g = null; windAus();
+  // das (unsichtbare) Flugzeug kommt jetzt an den Anker neben Joshi, noch in der Sprung-Lage – story.js blendet es erst im
+  // naechsten Bild aus, und das erste Bild zu Fuss dauert lange (Live-Befund 26.10.2026: "fuer ca. eine Sekunde die abgestuerzte
+  // Mustang neben sich"). Darum hier gleich weg, ebenso eine noch fliegende Kopie
+  planeGroup.visible = false;                                 // global-ok: Engine
+  if(fs.flieger){ if(fs.flieger.g.parent) fs.flieger.g.parent.remove(fs.flieger.g); fs.flieger = null; }
   // zu Fuss an der Landestelle – die Figur wie in evaExit der Engine, ohne deren Sperren
   const y = fs.opt.boden(x, z), a = fs.opt.anker || { x, z };
   state.pos.set(a.x, fs.opt.boden(a.x, a.z), a.z); state.vel.set(0, 0, 0); state.onGround = true; state.throttle = 0;   // global-ok: Engine

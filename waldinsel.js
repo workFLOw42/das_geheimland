@@ -274,10 +274,10 @@ function baueFesttisch(){
   g.traverse(o => { if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   return g;
 }
-// Zwei Fussspuren quer ueber die Tischdecke (Konzept: "auf dem Foto sind zwei Fussspuren – vom Hamster und vom
-// Eichhoernchen"), dunkelbraun wie von Sosse. Deutlich groesser als in echt, damit man sie auf dem Foto sieht:
-// Hamster klein und rund (vier Zehen, im Wechselschritt), Eichhoernchen groesser mit langen Zehen, im Sprung (die grossen
-// Hinterpfoten paarweise vorn, die kleinen Vorderpfoten dahinter). Flach auf der Decke, ohne Grenze.
+// Zwei Fussspuren quer ueber die Tischdecke (Konzept: "auf dem Foto sind zwei Fussspuren" – vom Lama und vom Eichhoernchen;
+// Live-Wunsch 26.10.2026: das Lama statt des Hamsters), dunkelbraun wie von Sosse. Deutlich groesser als in echt, damit man sie
+// auf dem Foto sieht: Lama zwei laengliche Zehen je Huf (im Wechselschritt), Eichhoernchen mit langen Zehen, im Sprung (die
+// grossen Hinterpfoten paarweise vorn, die kleinen Vorderpfoten dahinter). Flach auf der Decke, ohne Grenze.
 // Leinwand 4 x 1 m (Tisch-Koordinaten x -2..2, z -0,5..0,5), 256 px je m; oben im Bild = hinten (-z).
 const SPUR_PX = 256;
 // Je Abdruck: erst ein heller Rand (hebt ihn vom roten Karo ab, Live-Pruefung: dunkelbraun allein ging im Muster unter),
@@ -292,15 +292,28 @@ function pfote(g, x, z, dreh, gr, zehen, lang){
   g.fillStyle = 'rgba(58,30,12,0.96)'; formen(s); g.fill();
   g.restore();
 }
+// Huf des Lamas: zwei laengliche Zehen nebeneinander, vorn leicht gespreizt, mit kleinen Naegeln an der Spitze (dieselbe Form
+// wie die Spur im Observatorium, observatorium_innen.js huf) – auch mit hellem Rand
+function huf(g, x, z, dreh, gr){
+  const formen = (s) => { g.beginPath();
+    for(const sx of [-1, 1]){ g.moveTo(sx * s * 0.17 + s * 0.14, s * 0.04); g.ellipse(sx * s * 0.17, s * 0.04, s * 0.14, s * 0.34, sx * 0.12, 0, 7);
+      g.moveTo(sx * s * 0.22 + s * 0.06, -s * 0.36); g.ellipse(sx * s * 0.22, -s * 0.36, s * 0.06, s * 0.07, sx * 0.12, 0, 7); } };
+  g.save(); g.translate((x + 2) * SPUR_PX, (z + 0.5) * SPUR_PX); g.rotate(dreh); const s = gr * SPUR_PX;
+  formen(s); g.lineWidth = s * 0.14; g.strokeStyle = 'rgba(250,244,230,0.95)'; g.lineJoin = 'round'; g.stroke();
+  g.fillStyle = 'rgba(58,30,12,0.96)'; formen(s); g.fill();
+  g.restore();
+}
 // Wege der beiden Spuren (Tisch-Koordinaten) – die Reste auf dem Tisch liegen daneben (baueFesttisch)
-const SPUR_HAMSTER = [{ x: -1.85, z: 0.45 }, { x: -0.85, z: -0.42 }];
+const SPUR_LAMA = [{ x: -1.85, z: 0.45 }, { x: -0.85, z: -0.42 }];
 const SPUR_HOERNCHEN = [{ x: 1.85, z: 0.42 }, { x: 0.75, z: -0.42 }];
+// fuer den Spurvergleich im Notizbuch (observatorium_innen.js): wo die Spuren auf dem Tatortfoto liegen
+story.e2SpurWege = { lama: SPUR_LAMA, hoernchen: SPUR_HOERNCHEN, tisch: TISCH };
 function spurenDecal(){
   const c = document.createElement('canvas'); c.width = 4 * SPUR_PX; c.height = SPUR_PX; const g = c.getContext('2d');
-  // Hamster: klein und rund, vier Zehen, im Wechselschritt – von vorn links nach hinten
-  const [h0, h1] = SPUR_HAMSTER, hd = Math.atan2(h1.x - h0.x, -(h1.z - h0.z));
-  for(let i = 0; i <= 6; i++){ const t = i / 6, seite = i % 2 ? 1 : -1;
-    pfote(g, h0.x + (h1.x - h0.x) * t + Math.cos(hd) * seite * 0.06, h0.z + (h1.z - h0.z) * t + Math.sin(hd) * seite * 0.06, hd, 0.13, 4, false); }
+  // Lama: Hufe mit zwei Zehen, im Wechselschritt – von vorn links nach hinten
+  const [h0, h1] = SPUR_LAMA, hd = Math.atan2(h1.x - h0.x, -(h1.z - h0.z));
+  for(let i = 0; i <= 5; i++){ const t = i / 5, seite = i % 2 ? 1 : -1;
+    huf(g, h0.x + (h1.x - h0.x) * t + Math.cos(hd) * seite * 0.09, h0.z + (h1.z - h0.z) * t + Math.sin(hd) * seite * 0.09, hd, 0.2); }
   // Eichhoernchen: groesser, lange Zehen, in Spruengen – von vorn rechts nach hinten zur Mitte
   const [e0, e1] = SPUR_HOERNCHEN, ed = Math.atan2(e1.x - e0.x, -(e1.z - e0.z));
   for(let i = 0; i <= 2; i++){ const t = i / 2, x = e0.x + (e1.x - e0.x) * t, z = e0.z + (e1.z - e0.z) * t, q = { x: Math.cos(ed), z: Math.sin(ed) };
@@ -663,9 +676,9 @@ const TEXT_WEG_NOCH_NICHT = ['Hier geht ein Weg in den Wald. Schau dich vorher n
 const WEG_REIN = { x: 12.0, z: 37, r: 3.2 };
 // notizbuch.js ruft das nach jeder fertigen Stelle (Foto, Lupe)
 // Nach dem Tatortfoto (Live-Wunsch 21.10.2026: "muesste Joshi nicht auch nach den Spuren fragen?"): Joshi fragt, wem die
-// Spuren gehoeren – keiner am Tisch war es (Hamster und Eichhoernchen sitzen nicht dabei), verraten wird nichts.
+// Spuren gehoeren – keiner am Tisch war es (Lama und Eichhoernchen sitzen nicht dabei), verraten wird nichts.
 const TEXT_SPUR_JOSHI = ['Da sind ja Spuren auf dem Tisch! Wem gehören die denn?'];
-const TEXT_SPUR_HASE = ['Meine sind das nicht. Meine Pfoten sind viel größer.'];
+const TEXT_SPUR_HASE = ['Meine sind das nicht. Meine Pfoten sehen ganz anders aus.'];
 const TEXT_SPUR_EULE = ['Und ich habe Krallen, keine Pfoten. Hu-huu.'];
 const TEXT_SPUR_ELCH = ['Solche Spuren habe ich hier im Wald noch nie gesehen.'];
 const TEXT_SPUR_MERKEN = ['Merk dir die Spuren gut. Vielleicht findest du später heraus, wem sie gehören.'];
@@ -809,6 +822,9 @@ function baue(){
   wi.tisch = story.setze('festtisch', 2, { x: TISCH.x, z: TISCH.z, dreh: TISCH.dreh, fest: true }).obj;
   // Lagerfeuer (Typ aus insel.js) – Licht und Animation selbst, das Feuer von Etappe 1 gehoert insel.js
   story.setze('lagerfeuer', 2, { x: FEUER.x, z: FEUER.z, fest: true }).bereit.then(d => feuerAn(d.obj));
+  // Funkgeraet (Live-Wunsch 26.10.2026): vom Tisch aus gesehen rechts neben dem Lagerfeuer, der Lautsprecher zum Tisch
+  if(story.funkgeraetSetzen){ const f = { x: FEUER.x - TISCH.x, z: FEUER.z - TISCH.z }, l = Math.hypot(f.x, f.z), x = FEUER.x - f.z / l * 1.7, z = FEUER.z + f.x / l * 1.7;
+    story.funkgeraetSetzen({ welt: 2, x, z, dreh: Math.atan2(TISCH.x - x, TISCH.z - z) }); }
   // Weihnachtsbaum
   {  // synchron (bau ist kein Promise): die Laempchen muessen vor zusammenfassen() in wi.lichter sein
     const d = story.setze('tanne', 2, { x: BAUM.x, z: BAUM.z, h: BAUM.h, schmuck: 'gross', farbe: 2, fest: true });

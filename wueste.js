@@ -1,4 +1,4 @@
-// Das Geheimland – Etappe 4: die Wueste mit der Oase des Hamsters (Konzept Abschnitt 7, Etappe 4). Laedt nach fallschirm.js.
+// Das Geheimland – Etappe 4: die Wueste mit der Oase des Lamas (Konzept Abschnitt 7, Etappe 4). Laedt nach fallschirm.js.
 // Live-Wunsch 23.10.2026: "Ankunftspunkt auf der Wuesteninsel muss in der Mitte sein" – die Oase liegt in der Mitte der grossen
 // Wuesteninsel (globus.js: Ort 3 genau auf der Inselmitte).
 // Ablauf: Am roten Punkt (Etappe 3, hoehle.js) kommt der Globus, danach fliegt Joshi in der Mustang noch ein Stueck allein
@@ -27,7 +27,9 @@ const SEE_STEH = 0.75;                                 // m: so flach steht Josh
 const seeY = () => ISLAND_Y - 0.15;                       // Wasserspiegel (knapp unter der Wiese; ISLAND_Y gibt es erst mit der Engine)   // global-ok
 const PLANETARIUM = { x: -12, z: -8, r: 5, lang: 10 };   // Observatorium: laengste Seite 10 m (Tuer gut 2,5 m hoch), Tuer nach +z
 const PARKPLATZ = { x: -32, z: 2, b: 16, t: 12 };
-const TUER = { dx: -1.0, b: 1.4, h: 2.6 };              // offene Tuer des Observatoriums (Lage auf der Schmalseite +z)
+// offene Tuer des Observatoriums (Lage auf der Schmalseite +z). Live-Befund 26.10.2026: genau auf das Tuerblatt des Modells gelegt
+// (vorher 1,4 m breit, 10 cm zu weit rechts, ohne Schwelle) – gemessen an einer Nahaufnahme
+const TUER = { dx: -1.1, b: 1.16, h: 2.66, unten: 0.07 };
 const LANDUNG = { x: -6, z: 20 };                      // vor dem Observatorium
 // Feldweg zur Tuer (Live-Wunsch 23.10.2026: "optisch wie die Schotterpiste aus Etappe 3"): vom Palmenring im Sueden ueber die
 // Landestelle bis vor die Tuer des Observatoriums (Tuer bei z ~ -3: halbe Tiefe des Modells vor seiner Mitte)
@@ -43,10 +45,10 @@ story.oase = { see: SEE, observatorium: PLANETARIUM, parkplatz: PARKPLATZ, landu
 const TEXT_SPRINGEN = ['Du bist über dem Ziel angekommen. Du kannst jederzeit abspringen, wenn Du bereit bist.',
   'Das Flugzeug fliegt dann automatisch zum Gorilla zurück.'];
 const TEXT_NOCHMAL = ['Drück B, dann springst du ab!'];
-const TEXT_GELANDET = ['Super gelandet! Du bist am Observatorium angekommen. Hier wohnt der Hamster.'];
+const TEXT_GELANDET = ['Super gelandet! Du bist am Observatorium angekommen. Hier wohnt das Lama.'];
 const TEXT_HINWEIS = ['Schau doch mal, ob du ins Observatorium kommst.'];
-const TEXT_FOLGT = 'Joshi ist im Observatorium beim Hamster. Wie es weitergeht, erfährst du bald.';
 const TEXT_SEE = ['Ein kleiner See mitten in der Wüste. Das Wasser ist ganz klar.'];
+const TEXT_TUER = ['Die Tür ist offen. Ob jemand zu Hause ist? Geh doch einfach hinein.'];
 
 // ---- Boden: Wuestensand statt Gras (insel.js nimmt ihn fuer die Insel der Etappe) -----------------------------------
 let bodenMat = null;
@@ -157,6 +159,19 @@ function abstandStrecke(x, z, a, b){ const dx = b.x - a.x, dz = b.z - a.z, t = M
   return Math.hypot(x - a.x - dx * t, z - a.z - dz * t); }
 // Observatorium (Live-Wunsch: "nicht zu riesig"): das Modell auf PLANETARIUM.lang m laengste Seite, Fuss auf den Boden,
 // Mitte auf den Platz; die Tuer liegt im Modell auf der Schmalseite +z (zur Landestelle). Grenze in seiner Form (objekte.js).
+// Blick durch die offene Tuer: ein dunkler, warmer Raum – Dielen, die schraeg nach hinten laufen, links ein Regal mit Buchruecken,
+// rechts das Licht einer Kerze, oben ein Stueck Nachthimmel mit Sternen (drinnen ist es Nacht)
+function innenBild(){
+  const c = document.createElement('canvas'); c.width = 128; c.height = 288; const g = c.getContext('2d'), W = 128, H = 288;
+  let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const hg = g.createLinearGradient(0, 0, 0, H); hg.addColorStop(0, '#0b0c1c'); hg.addColorStop(0.32, '#16110f'); hg.addColorStop(1, '#2c1d12'); g.fillStyle = hg; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#1a2142'; g.fillRect(34, 14, 60, 44); g.fillStyle = '#e8eaff'; for(let i = 0; i < 14; i++) g.fillRect(36 + rnd() * 56, 16 + rnd() * 40, 1.5, 1.5);   // Nachthimmel durch den Spalt
+  g.strokeStyle = 'rgba(90,60,35,.6)'; g.lineWidth = 2; for(let i = 0; i < 6; i++){ const y = 200 + i * 16; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y - 6); g.stroke(); }   // Dielen
+  g.fillStyle = '#24170e'; g.fillRect(6, 92, 40, 120); for(let r = 0; r < 4; r++) for(let i = 0; i < 6; i++){ g.fillStyle = ['#5a2a24', '#2f4a3a', '#5a4a2a', '#2a3550'][(r + i) % 4]; g.fillRect(9 + i * 6, 98 + r * 28, 4, 22); }   // Regal
+  const lg = g.createRadialGradient(98, 150, 2, 98, 150, 46); lg.addColorStop(0, 'rgba(255,200,120,.75)'); lg.addColorStop(1, 'rgba(255,170,80,0)'); g.fillStyle = lg; g.fillRect(40, 100, 88, 110);   // Kerzenlicht
+  g.fillStyle = '#ffd27a'; g.fillRect(97, 146, 2, 5);
+  const t = new THREE.CanvasTexture(c); return t;
+}
 function ladeObservatorium(w){
   if(!window.OBSERVATORIUM_GLB || !story.ladeGlb) return;
   story.ladeGlb(window.OBSERVATORIUM_GLB, 'Observatorium', (gl) => {
@@ -165,7 +180,11 @@ function ladeObservatorium(w){
     o.scale.multiplyScalar(PLANETARIUM.lang / Math.max(sz.x, sz.z)); o.updateMatrixWorld(true);
     const b2 = new THREE.Box3().setFromObject(o), c = b2.getCenter(new THREE.Vector3());
     o.position.x -= c.x; o.position.z -= c.z; o.position.y -= b2.min.y;
-    o.traverse(m => { if(m.isMesh){ m.castShadow = true; m.frustumCulled = false; } });
+    // Leuchten beim Anzeigen (Live-Befund 26.10.2026): das Modell hat eine fast schwarze Leucht-Textur (Helligkeit 6/255) bei weisser
+    // Leuchtfarbe – das Aufleuchten (story.js setGlow faerbt die Leuchtfarbe) blieb damit unsichtbar. Ohne sie und mit schwarzer
+    // Leuchtfarbe sieht es gleich aus, und es leuchtet wie alle anderen Dinge.
+    o.traverse(m => { if(m.isMesh){ m.castShadow = true; m.frustumCulled = false;
+      if(m.material && m.material.emissiveMap){ m.material.emissiveMap = null; m.material.emissive.set(0x000000); m.material.needsUpdate = true; } } });
     const g = new THREE.Group(); g.add(o); g.position.set(PLANETARIUM.x, ISLAND_Y, PLANETARIUM.z);
     w.add(g); w4.observatorium = g; g.updateMatrixWorld(true);   // vor story.ding: sonst lagen die Grenzen am Ursprung (sie werden nicht nachgefuehrt)
     if(story.ding) story.ding(g, { welt: 4, typ: 'observatorium' });
@@ -173,8 +192,13 @@ function ladeObservatorium(w){
     // Tuerblatt des Modells; TUER_DX = wo die Tuer auf der Schmalseite sitzt (gemessen am gerenderten Modell)
     const vorn = new THREE.Box3().setFromObject(o).max.z;
     w4.tuer = { x: PLANETARIUM.x + TUER.dx, z: vorn };
-    const oe = new THREE.Mesh(new THREE.PlaneGeometry(TUER.b, TUER.h), new THREE.MeshBasicMaterial({ color: 0x0a0c12 }));
-    oe.position.set(w4.tuer.x, ISLAND_Y + TUER.h / 2, vorn + 0.03); w.add(deko(oe));
+    // In der Oeffnung eine Andeutung des Inneren statt Schwarz (Live-Wunsch 26.10.2026): Dielen, ein Bücherregal im Halbdunkel,
+    // warmes Kerzenlicht, oben ein Stueck Nachthimmel – gemalt (der Saal selbst schwebt weit weg)
+    const oe = new THREE.Mesh(new THREE.PlaneGeometry(TUER.b, TUER.h), new THREE.MeshBasicMaterial({ map: innenBild(), fog: false }));
+    oe.position.set(w4.tuer.x, ISLAND_Y + TUER.unten + TUER.h / 2, vorn + 0.03); w.add(deko(oe));
+    // Live-Wunsch 26.10.2026: draussen gab es mit X nur den See zu entdecken – jetzt auch das Observatorium (es leuchtet auf),
+    // Y vor der Tuer: ein Satz der Erzaehlerin, hinein geht es weiter durch die Tuer
+    story.interaktion(g, { name: 'Observatorium', welt: 4, x: w4.tuer.x, z: vorn + 1.8, r: 0.8, yx: w4.tuer.x, yz: vorn, yHoehe: TUER.h + 0.5, einmal: true, text: TEXT_TUER });
   });
 }
 // Parkplatz: Asphalt mit weissen Linien, darauf der X-Wing (die Park-Vorlage der Engine: xwingParkTpl, laedt beim Start)
@@ -195,14 +219,17 @@ function baueParkplatz(w){
     if(tpl._grenzen) x._grenzen = tpl._grenzen; if(tpl._clips) x._clips = tpl._clips;
     story.welt(4).add(x); w4.xwing = x; x.updateMatrixWorld(true);   // vor story.ding (feste Grenzen: Lage beim Anmelden)
     if(story.ding) story.ding(x, { welt: 4, typ: 'xwing' });   // noch nicht benutzbar: kein Y (Live-Wunsch 23.10.2026)
-    // Der Rumpf haengt auf dem Fahrwerk 1,6 m hoch – Joshi (1,2 m) lief darunter hindurch. Ein unsichtbarer Block vom Boden bis
-    // unter den Rumpf (aus den hohen Grenz-Kaesten: Rumpf und Nase)
-    const d = x.userData.ding, rumpf = new THREE.Box3();
-    if(d) for(const k of d.koerper) if(k.wb.min.y > 1.2) rumpf.union(k.wb);
-    if(!rumpf.isEmpty()){ const sz = rumpf.getSize(new THREE.Vector3()), c = rumpf.getCenter(new THREE.Vector3()), h = rumpf.min.y - ISLAND_Y + 0.1;
-      const blk = new THREE.Mesh(new THREE.BoxGeometry(sz.x, h, sz.z), new THREE.MeshBasicMaterial({ visible: false }));
-      blk.position.set(c.x, ISLAND_Y + h / 2, c.z); story.welt(4).add(blk); blk.updateMatrixWorld(true);
-      if(story.ding) story.ding(blk, { welt: 4, typ: 'xwing' }); }
+    // Der Rumpf haengt auf dem Fahrwerk bis 1,5 m hoch – Joshi (1,2 m) lief darunter hindurch. Darum unter jedem Rumpf-Kasten der
+    // Engine-Grenzen (Mitte im Modell |x| < 1 m, nicht schon am Boden) ein unsichtbarer Block bis zum Boden, im Schiff angehaengt –
+    // er dreht mit. Live-Befund 26.10.2026: vorher EIN Kasten in Weltachsen um alle hohen Teile; beim schraeg geparkten Schiff
+    // 7,6 x 11 m bis zur Nasenspitze, man kam nur von der Seite heran. Jetzt bleiben Fluegel und Nase frei wie in Trip to Japan.
+    // Laengs (z) reicht jeder Block bis zum naechsten, damit unter dem Rumpf keine Luecke bleibt.
+    const rumpf = (x._grenzen || []).filter(b => Math.abs((b.min.x + b.max.x) / 2) < 1 && b.min.y > 0.5).sort((a, b) => a.min.z - b.min.z);
+    rumpf.forEach((b, i) => {
+      const z1 = i + 1 < rumpf.length ? Math.max(b.max.z, rumpf[i + 1].min.z) : b.max.z, h = b.min.y + 0.1;
+      const blk = new THREE.Mesh(new THREE.BoxGeometry(b.max.x - b.min.x, h, Math.max(0.05, z1 - b.min.z)), new THREE.MeshBasicMaterial({ visible: false }));
+      blk.position.set((b.min.x + b.max.x) / 2, h / 2, (b.min.z + z1) / 2); x.add(blk); blk.updateMatrixWorld(true);
+      if(story.ding) story.ding(blk, { welt: 4, typ: 'xwing' }); });
   })();
 }
 
@@ -287,8 +314,9 @@ function windUpdate(dt){
       s.connect(g).connect(audioCtx.destination); s.start(); wind.src = s; wind.gain = g; }).catch(e => console.warn('Wuestenwind:', e)); }
   if(!wind.gain) return;
   const y = eva ? eva.group.position.y : state.pos.y, hoehe = 1 - Math.max(0, Math.min(1, (y - ISLAND_Y) / AMB_MAX_Y));   // global-ok: Engine
-  const ziel = locale === 'earth' && soundOn ? AMB_OCEAN_VOL * hoehe : 0;                                               // global-ok: Engine
-  wind.gain.gain.value += (ziel - wind.gain.gain.value) * Math.min(1, 0.7 * dt);
+  // drinnen (Observatorium) kein Wind (Live-Wunsch 26.10.2026) – dort schnell weg, draussen weich wieder da
+  const drin = !!(story.innen && story.innen.drin), ziel = locale === 'earth' && soundOn && !drin ? AMB_OCEAN_VOL * hoehe : 0;   // global-ok: Engine
+  wind.gain.gain.value += (ziel - wind.gain.gain.value) * Math.min(1, (drin ? 4 : 0.7) * dt);
 }
 // ---- Anflug und Sprung -----------------------------------------------------------------------------------------------
 // Kreisen: der Autopilot fliegt einen Kreis um die Oase (gegen den Uhrzeigersinn von oben), leicht in die Kurve gelegt; die
@@ -488,17 +516,14 @@ function tiereUpdate(dt){
   m.o.position.set(x, Math.max(seeBoden(x, z) + 0.8, seeY() - MANTA.tief) + Math.sin(tiere.t * 0.4) * 0.4, z);
   m.o.rotation.y = Math.atan2(Math.sin(m.a), -Math.cos(m.a)); m.mx.update(dt);
 }
-// ---- Durch die offene Tuer: Blende, ins Observatorium (observatorium_innen.js; ohne diese Datei "Fortsetzung folgt") --
+// ---- Durch die offene Tuer: Blende, ins Observatorium (observatorium_innen.js) -------------------------------------------
 function tuerPruefen(){
   const T = w4.tuer; if(!T || !eva || w4.drin || eva.boat) return;
   const p = eva.group.position;
   if(Math.abs(p.x - T.x) > TUER.b / 2 || p.z > T.z + 0.9 || p.z < T.z - 1) return;
   if(story.aktionLaeuft && story.aktionLaeuft()){ p.z = T.z + 0.9; return; }      // waehrend einer Aktion ist die Tuer zu
   w4.drin = true;
-  if(story.e4Rein){ story.e4Rein(); return; }
-  const el = document.createElement('div'); el.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;transition:opacity .35s;pointer-events:none;z-index:55;';
-  document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; });
-  setTimeout(() => { if(story.fortsetzungFolgt) story.fortsetzungFolgt('🐹', TEXT_FOLGT); }, 400);
+  if(story.e4Rein) story.e4Rein();
 }
 function updateE4(dt){
   if(!e4()) return;

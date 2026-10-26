@@ -14,7 +14,7 @@
 //   6. Y beim Gorilla: das Entchen schenken -> er trommelt vor Freude und schiebt Joshi den Bananenkorb hin; daran rotes
 //      Fell. Am Korb erscheint ein brauner Lupenring (der Fuchs zeigt ihn).
 //   7. Lupe am Korb: das rote Fell (klebt dann im Notizbuch). Erst danach fragt Joshi nach dem Fell: weiss er nicht – frag
-//      doch den Hamster. Und: er leiht Joshi sein Flugzeug.
+//      doch das Lama. Und: er leiht Joshi sein Flugzeug.
 //   8. Vor dem Ausgang der blaue Fotoring: Foto vom Gorilla mit seinem Entchen.
 // Danach draussen (hoehle.js): der Weg ist hell, die Mustang hat ein Y, Abflug.
 // Die Hoehle schwebt weit draussen (RAUM, BODEN_Y = 150 wie die Huette) – von der Insel aus nicht zu sehen.
@@ -32,7 +32,9 @@ GORILLA.blick = Math.atan2(FEUER.x - GORILLA.x, FEUER.z - GORILLA.z);
 const SCHEIT = { x: RAUM.x + 3.6, z: RAUM.z + 1.4 };   // rechts vorn, mit dem gruenen Ring
 const LUPE_P = { x: RAUM.x - 3.7, z: RAUM.z + 0.2 };   // links neben dem Gorilla: das zerbrochene Entchen
 const KORB = { x: RAUM.x - 3.2, z: RAUM.z - 4.6 };     // hinter dem Gorilla im Schatten (er gibt ihn spaeter zurueck)
-const KORB_HIN = { x: GORILLA.x + 0.4, z: GORILLA.z + 1.8 };   // dorthin schiebt er ihn (davor der Lupenring, notizbuch.js fell_lupe)
+// dorthin schiebt er ihn (davor der Lupenring, notizbuch.js fell_lupe). Live-Wunsch 26.10.2026: weiter weg als vorher (1,8 m) –
+// sonst lag der Lupenring im Y-Bereich des Gorillas und man erwischte sein Y
+const KORB_HIN = { x: GORILLA.x - 0.4, z: GORILLA.z + 3.0 };
 const FOTO_P = { x: RAUM.x, z: RAUM.z + RAUM.R - 2.2 }; // vor dem Ausgang
 const hi = story.hoehleInnen = { drin: false, wechsel: null, sperre: 0, gebaut: false, gruppe: null, gorilla: null, stufe: 'x',
   mixer: null, acts: {}, cur: null, korb: null, kaputt: null, entchen: null, t: 0 };
@@ -57,7 +59,7 @@ const T = {
     'Der Tisch war verwüstet und nur noch die Bananen standen rum. Deshalb hab ich sie einfach mitgenommen.',
     'Bitte nimm sie wieder mit.'],
   joshiFell: ['Weißt du, von wem das rote Fell ist?'],
-  gorillaFell: ['Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden.',
+  gorillaFell: ['Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden.',
     'Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm.'],
   foto: ['Klasse! Der Gorilla lacht wieder.'],
   hinweisLupe: ['Neben dem Gorilla ist ein brauner Kreis. Schau dort ganz genau hin.'],
@@ -113,7 +115,8 @@ function baueRaum(){
   const ah = ag.createLinearGradient(0, 0, 0, 128); ah.addColorStop(0, '#e8d6c2'); ah.addColorStop(0.62, '#f0e2d0'); ah.addColorStop(0.64, '#dfe6ea'); ah.addColorStop(1, '#cfd8de');
   ag.fillStyle = ah; ag.fillRect(0, 0, 128, 128);
   for(let i = 0; i < 9; i++){ const x = 6 + i * 14 + rnd() * 6, hh = 30 + rnd() * 26; ag.fillStyle = '#3f6a4a'; ag.beginPath(); ag.moveTo(x, 82 - hh); ag.lineTo(x - 7, 84); ag.lineTo(x + 7, 84); ag.fill(); }
-  const bild = new THREE.Mesh(new THREE.PlaneGeometry(AUSGANG.B + 0.4, AUSGANG.H + 0.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aus) }));
+  // fog: false (Live-Befund 26.10.2026: von drinnen sah man im Ausgang nur Schwarz – der dunkle Hoehlennebel schluckte das Bild)
+  const bild = new THREE.Mesh(new THREE.PlaneGeometry(AUSGANG.B + 0.4, AUSGANG.H + 0.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aus), fog: false }));
   bild.position.set(0, AUSGANG.H / 2, R + 1.2); bild.rotation.y = Math.PI; bild.userData.deko = true; g.add(bild);
   for(const sx of [-1, 1]){ const w = new THREE.Mesh(new THREE.BoxGeometry(0.6, AUSGANG.H + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x4f4a44 }));
     w.position.set(sx * (AUSGANG.B / 2 + 0.3), AUSGANG.H / 2, R + 0.4); w.userData.keinKoerper = true; g.add(w); }   // Laibung (Grenze: raumTiefe)
@@ -138,6 +141,8 @@ function baueRaum(){
   story.setze('holzscheit', 3, { x: SCHEIT.x, z: SCHEIT.z, y: BODEN_Y, dreh: 0.4, fest: true }).bereit.then(d => { hi.scheit = d; });
   hi.korb = story.setze('bananenkorb', 3, { x: KORB.x, z: KORB.z, y: BODEN_Y, dreh: 0.5, fest: true }).obj;
   hi.kaputt = story.setze('entchen_kaputt', 3, { x: LUPE_P.x, z: LUPE_P.z, y: BODEN_Y, dreh: -0.8, fest: true });
+  // Funkgeraet (Live-Wunsch 26.10.2026): links vorn in der Ecke, zur Hoehlenmitte gedreht
+  if(story.funkgeraetSetzen) story.funkgeraetSetzen({ welt: 3, innen: true, x: RAUM.x - 6.0, z: RAUM.z + 2.8, y: BODEN_Y, dreh: Math.atan2(6.0, -2.8) });
   gorillaLaden();
 }
 
@@ -275,7 +280,7 @@ function gorillaY(o){
   }
   // nach dem Korb (Live-Wunsch 22.10.2026): kein Hilfetext, er ist einfach froh – den Lupenring nennt nur die Hilfe-Taste
   if(hi.stufe === 'korb' || hi.stufe === 'geschenkt'){ sprichDann(T.gluecklich, 'tierM', fertig); return; }
-  if(hi.stufe === 'fell' || hi.stufe === 'foto'){ sprichDann(['Danke, ' + 'Joshi! Viel Glück beim Hamster.'], 'tierM', fertig); return; }
+  if(hi.stufe === 'fell' || hi.stufe === 'foto'){ sprichDann(['Danke, ' + 'Joshi! Viel Glück beim Lama.'], 'tierM', fertig); return; }
   sprichDann(T.inRuhe, 'tierM', fertig);
 }
 // Das neue Entchen (das geschnitzte) haelt er dann in den Haenden – vor ihm auf dem Boden, gut zu sehen
@@ -425,6 +430,9 @@ story.testE3 = function(){
 // ---- Hinein / hinaus (wie die Huette: Blende, eigene Welt) -----------------------------------------------------------
 const HUELLE = 15, KOERPER = 0.32;
 function imRaum(x, z){ return Math.hypot(x - RAUM.x, z - RAUM.z) < RAUM.R + HUELLE; }
+// nur die sichtbaren Teile, die Lichter bleiben (sonst uebersetzt three.js beim Betreten jedes Material neu – siehe Observatorium)
+function innenZeigen(an){ for(const o of story.welt(3).children){ const p = o.position; if(p.y > BODEN_Y - 5 && Math.hypot(p.x - RAUM.x, p.z - RAUM.z) < RAUM.R + HUELLE)
+  story.sichtTeile(o, an); } }
 function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z, d = Math.hypot(lx, lz);
   // im Durchgang (bei +z, so breit wie der Ausgang) frei bis ein Stueck hinaus – dort loest updateWechsel den Wechsel aus
@@ -438,12 +446,13 @@ function blende(w){ if(!blendeEl){ blendeEl = document.createElement('div'); ble
 function setzeUm(ziel){
   const g = eva.group;
   if(ziel === 'innen'){
-    baueRaum();
+    baueRaum(); innenZeigen(true);
     const x = RAUM.x, z = RAUM.z + RAUM.R - 3.6;              // ein Stueck in der Hoehle: hinter ihm hat die Kamera Platz
     g.position.set(x, BODEN_Y, z); eva.yaw = 0;                 // Blick in die Hoehle (-z): Feuer und Gorilla
     hi.drin = true; story.innen.drin = true; story.innen.wo = 'hoehle';
     if(!hi.warDrin){ hi.warDrin = true; story.spaeter(1.0, () => story.sprich(T.ankunft)); }
   } else {
+    innenZeigen(false);
     const H = story.hoehle.eingang, { x, z } = story.freierPlatz(H.x, H.z + 4.5, 'joshi');
     g.position.set(x, evaFootY(x, z), z); eva.yaw = Math.PI;      // Blick vom Berg weg (Wiese, Piste)
     hi.drin = false; story.innen.drin = false; story.innen.wo = null;
@@ -500,7 +509,9 @@ function hookHoehle(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding, wasserOrig = isOpenWater, dinghyOrig = evaEnterDinghy;
   evaSolid = function(x, z){ if(e3() && locale === 'earth' && imRaum(x, z)) return raumFrei(x, z); return solidOrig.apply(this, arguments); };
   evaFootY = function(x, z){ if(e3() && locale === 'earth' && imRaum(x, z)) return BODEN_Y; return fussOrig.apply(this, arguments); };
-  hitsBuilding = function(x, y, z){ if(e3() && locale === 'earth' && imRaum(x, z) && !raumFrei(x, z)) return true; return hitsOrig.apply(this, arguments); };
+  // Live-Befund 26.10.2026 (im Observatorium): die Hoehle schwebt in 150 m Hoehe – ohne Joshi drinnen ist sie nicht zu sehen und
+  // haelt kein Flugzeug auf (ihre Grenzen galten in jeder Hoehe)
+  hitsBuilding = function(x, y, z){ if(e3() && locale === 'earth' && imRaum(x, z)){ if(!hi.drin) return false; if(!raumFrei(x, z)) return true; } return hitsOrig.apply(this, arguments); };
   isOpenWater = function(x, z){ if(e3() && locale === 'earth' && imRaum(x, z)) return false; return wasserOrig.apply(this, arguments); };
   evaEnterDinghy = function(){ if(hi.drin) return; return dinghyOrig.apply(this, arguments); };
   // Kamera: wie in der Huette, an der runden Wand geklemmt

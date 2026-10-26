@@ -65,9 +65,23 @@ function baueRaum(){
   const vorn = wand(B, true); vorn.position.z = T / 2; vorn.rotation.y = Math.PI; g.add(vorn);
   const links = wand(T, false); links.position.x = -B / 2; links.rotation.y = Math.PI / 2; g.add(links);
   const rechts = wand(T, false); rechts.position.x = B / 2; rechts.rotation.y = -Math.PI / 2; g.add(rechts);
-  // In der Tueroeffnung: warmes Nachtblau (draussen ist Nacht) statt Leere
-  const nacht = new THREE.Mesh(new THREE.PlaneGeometry(TUER_B, TUER_H), new THREE.MeshBasicMaterial({ color: 0x0d1a3a }));
-  nacht.position.set(0, TUER_H / 2, T / 2 + 0.05); nacht.rotation.y = Math.PI; nacht.userData.deko = true; g.add(nacht);   // nur Farbe in der Tuer
+  // In der Tueroeffnung ein Bild von draussen bei Nacht (Live-Befund 26.10.2026: man sah nur Schwarz – eine dunkelblaue Flaeche, die
+  // der Nebel im schwebenden Raum noch schluckte): Sterne und Mond, das Meer, Sand, eine Palme, der Schein des Lagerfeuers.
+  // Ohne Nebel, ein Stueck hinter der Wand und groesser als die Oeffnung – die Wand verdeckt die Raender.
+  const draussen = canvasTex(128, 224, (c, w, h) => {
+    const hg = c.createLinearGradient(0, 0, 0, h * 0.55); hg.addColorStop(0, '#0a1430'); hg.addColorStop(1, '#1a2c58'); c.fillStyle = hg; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#ffffff'; for(let i = 0; i < 26; i++) c.fillRect((i * 41) % w, (i * 29) % 110, 2, 2);
+    c.fillStyle = '#fff6c8'; c.beginPath(); c.arc(90, 36, 12, 0, Math.PI * 2); c.fill(); c.fillStyle = '#0f1b3c'; c.beginPath(); c.arc(96, 31, 11, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#16305a'; c.fillRect(0, 122, w, 34);                                         // Meer
+    c.fillStyle = 'rgba(255,246,200,.25)'; for(let i = 0; i < 6; i++) c.fillRect(70 + i * 6, 128 + i * 4, 18, 2);   // Mondglitzern
+    c.fillStyle = '#c8b07a'; c.fillRect(0, 156, w, h - 156);                                   // Sand
+    const fg = c.createRadialGradient(34, 176, 2, 34, 176, 46); fg.addColorStop(0, 'rgba(255,170,70,.85)'); fg.addColorStop(1, 'rgba(255,140,40,0)'); c.fillStyle = fg; c.fillRect(0, 120, 90, 104);   // Feuer
+    c.fillStyle = '#ffd27a'; c.beginPath(); c.moveTo(30, 182); c.lineTo(34, 168); c.lineTo(38, 182); c.fill();
+    c.strokeStyle = '#1a140e'; c.lineWidth = 5; c.beginPath(); c.moveTo(104, 200); c.quadraticCurveTo(100, 140, 112, 96); c.stroke();   // Palme
+    c.fillStyle = '#1a140e'; for(const a of [-2.6, -2.0, -1.2, -0.5, 0.2]){ c.beginPath(); c.ellipse(112 + Math.cos(a) * 16, 96 + Math.sin(a) * 9, 18, 4, a, 0, 7); c.fill(); }
+  });
+  const nacht = new THREE.Mesh(new THREE.PlaneGeometry(TUER_B + 0.5, TUER_H + 0.4), new THREE.MeshBasicMaterial({ map: draussen, fog: false }));
+  nacht.position.set(0, TUER_H / 2 + 0.1, T / 2 + 0.3); nacht.rotation.y = Math.PI; nacht.userData.deko = true; g.add(nacht);
   // Fenster (gemalt: Nachthimmel mit Mond) an der Rueckwand und links
   const fensterTex = canvasTex(128, 128, (c, w, h) => {
     c.fillStyle = '#0d1a3a'; c.fillRect(0, 0, w, h);

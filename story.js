@@ -1311,6 +1311,7 @@ function yZeichen(){
 // Das naechste entdeckte Objekt in Y-Reichweite (nur zu Fuss, draussen)
 function interNaechstes(){
   if(!eva || eva.boat || eva.rover || sw.aktiv) return null;
+  if(story.imKreis && story.imKreis()) return null;              // im Ring gehoert das Y dem Ring (notizbuch.js)
   const drin = !!(story.innen && story.innen.drin);
   const g = eva.group.position; let best = null, bd = 1e9;
   for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.erledigt || o.innen !== drin) continue;
@@ -1373,7 +1374,8 @@ story.fuchsRundgang = function(x, z, drin, r, nurOffen, nur){
   const kreise = story.sucheKreise ? story.sucheKreise(drin) : [];
   const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && o.frei).concat(kreise);
   let rest = nurOffen ? [] : hier.filter(o => !o.entdeckt);
-  if(nurOffen){ rest = hier.filter(o => o.kreis ? true : offen(o)); if(nur) rest = rest.filter(nur); if(!rest.length) return; }
+  // nur: ein ausdruecklich gewaehltes Ding zeigt er auch, wenn es schon benutzt wurde (das Lama nach dem Spurvergleich)
+  if(nurOffen){ rest = hier.filter(o => o.kreis ? true : (offen(o) || (nur && nur(o)))); if(nur) rest = rest.filter(nur); if(!rest.length) return; }
   // Nichts Neues: beim X laeuft der Fuchs dann die OFFENEN Dinge ab (entdeckt, aber noch ohne Y; Kreise: noch nicht
   // gemacht) – mit dem Satz, dass man jetzt hingehen soll. Ist auch nichts offen: "schon alles entdeckt" bzw. "nichts hier".
   let nochmal = false;
@@ -1526,6 +1528,8 @@ function stimmeFuer(rolle){
 function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
 let sprichtGerade = null, gehalten = null;
 const sprichWarte = [];
+// Spricht gerade jemand (oder wartet noch ein Satz)? notizbuch.js: Detektivhut und blaues X erst danach (Live-Wunsch 26.10.2026)
+story.redetGerade = () => !!(sprichtGerade || gehalten || sprichWarte.length);
 // Inventar-Erklaerungen (rolle 'inventar', Live-Frage 16.10.): sie stellen sich nicht hinten an, sondern schieben sich
 // dazwischen. Ein laufender Spielsatz wird dafuer "gehalten" (gehalten) – nicht abgebrochen, sein fertig() bleibt offen.
 // Schliesst man das Inventar, geht er weiter: genau an der Stelle, wenn nichts erklaert wurde, sonst wird der
@@ -1536,6 +1540,9 @@ function halten(){
   gehalten = me; sprichtGerade = null;
   if(window.speechSynthesis) window.speechSynthesis.cancel();
 }
+// Einen gehaltenen Satz vergessen, statt ihn nach dem Inventar zu wiederholen (Live-Befund 26.10.2026: nach dem Spurvergleich im
+// Notizbuch kam beim Schliessen noch einmal der Hinweis, die Spur zu vergleichen – er war beim Oeffnen gehalten worden)
+story.gehaltenVergessen = function(saetze){ if(gehalten && gehalten.saetze === saetze){ const g = gehalten; gehalten = null; g.stopp(); untertitel(''); } };
 // beim Schliessen von Inventar/Pause: Erklaerung beenden, gehaltenen Satz fortsetzen; true = erledigt
 function fortsetzen(){
   story.stimmeStopp();
@@ -1554,7 +1561,7 @@ function sprich(saetze, fertig, rolle){
   if(typeof saetze === 'function'){ saetze = saetze() || []; if(!saetze.length){ if(fertig) fertig(); const n = sprichWarte.shift(); if(n) n(); return; } }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
-  const me = sprichtGerade = { rolle };
+  const me = sprichtGerade = { rolle, saetze };
   // Rauschen davor/danach: beim Funk (Maennerstimme) und bei der Erklaerung des Funkgeraets ('funkRahmen', Erzaehlerin)
   const funk = rolle === 'radio' || rolle === 'funkRahmen';
   // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
@@ -1936,13 +1943,37 @@ function funkRauschen(dauer){
 story.funkAktiv = () => radio.fall1 === 'ruft' || !!(sprichtGerade && sprichtGerade.rolle === 'radio');
 story.funkWackel = () => radio.t;
 story.baueFunkgeraet = () => baueRadio();
+// Innenraeume (Hoehle, Observatorium) draussen unsichtbar: nur die sichtbaren Teile aus, die Lichter bleiben (sonst aendert sich
+// die Zahl der Lichter, und three.js uebersetzt beim Betreten jedes Material neu – Live-Befund 26.10.2026: es ruckelte). Was vorher
+// schon unsichtbar war (z. B. die durchgeschnittene Schnur), bleibt es beim Wiederzeigen.
+story.sichtTeile = function(o, an){
+  o.traverse(n => { if(n.isLight || n.isGroup || n === o && !n.isMesh) return;
+    if(!an){ if(n.userData.sichtVorher === undefined){ n.userData.sichtVorher = n.visible; n.visible = false; } }
+    else if(n.userData.sichtVorher !== undefined){ n.visible = n.userData.sichtVorher; delete n.userData.sichtVorher; } });
+};
+// Funkgeraete in den anderen Etappen (Live-Wunsch 26.10.2026): eine Kopie von dem am Lagerfeuer – auf der Kiste (welt, x, z,
+// dreh; innen: y = Boden des Innenraums) oder ohne Kiste auf einem Moebel (eltern + lokal: z. B. der Schreibtisch im Observatorium).
+// Ohne Y und ohne Entdecken-Text (Live-Wunsch 26.10.2026: den braucht es nur an Joshis Huette); beim Rauschen wackeln und
+// blinken alle mit.
+const funkgeraete = [];
+story.funkgeraetSetzen = function(o){
+  let g;
+  if(o.eltern){
+    g = baueRadio(); g.remove(g.children[0]); g.userData.geraet.position.y = 0; g.userData.grundY = 0;   // ohne Kiste
+    g.position.set(o.lokal.x, o.lokal.y, o.lokal.z); g.rotation.y = o.dreh || 0; g.traverse(m => { m.userData.keinKoerper = true; });
+    o.eltern.add(g); g.updateMatrixWorld(true);
+  } else g = story.setze('funkgeraet', o.welt, { x: o.x, z: o.z, y: o.y, dreh: o.dreh || 0 }).obj;
+  funkgeraete.push(g);
+  return g;
+};
 function updateRadio(dt){
-  if(!radio.obj) return;
   radio.t += dt;
-  const r = radio.obj.userData.geraet;
-  r.rotation.z = radio.an ? Math.sin(radio.t * 30) * 0.03 : 0;
-  r.position.y = 0.45 + (radio.an ? Math.abs(Math.sin(radio.t * 22)) * 0.01 : 0);
-  radio.obj.userData.lampe.visible = !radio.an || Math.sin(radio.t * 10) > 0;
+  for(const g of radio.obj ? [radio.obj, ...funkgeraete] : funkgeraete){
+    const r = g.userData.geraet, y0 = g.userData.grundY !== undefined ? g.userData.grundY : 0.45;
+    r.rotation.z = radio.an ? Math.sin(radio.t * 30) * 0.03 : 0;
+    r.position.y = y0 + (radio.an ? Math.abs(Math.sin(radio.t * 22)) * 0.01 : 0);
+    g.userData.lampe.visible = !radio.an || Math.sin(radio.t * 10) > 0;
+  }
 }
 function startSzene(){
   if(story.etappe === 2 && story.e2StartSzene){ story.e2StartSzene(); return; }   // Waldinsel: im Boot am Steg (waldinsel.js)
@@ -2170,9 +2201,74 @@ function hookTon(){
   showToggle = function(sym){ if(sym === '🔊' || sym === '🔇') return; return symOrig.apply(this, arguments); };   // Lautsprecher an / aus
 }
 
+// ---- Propellerton (Live-Wunsch 26.10.2026) ------------------------------------------------------------------------------
+// "Zu hell, klingt wie ein Rasenmaeher", und am Anfang der Aufnahme steckt ein Startgeraeusch: Die Schleife beginnt PROP_START s
+// spaeter, ein Tiefpass nimmt die Schaerfe, und die Tonhoehe bleibt tief – mit dem Schub wird der Motor nur lauter (leise und
+// tief im Leerlauf, laut und tief bei Vollgas). Turbinen (Alpha Jet, X-Wing, Airbus) und Boote bleiben wie in der Engine.
+// Die Engine selbst bleibt unveraendert (startEngineLoop und updateEngineSound werden nur umhuellt).
+const PROP_START = 1.0, PROP_TIEF = 1300, PROP_RATE = 0.72, PROP_LEISE = 0.04, PROP_LAUT = 0.27, PROP_UEBER = 0.3;
+// Nahtlose Schleife (Live-Befund 26.10.2026: "eine kurze Pause dazwischen" – beim Sprung vom Ende zurueck passten Klang und
+// Lautstaerke nicht zusammen): einmal je Aufnahme ein eigener Puffer ab PROP_START, dessen letzte PROP_UEBER s weich in den
+// Anfang uebergeblendet sind (gleiche Leistung) – das Ende geht ohne Sprung in den Anfang ueber.
+const propSchleifen = new WeakMap(), propFertig = new WeakSet();
+function propSchleife(buf){
+  if(propFertig.has(buf)) return buf;                                   // schon eine fertige Schleife (die Engine gibt sie zurueck)
+  if(propSchleifen.has(buf)) return propSchleifen.get(buf);
+  const sr = buf.sampleRate, a = Math.floor(PROP_START * sr), x = Math.floor(PROP_UEBER * sr), L = buf.length - a - x;
+  const out = audioCtx.createBuffer(buf.numberOfChannels, L, sr);                                       // global-ok: Engine
+  for(let c = 0; c < buf.numberOfChannels; c++){ const d = buf.getChannelData(c), o = out.getChannelData(c);
+    for(let i = 0; i < L; i++) o[i] = d[a + i];
+    for(let i = 0; i < x; i++){ const k = i / x; o[i] = d[a + i] * Math.sin(k * Math.PI / 2) + d[a + L + i] * Math.cos(k * Math.PI / 2); } }
+  propSchleifen.set(buf, out); propFertig.add(out); return out;
+}
+function propellerTon(buf){
+  const m = MODEL_NAMES[currentModel];                                                                   // global-ok: Engine
+  if(m === 'AlphaJet' || m === 'XWing' || m === 'Airbus') return false;
+  if((typeof boatEngineBuf !== 'undefined' && buf === boatEngineBuf) || (typeof subEngineBuf !== 'undefined' && buf === subEngineBuf)) return false;   // global-ok
+  return !(typeof isWaterCraft === 'function' && isWaterCraft()) && (propFertig.has(buf) || buf.duration > PROP_START + PROP_UEBER + 0.5);   // global-ok: Engine
+}
+// ---- Pause haelt auch den Ton an (Live-Wunsch 26.10.2026: "Pause sollte doch grundsaetzlich alles pausieren") ------------
+// In der Pause ruft die Engine updateEngineSound und die Umgebungstoene nicht mehr auf – der Motor lief auf seiner letzten
+// Lautstaerke weiter. Darum haelt die Pause die ganze Web-Audio-Ausgabe an (audioCtx.suspend, auch Musik, Wind, Sirene) und die
+// Ansage; danach geht alles an derselben Stelle weiter. Nur was wir selbst angehalten haben, setzen wir fort.
+let pauseTonAn = false, pauseTonUns = false;
+function pauseTonSchritt(){
+  const p = hilfeOffen() && pause.art === 'hilfe';                    // nur die echte Pause – im Inventar und im Teleskop wird gesprochen
+  if(p === pauseTonAn) return; pauseTonAn = p;
+  const ctx = typeof audioCtx !== 'undefined' ? audioCtx : null;                                       // global-ok: Engine
+  if(p){ if(ctx && ctx.state === 'running'){ ctx.suspend(); pauseTonUns = true; } try { speechSynthesis.pause(); } catch(e){} }
+  else { if(ctx && pauseTonUns && ctx.state === 'suspended') ctx.resume(); pauseTonUns = false; try { speechSynthesis.resume(); } catch(e){} }
+}
+function hookPauseTon(){ const loopOrig = loop; loop = function(){ const r = loopOrig.apply(this, arguments); pauseTonSchritt(); return r; }; }   // global-ok: Engine
+function hookPropeller(){
+  if(typeof startEngineLoop !== 'function') return;
+  const startOrig = startEngineLoop;                                                                    // global-ok: Engine
+  startEngineLoop = function(buf){
+    if(!audioCtx || !buf || !propellerTon(buf)) return startOrig.apply(this, arguments);                // global-ok: Engine
+    if(engineSrc){ try { engineSrc.stop(); } catch(e){} }                                               // global-ok: Engine
+    const s = audioCtx.createBufferSource(); s.buffer = propSchleife(buf); s.loop = true; s.quelle = buf;
+    const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = PROP_TIEF; f.Q.value = 0.7;
+    const g = audioCtx.createGain(); g.gain.value = 0;
+    s.connect(f).connect(g).connect(audioCtx.destination); s.start(); s.propeller = true;
+    // als aktueller Puffer der Engine anmelden – sonst startete sie den Loop jedes Bild neu (sie vergleicht engineSrc.buffer)
+    engineSrc = s; engineGain = g; engineBufCurrent = s.buffer;                                        // global-ok: Engine
+  };
+  const tonOrig = updateEngineSound;                                                                    // global-ok: Engine
+  updateEngineSound = function(){
+    const r = tonOrig.apply(this, arguments);
+    // nur, wenn die Engine den Motor gerade laufen laesst (sonst hat sie die Lautstaerke auf 0 gesetzt – das bleibt so)
+    if(engineSrc && engineSrc.propeller && engineGain && engineGain.gain.value > 0){                   // global-ok: Engine
+      const t = Math.max(0, Math.min(1, state.throttle));                                              // global-ok: Engine
+      engineSrc.playbackRate.value = PROP_RATE; engineGain.gain.value = PROP_LEISE + t * (PROP_LAUT - PROP_LEISE);
+    }
+    return r;
+  };
+}
 window.STORY_HOOK = function(){
   if(typeof strandleben !== 'undefined'){ strandleben.an = true; strandleben.festPlatz = story.seeloewenPlatz || null; }   // Forellen im Flachwasser, Seeloewen am Strand (Engine)
   hookTon();
+  hookPropeller();
+  hookPauseTon();
   story.typ('funkgeraet', { bau: baueRadio });
   hookHudAus();
   hookWelt();

@@ -1,4 +1,4 @@
-// Das Geheimland – durch das Teleskop des Hamsters schauen (Live-Wunsch 23.10.2026). Laedt nach observatorium_innen.js, vor
+// Das Geheimland – durch das Teleskop des Lamas schauen (Live-Wunsch 23.10.2026). Laedt nach observatorium_innen.js, vor
 // der Engine. Freiwillig: fuer die Geschichte zaehlt es nicht – man darf, sobald alle Aufgaben der Etappe 4 erledigt sind
 // (observatorium_innen.js zeigt dann am Teleskop ein Y).
 // Ansicht: der Nachthimmel, rund wie durch ein Okular. Links/rechts/hoch/runter springt das Teleskop zum naechsten Objekt in
@@ -6,7 +6,7 @@
 // Erzaehlerin erzaehlt ein paar Fakten. B: wieder hinaus – auch mitten in einer Erklaerung (sie hoert dann auf).
 // Objekte: Sonne, Merkur, Venus, Mond, Mars, Jupiter, Saturn, Uranus, Neptun, Pluto (Modelle von Akshat, CC-BY-4.0), die
 // Milchstrasse und die Sternbilder aus sternbilder.js. Die Erde fehlt (auf ihr steht man). Die Sonne steht – als Ausnahme
-// in der Nacht – tief am Horizont. Auf dem Mond blinkt an einer Stelle etwas (wichtig fuer die Geschichte, der Hamster
+// in der Nacht – tief am Horizont. Auf dem Mond blinkt an einer Stelle etwas (wichtig fuer die Geschichte, das Lama
 // erwaehnt es spaeter): Morsezeichen H A L L O, rot und blau.
 (function(){
 'use strict';
@@ -298,6 +298,15 @@ function nachbar(sx, sy){
   });
   return best;
 }
+// Links/rechts: eine feste Runde um den Himmel (Live-Wunsch 26.10.2026: mit dem Kegel-Nachbarn kam man nicht an alle Planeten, man
+// musste zwischendurch die Richtung wechseln). Alle Objekte nach ihrer Himmelsrichtung sortiert; rechts = im Uhrzeigersinn weiter,
+// am Ende wieder von vorn – so erreicht man mit einer Richtung jedes Objekt. Hoch/runter bleibt der Nachbar im Bild (nachbar).
+function imKreis(sx){
+  const az = (o) => Math.atan2(o.dir.x, o.dir.z);                  // nach rechts wird dieser Winkel kleiner (rechts = Blick x oben)
+  const liste = tk.objekte.map((o, i) => ({ i, a: az(o) })).sort((p, q) => q.a - p.a);   // absteigend = nach rechts
+  const k = liste.findIndex(e => e.i === tk.wahl), n = liste.length;
+  return liste[((k + (sx > 0 ? 1 : -1)) % n + n) % n].i;
+}
 function steuern(dt){
   const e = liesEingabe(), alt = tk.eingabe, kante = { a: e.a && !alt.a, b: e.b && !alt.b };
   const dir = e.x || e.y; let schritt = null;
@@ -306,7 +315,7 @@ function steuern(dt){
   else tk.sperre -= dt;
   tk.eingabe = e;
   if(kante.b){ zu(); return; }                                    // B: hinaus, auch mitten in einer Erklaerung
-  if(schritt){ const n = nachbar(schritt.x, schritt.y);
+  if(schritt){ const n = schritt.x ? imKreis(schritt.x) : nachbar(0, schritt.y);
     if(n >= 0){ tk.wahl = n; nahWeg(); sprechen([tk.objekte[n].name]); } }
   if(kante.a){ const o = tk.objekte[tk.wahl]; if(tk.nahO === o) { nahWeg(); sprechen([o.name]); } else nahZeigen(o); }
 }

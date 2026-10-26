@@ -45,13 +45,13 @@ const STELLEN = [
   // ---- Etappe 2, Waldinsel (waldinsel.js; Live-Wunsch 21.10.2026) ----
   // Blauer Fotoring vor dem Festtisch: erst da, wenn alle Tiere erzaehlt haben (bedingung) UND Joshi sich danach noch einmal
   // umgeschaut hat (nachX – der Fuchs zeigt ihn dann). Das Foto ist das Tatortfoto (Live-Wunsch 21.10.2026): der Tisch fast
-  // senkrecht von oben in voller Laenge, nur die Reste und die zwei Fussspuren auf der Decke (Hamster und Eichhoernchen –
+  // senkrecht von oben in voller Laenge, nur die Reste und die zwei Fussspuren auf der Decke (Lama und Eichhoernchen –
   // noch ohne es zu sagen, das kommt im Notizbuch). Tiere und Fuchs sind fuer das Bild weg (ausblenden), der Wald oben.
   { id: 'tisch_foto', art: 'foto', name: 'Der Festtisch', etappe: 2, ort: 'waldinsel', kreis: { x: 0, z: 71.3, r: 1.0 }, nachX: true,
     bedingung: () => !!(story.e2SpurFrei && story.e2SpurFrei()),
     blick: { x: 0, y: 4.0, z: 68.3, yaw: 0, pitch: -Math.PI / 2 + 0.08, fov: 58 }, fuchs: null, ohneJoshi: true, ohneFuchs: true,
     ausblenden: () => (story.e2FotoAusblenden ? story.e2FotoAusblenden() : []),
-    text: ['Klasse. Jetzt hast du den Tisch auf deinem Foto. Das schauen wir uns später noch ganz genau an.'] },
+    text: ['Klasse. Jetzt hast du den Tisch auf deinem Foto.'] },   // ohne "später" (Live-Wunsch 26.10.2026: gleich danach kommt "Merk dir die Spuren gut ... später")
   // Brauner Lupenring am Eingang des Waldwegs (gleiche Freischaltung wie das Foto): dort liegt eine Bananenschale, unter der
   // Lupe krabbeln Ameisen darueber (Live-Wunsch 21.10.2026). Modell aus waldinsel.js (bau: selbst gebaut, animiere: Ameisen).
   { id: 'weg_lupe', art: 'lupe', name: 'Die Bananenschale', etappe: 2, ort: 'waldinsel', kreis: { x: 6.7, z: 56.9, r: 1.0 }, nachX: true,
@@ -71,7 +71,7 @@ const STELLEN = [
   // Lupe am Korb (Live-Wunsch 22.10.2026): hat der Gorilla Joshi den Korb hingeschoben, liegt davor ein brauner Ring – unter
   // der Lupe das rote Fell am Korbrand; ins Notizbuch kommt die Fell-Skizze (seite statt der Modellskizze). Kein nachX: der
   // Ring erscheint sofort (hoehle_innen.js fuchsZu), der Fuchs zeigt ihn.
-  { id: 'fell_lupe', art: 'lupe', name: 'Rotes Fell', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 638.1, z: -619.2, r: 0.95 }, nachX: true,
+  { id: 'fell_lupe', art: 'lupe', name: 'Rotes Fell', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 637.3, z: -618.0, r: 0.95 }, nachX: true,   // = KORB_HIN + 1,4 m nach vorn
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('fell_lupe')), modell: 'fell', liegt: true,
     bau: () => story.e3FellModell(), seite: () => story.e3FellSeite(), text: ['Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch.'] },
   // Foto: der Gorilla mit seinem Entchen, vor dem Ausgang (ganz am Schluss)
@@ -79,30 +79,37 @@ const STELLEN = [
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('gorilla_foto')), vorher: () => story.e3FotoVorbereiten && story.e3FotoVorbereiten(),
     blick: { x: 640, y: 151.6, z: -613.4, yaw: Math.atan2(640 - 637.7, -613.4 + 622.4), pitch: -0.08, fov: 48 }, fuchs: { x: 639.2, z: -620.0 }, fuchsVon: { x: 643, z: -617 }, ohneJoshi: true,
     text: ['Klasse! Der Gorilla lacht wieder.'] },
-  // ---- Etappe 4, im Observatorium des Hamsters (observatorium_innen.js; innen: nur dort) ----
-  // Messer am Paket (Live-Wunsch 23.10.2026): keine Szene und keine Skizze – Joshi schneidet die Schnur auf (aktion). Der Ring
-  // erst, wenn der Hamster von seinen Zahnschmerzen erzaehlt hat (der Fuchs zeigt ihn). Kreis = observatorium_innen.js MESSER_P.
-  { id: 'schnur_messer', art: 'messer', name: 'Die Schnur', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -636.91, z: 624.80, r: 0.9 }, nachX: true,
-    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('schnur_messer')), aktion: (fertig) => story.obsSchnur(fertig) },
-  // Lupe: kleine Pfotenspuren im Staub vor dem Tisch – erst nach dem Aufschneiden UND einem neuen Suchblick (X). Kreis =
+  // ---- Etappe 4, im Observatorium des Lamas (observatorium_innen.js; innen: nur dort) ----
+  // Messer am Paket: der Ring erst, wenn das Lama erzaehlt hat, dass es mit Hufen keinen Knoten aufbekommt (der Fuchs zeigt ihn).
+  // Kreis = observatorium_innen.js MESSER_P. Live-Wunsch 26.10.2026: wie das Schnitzen – das Messer schneidet gross im Bild
+  // durch ein Seil (seil: ohne Holzklotz, die Enden ausserhalb des Bilds), danach eine Skizze vom Seil im Notizbuch; das Paket
+  // geht auf, wenn die Stelle fertig ist (observatorium_innen.js e4StelleFertig).
+  { id: 'schnur_messer', art: 'messer', name: 'Die Schnur', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -634.71, z: 622.80, r: 0.9 }, nachX: true,
+    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('schnur_messer')), seil: true, modell: 'seil',
+    bau: () => story.obsSeilModell(), seite: () => story.obsSeilSkizze(), text: ['Schnipp! Die Schnur ist durch.'] },
+  // Lupe: Hufspuren im Staub vorn am Eingang – erst nach dem Aufschneiden UND einem neuen Suchblick (X). Kreis =
   // observatorium_innen.js SPUR_P
-  { id: 'hamster_spur', art: 'lupe', name: 'Die Spur des Hamsters', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -638.77, z: 624.24, r: 0.9 }, nachX: true,
-    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('hamster_spur')), modell: 'hamster_spur', liegt: true,
-    bau: () => story.obsSpurModell(), seite: () => story.obsSpurSeite(), text: ['Schau mal, kleine Pfotenspuren im Staub. Die kommen in dein Notizbuch.'] },
-  // Lupe am Packpapier (nach dem zweiten Gespraech; der Fuchs zeigt den Ring): grosse Spuren mit langen Zehen und rotes Fell.
+  { id: 'lama_spur', art: 'lupe', name: 'Die Spur des Lamas', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -638.4, z: 626.2, r: 0.9 }, nachX: true,
+    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('lama_spur')), modell: 'lama_spur', liegt: true,
+    bau: () => story.obsSpurModell(), seite: () => story.obsSpurSeite(), text: ['Schau mal, Spuren im Staub. Die kommen in dein Notizbuch.'] },
+  // Lupe am Packpapier (nach dem zweiten Gespraech; der Fuchs zeigt den Ring): Spuren mit langen Zehen und rotes Fell.
   // Kreis = observatorium_innen.js PAPIER_P
-  { id: 'packpapier_lupe', art: 'lupe', name: 'Das Packpapier', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -637.73, z: 624.41, r: 0.9 }, nachX: true,
+  { id: 'packpapier_lupe', art: 'lupe', name: 'Das Packpapier', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -635.53, z: 622.41, r: 0.9 }, nachX: true,
     bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('packpapier_lupe')), modell: 'packpapier', liegt: true,
-    bau: () => story.obsPapierModell(), seite: () => story.obsPapierSeite(), text: ['Schau mal! Auf dem Packpapier sind auch Spuren – große, mit langen Zehen. Und wieder rotes Fell!'] },
-  // Foto beim Hinausgehen: der Hamster vor seinem Teleskop (vom Ring vorn links: der Hamster vor dem Paket, das Teleskop dahinter)
-  { id: 'hamster_foto', art: 'foto', name: 'Der Hamster', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -637.9, z: 625.6, r: 0.9 }, nachX: true,
-    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('hamster_foto')), vorher: () => story.obsFotoVorbereiten && story.obsFotoVorbereiten(),
-    blick: { x: -637.9, y: 151.4, z: 625.6, yaw: -0.28, pitch: 0.06, fov: 58 }, fuchs: { x: -638.7, z: 623.6 }, fuchsVon: { x: -639.5, z: 625.5 }, ohneJoshi: true,   // vorn links: der Hamster vor dem Paket, dahinter das Teleskop
-    text: ['Klasse! Der Hamster vor seinem Teleskop.'] },
-  // Skizze neben dem Teleskop (erst nach dem Blick hindurch): das Observatorium in der Oase unter dem Nachthimmel mit dem Mond
-  { id: 'obs_skizze', art: 'skizze', name: 'Das Observatorium', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -637.2, z: 620.4, r: 0.9 }, nachX: true,
-    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('obs_skizze')), vorher: () => story.obsSkizzeVorbereiten && story.obsSkizzeVorbereiten(),
-    blick: { x: -1, y: 2.2, z: 22, yaw: 0.351, pitch: 0.34, fov: 64 }, fuchs: null, ohneJoshi: true,
+    bau: () => story.obsPapierModell(), seite: () => story.obsPapierSeite(), text: ['Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder rotes Fell!'] },
+  // Foto beim Hinausgehen: das Lama an seinem Paket, links das Teleskop; der Fuchs laeuft von links ins Bild (wie bei Huette
+  // und Gorilla – vorher stand sein Ziel am Bildrand, Live-Befund 26.10.2026)
+  { id: 'lama_foto', art: 'foto', name: 'Das Lama', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -637.0, z: 626.0, r: 0.9 }, nachX: true,
+    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('lama_foto')), vorher: () => story.obsFotoVorbereiten && story.obsFotoVorbereiten(),
+    blick: { x: -637.0, y: 151.4, z: 626.0, yaw: -0.12, pitch: 0.06, fov: 58 }, fuchs: { x: -638.0, z: 621.2 }, fuchsVon: { x: -640.6, z: 623.0 }, ohneJoshi: true,
+    text: ['Klasse! Das Lama vor seinem Teleskop.'] },
+  // Skizze draussen vor dem Observatorium (erst nach dem Blick durchs Teleskop; Live-Wunsch 26.10.2026: vorher drinnen neben dem
+  // Teleskop): das Observatorium in der Oase unter dem Nachthimmel mit dem Mond. Der Ring steht am Blickpunkt des Bildes.
+  // Live-Wunsch 26.10.2026: naeher am Observatorium (vorher bei -1 / 22); Nacht und Mond nur waehrend der Aufnahme (beiAufnahme),
+  // vorher blendete die Nacht sichtbar ein und wieder aus
+  { id: 'obs_skizze', art: 'skizze', name: 'Das Observatorium', etappe: 4, ort: 'wueste', kreis: { x: -7, z: 9, r: 1.0 }, nachX: true,
+    bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('obs_skizze')), beiAufnahme: (an) => story.obsSkizzeAufnahme && story.obsSkizzeAufnahme(an),
+    blick: { x: -7, y: 2.2, z: 9, yaw: 0.285, pitch: 0.25, fov: 64 }, fuchs: null, ohneJoshi: true,
     text: ['Wow. Das Observatorium unter dem Sternenhimmel – und oben der Mond.'] },
   // Draussen: der Holzscheit am Parkplatz (liegt von Anfang an, ohne Kreis) – ein Schluessel fuer das Raumschiff
   { id: 'schluessel_schnitzen', art: 'messer', name: 'Der Schlüssel', etappe: 4, ort: 'wueste', kreis: { x: -22.5, z: 9.5, r: 0.95 }, nachX: true,
@@ -215,6 +222,7 @@ function kreisZiel(s){
     blinken(){ const m = marken.find(q => q.s === s); if(m) m.blink = 1.6; } });
 }
 story.kreiseFreischalten = function(x, z, r, drin){
+  if(muetze.x){ muetze.xan = 0; muetze.x.visible = false; }      // X gedrueckt: das blaue X sofort weg (Live-Wunsch 26.10.2026)
   if(story.e3Gesucht) story.e3Gesucht();                       // hoehle_innen.js: der Suchblick in der Hoehle zaehlt
   if(story.e4Gesucht) story.e4Gesucht();                       // observatorium_innen.js: ebenso im Observatorium
   for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
@@ -223,6 +231,9 @@ story.sucheKreise = function(drin){
   return STELLEN.filter(s => passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
 };
 // Y (story.js buttonY fragt hier zuerst): steht Joshi auf einem offenen Kreis -> los
+// Steht Joshi in einem offenen Ring? Dann zeigt nur der Ring sein Y (story.js interNaechstes) – Y gehoert ohnehin zuerst dem Ring
+// (fotoY). Live-Wunsch 26.10.2026: am Bananenkorb und am Lama-Tisch standen zwei Y nebeneinander.
+story.imKreis = () => !zustand.aktiv && marken.some(q => stelleSichtbar(q.s) && aufKreis(q.s));
 story.fotoY = function(){
   if(zustand.aktiv) return false;
   const k = marken.find(q => stelleSichtbar(q.s) && aufKreis(q.s));
@@ -307,6 +318,7 @@ function walTropfen(wal){
   for(const k of marken) for(const o of [k.m, k.y]) if(o.visible){ o.visible = false; versteckt.push(o); }
   if(story.interListe) for(const o of story.interListe) if(o.zeichen && o.zeichen.visible){ o.zeichen.visible = false; versteckt.push(o.zeichen); }
   mondZu(kam);                                                     // Mond und Milchstrasse zur Fotokamera
+  if(s.beiAufnahme) s.beiAufnahme(true);                           // nur fuer die Aufnahme (observatorium_innen.js: Nacht und Mond)
   const bild = rendern(kam);
   // Skizze in Schichten (Live-Wunsch 16.10.): erst Strand und Steg, dann das Boot, dann das Meer, ein paar Sterne, der Wal
   // – je ein Bleistiftbild mit dem bisher Gezeichneten (kumulativ); das Kritzeln deckt sie nacheinander auf
@@ -330,6 +342,7 @@ function walTropfen(wal){
     sichtbar(teile);                  schichten.push(wellenZeichnen(bleistift(rendern(kam), false), wellen, true));          // + Wal (alles)
     for(const o of teile) o.visible = true;
   }
+  if(s.beiAufnahme) s.beiAufnahme(false);                          // im selben Augenblick zurueck – auf dem Bildschirm sieht man nichts
   for(const o of versteckt) o.visible = true;
   wegFuerBild();
   mondZu(camera);
@@ -409,7 +422,8 @@ function sucherLive(s, kam){
 }
 // Was fuer das Bild weg soll (s.ausblenden: Liste von Objekten, z. B. die Tiere am Tatort) – Rueckgabe: wieder zeigen
 function ausblendenFuer(s){
-  const weg = []; for(const o of (s.ausblenden ? s.ausblenden() : [])) if(o && o.visible){ o.visible = false; weg.push(o); }
+  // dazu immer das blaue X ueber Joshi und die gelben Y der Ringe (Live-Befund 26.10.2026: draussen kam das X mit auf die Skizze)
+  const weg = []; for(const o of [...(s.ausblenden ? s.ausblenden() : []), muetze.x, ...marken.map(k => k.y)]) if(o && o.visible){ o.visible = false; weg.push(o); }
   return () => { for(const o of weg) o.visible = true; };
 }
 // Der Mond steht unendlich weit weg und wird in story.js jedes Bild relativ zur Spielkamera gesetzt – fuer eine andere
@@ -747,7 +761,8 @@ function szeneStarten(s){
     g.traverse(m => { if(m.isMesh){ m.renderOrder = 6; m.material = m.material.clone(); m.material.transparent = true; } });
     sz.gruppe.visible = false;
     sz.skizze = s.seite ? s.seite() : modellSkizze(s);             // die Bleistiftskizze schon jetzt (aus dem fertigen Modell)
-    if(s.art === 'messer'){
+    if(s.seil && sz.skizze) sz.skizze = mitSignatur(sz.skizze);     // das Seil mit Joshis J (Live-Wunsch 26.10.2026), wie die anderen Skizzen
+    if(s.art === 'messer' && !s.seil){
       // Holzklotz: heller Quader mit Maserung, in den das Messer schneidet
       const holz = document.createElement('canvas'); holz.width = holz.height = 128; const hg = holz.getContext('2d');
       hg.fillStyle = '#c99a62'; hg.fillRect(0, 0, 128, 128); hg.strokeStyle = 'rgba(120,80,40,.55)'; hg.lineWidth = 2;
@@ -764,7 +779,7 @@ function szeneStarten(s){
     // Draufsicht mit offenen Fluegeln (Live-Wunsch 16.10.): der Fluegelschlag steht bei t = 0 (ganz offen), nur ein ganz
     // leichtes Atmen (updateSzene setzt die Zeit selbst) – im Schlag sah man ihn sonst von der Kante
     if(s.art === 'lupe' && g.userData.clips && g.userData.clips.length){ sz.falterMx = new THREE.AnimationMixer(g.userData.inner || g); sz.falterMx.clipAction(g.userData.clips[0]).play(); sz.falterMx.setTime(0); }
-    if(s.art === 'messer' && story.arbeiten && !story.figur.arbeitet) story.arbeiten(true, feuerVon(s));   // hockt (falls noch nicht), Blick zum Feuer
+    if(s.art === 'messer' && !s.seil && story.arbeiten && !story.figur.arbeitet) story.arbeiten(true, feuerVon(s));   // hockt (falls noch nicht), Blick zum Feuer (am Paket steht er)
     // Live-Befund 19.10.2026: "die ganze Schnitz-Animation ist nicht mehr zu sehen, Joshi bleibt am Feuer hocken, das Spiel
     // haengt" – nach Y im gruenen Kreis, waehrend die Kreise gerade neu erschienen waren und Fuchsi zum Markieren lief. Die
     // Szene begann NUR im fertig() von ausRucksack (Messer raus und aufgeklappt); kam das nicht, hing sie fuer immer. Jetzt
@@ -796,6 +811,26 @@ function klotzMaske(k){
   }
   g.putImageData(id, 0, 0); m.tex.needsUpdate = true;
 }
+// Bleistift-Skizze eines Modells aus der Welt (observatorium_innen.js: das Lama unter seiner Spur): eine Kopie in der
+// jetzigen Haltung vor hellem Grund, um yaw gedreht, so gross, dass sie ins Bild passt
+story.modellBleistift = function(obj, yaw){
+  const W = BILD_W, H = BILD_H, szn = new THREE.Scene(); szn.background = new THREE.Color(0xf4ecd8);
+  szn.add(new THREE.HemisphereLight(0xffffff, 0x777777, 1.1)); const l = new THREE.DirectionalLight(0xffffff, 0.8); l.position.set(1, 2, 2); szn.add(l);
+  const kopie = story.klonSkin(obj), h = new THREE.Group(); kopie.position.set(0, 0, 0); kopie.rotation.set(0, 0, 0); h.add(kopie); h.rotation.y = yaw || 0; szn.add(h); h.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(h), sz = bb.getSize(new THREE.Vector3()), c0 = bb.getCenter(new THREE.Vector3()), k = 1 / Math.max(sz.x, sz.y, sz.z);
+  h.scale.setScalar(k); h.position.copy(c0).multiplyScalar(-k); h.updateMatrixWorld(true);
+  const kam = new THREE.PerspectiveCamera(30, W / H, 0.01, 10); kam.position.set(0, 0.1, 2.3); kam.lookAt(0, 0, 0);
+  const rt = new THREE.WebGLRenderTarget(W, H), alt = renderer.getRenderTarget();
+  renderer.setRenderTarget(rt); renderer.clear(); renderer.render(szn, kam); renderer.setRenderTarget(alt);
+  const px = new Uint8Array(W * H * 4); renderer.readRenderTargetPixels(rt, 0, 0, W, H, px); rt.dispose();
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), id = g.createImageData(W, H);
+  for(let y = 0; y < H; y++) id.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
+  for(let i = 3; i < id.data.length; i += 4) id.data[i] = 255;
+  g.putImageData(id, 0, 0); story.entsorgen && story.entsorgen(kopie);
+  return bleistift(c, true);
+};
+// Eine Stelle nachschlagen (observatorium_innen.js braucht den Blick des Tatortfotos)
+story.stelleInfo = (id) => STELLEN.find(q => q.id === id);
 function modellSkizze(s){
   const W = BILD_W, H = BILD_H, szn = new THREE.Scene(); szn.background = new THREE.Color(0xf4ecd8);
   szn.add(new THREE.HemisphereLight(0xffffff, 0x777777, 1.1)); const l = new THREE.DirectionalLight(0xffffff, 0.8); l.position.set(1, 2, 2); szn.add(l);
@@ -826,7 +861,16 @@ function updateSzene(dt, pause){
   // helle Flaeche hinter der Szene (blendet mit ein und aus)
   if(sz.flaeche){ const B0 = H * innerWidth / innerHeight, an = sz.phase === 'weg' ? 1 - weich(sz.t / T_WEG) : Math.min(1, sz.t / 0.4 + (sz.phase !== 'schnitzen' && sz.phase !== 'lupe' ? 1 : 0));
     sz.flaeche.visible = true; sz.flaeche.position.set(0, 0, -0.6); sz.flaeche.scale.set(Math.min(B0, H * 1.5) * 0.9, H * 0.9, 1); sz.flaeche.material.opacity = an; }
-  if(sz.phase === 'schnitzen'){
+  if(sz.phase === 'schnitzen' && sz.s.seil){
+    // Seil (Live-Wunsch 26.10.2026): quer durchs ganze Bild (die Enden liegen draussen), das Messer saegt in der Mitte; im
+    // letzten Viertel ist es durch (die zwei Haelften gehen zur Seite) – ohne Spaene
+    seilLage(g, grp, H);
+    const k = weich(Math.max(0, (sz.t - T_SCHNITZ * 0.7) / (T_SCHNITZ * 0.3)));
+    if(g.userData.seilAuf) g.userData.seilAuf(k);
+    if(story.messerSchneidet) story.messerSchneidet(Math.sin(sz.t * 9) * 0.25, -0.02 + Math.cos(sz.t * 4.5) * 0.04 - k * 0.12);
+    schnitzTonAn();
+    if(sz.t >= T_SCHNITZ){ schnitzTonAus(); sz.phase = 'zeigen'; sz.t = 0; }
+  } else if(sz.phase === 'schnitzen'){
     // Klotz wird kleiner, der Fuchs waechst aus ihm heraus; das Messer (raus.akt, ausruestung.js) schabt rechts daneben
     const k = weich(sz.t / T_SCHNITZ);
     // genau dort, wo das fertige Modell danach steht (Live-Wunsch 22.10.2026: vorher bei -0,25/-0,15, beim Zeigen 0/0 – es
@@ -863,17 +907,19 @@ function updateSzene(dt, pause){
     if(sz.t > 0.6 && bGedrueckt()){ bZeigen(false); werkzeugBeiB(); sz.phase = 'weg'; sz.t = 0; }
     else if(sz.t <= 0.6) bGedrueckt();
   }
-  if(sz.phase === 'zeigen'){                                       // fertiger Fuchs dreht sich gross, bis B
-    grp.position.set(0, 0, 0.4); g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + Math.PI + sz.t * 0.7, 0);
+  if(sz.phase === 'zeigen'){                                       // fertiger Fuchs dreht sich gross, bis B (das Seil bleibt liegen)
+    if(sz.s.seil){ seilLage(g, grp, H); if(g.userData.seilAuf) g.userData.seilAuf(1); }
+    else { grp.position.set(0, 0, 0.4); g.scale.setScalar(gross / sz.L); g.rotation.set(0.15, -0.6 + Math.PI + sz.t * 0.7, 0); }
     if(sz.t > 0.4) bZeigen(true);
     if(sz.t < 0.1 && story.werkzeugRuht) story.werkzeugRuht();    // Messer ruht neben dem Fuchs bis B
     if(sz.t > 0.4 && bGedrueckt()){ bZeigen(false); werkzeugBeiB(); sz.phase = 'weg'; sz.t = 0; }
     else if(sz.t <= 0.4) bGedrueckt();
   }
-  if(sz.phase === 'weg'){                                          // klein in den Rucksack (unten rechts)
+  if(sz.phase === 'weg'){                                          // klein in den Rucksack (unten rechts); das Seil blendet nur aus
     const k = weich(sz.t / T_WEG), B = H * innerWidth / innerHeight;
-    grp.position.set(B / 2 * 0.8 * k, -H / 2 * 0.66 * k + Math.sin(k * Math.PI) * 0.3, 0.4);
-    g.scale.setScalar(gross / sz.L * (1 - k * 0.92));
+    if(sz.s.seil) g.traverse(m => { if(m.isMesh) m.material.opacity = 1 - k; });
+    else { grp.position.set(B / 2 * 0.8 * k, -H / 2 * 0.66 * k + Math.sin(k * Math.PI) * 0.3, 0.4);
+    g.scale.setScalar(gross / sz.L * (1 - k * 0.92)); }
     for(const p of sz.spaene) grp.remove(p.m);
     if(sz.t >= T_WEG){
       E.szene.remove(grp); if(sz.mx) story.stoppe(sz.mx); sz.mx = sz.falterMx = null;
@@ -907,7 +953,9 @@ story.szeneAktiv = () => !!sz.phase;
 // (Raum-Koordinaten wie huette_innen.js: Bett an der linken Wand x -4,5, Kopfteil zur Rueckwand). Der Raum wird erst beim
 // Betreten gebaut – darum werden die Dinge gemerkt und gesetzt, sobald er steht.
 const huette = { fuchs: false, schmetterling: false, gesetzt: {}, falter: null, mixer: null };
-function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.regal === 'schluessel') huette.schluessel = true; else if(s.art === 'messer') huette.fuchs = true;
+// Seil im weissen Oval (wie beim Schnitzen): so lang wie das Oval, die Enden laufen darin aus (observatorium_innen.js seilBauen)
+function seilLage(g, grp, H){ const B = H * innerWidth / innerHeight, oval = Math.min(B, H * 1.5) * 0.9; grp.position.set(0, -H * 0.04, 0.4); g.scale.setScalar(oval * 0.95 / sz.L); g.rotation.set(0.35, 0, -0.06); g.visible = true; }
+function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.regal === 'schluessel') huette.schluessel = true; else if(s.art === 'messer' && !s.seil) huette.fuchs = true;
   if(s.art === 'lupe' && etappeVon(s) === 1) huette.schmetterling = true; huetteSetzen(); }
 function huetteSetzen(){
   const I = story.innen; if(!I || !I.gruppe) return;               // Raum noch nicht gebaut: beim Betreten (updateHuette)
@@ -1059,7 +1107,7 @@ story.testStelle = (id) => { const s = STELLEN.find(q => q.id === id); return s 
 // wippend). Gezeichnet: braune Sherlock-Muetze mit Schild vorn und hinten und einer Schleife. Genau auf dem Platz von
 // Rucksack/Funkgeraet (Live-Wunsch 16.10.) – ist einer davon zu sehen, weicht die Muetze (story.eckeBelegt); in Pause und
 // Inventar aus (data-etappe-hud). Groesse mit der Bildhoehe, etwas groesser als vorher (118 px).
-const MUETZE_R = 12;
+const MUETZE_R = 12, MUETZE_RUHE = 1.2;
 const muetze = { el: null, an: 0, t: 0 };
 function muetzeBild(){
   const c = document.createElement('canvas'); c.width = 220; c.height = 160; const g = c.getContext('2d');
@@ -1091,7 +1139,10 @@ function updateMuetze(dt){
     document.body.appendChild(muetze.el);
   }
   muetze.t += dt;
-  const soll = story.gestartet && eva && !zustand.aktiv && !(story.eckeBelegt && story.eckeBelegt()) && etwasInDerNaehe() ? 1 : 0;
+  // erst nach MUETZE_RUHE s Ruhe (Live-Befund 26.10.2026: nach einer Animation oder der Ankunft blitzte das X kurz auf, bis die naechste
+  // Ansage begann – sie kommt oft mit kurzer Verzoegerung)
+  muetze.ruhe = (zustand.aktiv || (story.redetGerade && story.redetGerade()) || (story.aktionLaeuft && story.aktionLaeuft())) ? 0 : (muetze.ruhe || 0) + dt;
+  const soll = story.gestartet && eva && muetze.ruhe > MUETZE_RUHE && !(story.eckeBelegt && story.eckeBelegt()) && etwasInDerNaehe() ? 1 : 0;
   muetze.an += klemme(soll - muetze.an, -dt * 3, dt * 3);
   muetze.el.style.opacity = muetze.an.toFixed(2);
   muetze.el.style.transform = 'translateY(' + (Math.sin(muetze.t * 2.4) * 4).toFixed(1) + 'px) rotate(' + (Math.sin(muetze.t * 1.7) * 3).toFixed(1) + 'deg)';
@@ -1102,6 +1153,7 @@ function updateMuetze(dt){
     muetze.x.renderOrder = 999; muetze.x.scale.setScalar(0.5); muetze.x.userData.deko = true; scene.add(muetze.x); }      // global-ok: folgt Joshi in jeder Welt
   if(muetze.x){
     muetze.xan = (muetze.xan || 0) + klemme((soll && xRichtig() ? 1 : 0) - (muetze.xan || 0), -dt * 3, dt * 3);
+    if(zustand.aktiv) muetze.xan = 0;                              // waehrend Foto oder Skizze weg
     muetze.x.visible = muetze.xan > 0.02 && !!eva;
     if(muetze.x.visible){ const p = eva.group.position, y = eva.yaw;
       muetze.x.position.set(p.x - Math.sin(y) * 0.55, p.y + 1.85 + Math.sin(muetze.t * 3) * 0.06, p.z - Math.cos(y) * 0.55);
@@ -1112,7 +1164,9 @@ function xRichtig(){
   if(!eva || (story.imBoot && story.imBoot())) return false;
   const p = eva.group.position, drin = !!(story.innen && story.innen.drin);
   if(story.interListe) for(const o of story.interListe){
-    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt || o.entdeckt) continue;
+    // frei = beim Umschauen schon dabei gewesen (story.js fuchsRundgang) – auch wenn der Fuchs es noch nicht angezeigt hat oder sein
+    // Rundgang abbrach: dann ist X nicht mehr das Richtige (Live-Wunsch 26.10.2026: das X blieb nach dem Umschauen stehen)
+    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt || o.entdeckt || o.frei) continue;
     if(Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
   }
   for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei
@@ -1128,6 +1182,10 @@ function etwasInDerNaehe(){
     if((!o.entdeckt || (story.objektOffen && story.objektOffen(o))) && Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
   }
   for(const s of STELLEN) if(passtOrt(s, drin) && stelleSichtbar(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  // ... und Ringe, die erst mit X kommen (Live-Befund 26.10.2026: nach dem Aufschneiden des Pakets kam weder Hut noch X, obwohl es
+  // nur mit Umschauen weitergeht – die Spur im Staub). Dieselbe Regel wie beim blauen X (xRichtig).
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei
+    && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
   return false;
 }
 // Alle vier Markierungen erledigt -> Funkspruch (nach einer kurzen Pause, damit er nicht in die letzte Ansage faellt)

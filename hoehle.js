@@ -51,8 +51,8 @@ story.hoehle = { insel: INSEL_R, start: START, eingang: HOEHLE, piste: PISTE, mu
 story.etappeR = Object.assign(story.etappeR || {}, { 2: INSEL_R, 3: INSEL_R });   // insel.js: Radius je Etappe
 story.etappeMitte = Object.assign(story.etappeMitte || {}, { 2: { x: 0, z: MITTE_Z }, 3: { x: 0, z: MITTE_Z } });   // ... und Mitte
 
-const TEXT_ANKUNFT = ['Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle.',
-  'Dort wohnt bestimmt der Gorilla. Hörst du ihn?'];
+const TEXT_ANKUNFT = ['Du bist auf der anderen Seite des Waldes. Dort vorn in der Höhle wohnt der Gorilla.',   // Text vom Nutzer (26.10.2026)
+  'Du kannst ihn schon hören.'];
 const TEXT_HINWEIS = ['Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla.'];
 
 // ---- Licht: spaeter Nachmittag (Live-Wunsch 21.10.2026) -----------------------------------------
@@ -415,7 +415,7 @@ function updateFlug(dt){
 function hookFlug(){
   // B im Flug: in Etappe 3 nichts (kein Schleudersitz der Engine – der fuehrerlose Flieger stuerzte ab, und der Pilot blieb
   // am Schirm stehen, waehrend resetPlane ihn wieder in die Mustang setzte). Der Fallschirmsprung kommt in Etappe 4
-  // (Konzept: zum Hamster) ueber fallschirm.js (story.fallschirmSprung).
+  // (Konzept: zum Lama) ueber fallschirm.js (story.fallschirmSprung).
   const bOrig = buttonB;
   buttonB = function(){ if(e3() && !eva) return; return bOrig.apply(this, arguments); };
   // der schmale Schubbalken der Engine (rechts) gehoert nicht ins Geheimland – segeln.js zeigt den eigenen unter dem Radar
@@ -430,6 +430,8 @@ function hookFlug(){
   const resetOrig = resetPlane;
   resetPlane = function(){
     if(!e3()) return resetOrig.apply(this, arguments);
+    // wie die Engine nach einem Absturz aufraeumen: Feuerwehr, Loeschboot und Sirene weg (Live-Befund 26.10.2026 in Etappe 4)
+    if(typeof clearRescue === 'function') clearRescue(); state.crashTimer = 0;                    // global-ok: Engine
     state.crashed = false; state.falling = false; mustangParken(); story.sprich(TEXT_NOCHMAL); snapCamera();
   };
   // Aussteigen geht nur auf der Piste am Boden (sonst saesse Joshi mitten im Wald); im Flug nie
@@ -506,6 +508,32 @@ function hookLicht(){
     return r;
   };
 }
+// Live-Wunsch 26.10.2026: im Wald vor der Hoehle (und in ihr) weder Meeresrauschen noch Moewen – das Meer ist zu weit weg.
+// Nur zu Fuss: im Flug mit der Mustang ueber das Meer bleibt das Rauschen der Engine. Wie in der Wueste (wueste.js).
+// Dafuer (Live-Wunsch 26.10.2026: "ist ja Wald und Berge") ab und zu ein Adlerruf in der Ferne – einer von zwei Aufnahmen
+// (Pixabay: koiroylers "eagle", u_jfkxueyart "eagle"), leise, mal links, mal rechts. Ebenfalls nur zu Fuss draussen.
+const ADLER = { vol: 0.16, pause: 18, streu: 25 };
+const adler = { bufs: null, laedt: false, t: 8 };
+function adlerSchritt(dt){
+  if(!e3() || !eva || (story.hoehleInnen && story.hoehleInnen.drin) || !soundOn || typeof audioCtx === 'undefined' || !audioCtx || audioCtx.state !== 'running') return;   // global-ok: Engine
+  if(!adler.bufs){ if(!adler.laedt && window.ADLER1_SND && window.ADLER2_SND){ adler.laedt = true;
+      Promise.all([decodeSound(window.ADLER1_SND), decodeSound(window.ADLER2_SND)]).then(b => { for(const x of b) normalizePeak(x, 0.8); adler.bufs = b; })   // global-ok: Engine
+        .catch(e => { console.warn('Adler:', e); }); }
+    return; }
+  if((adler.t -= dt) > 0) return;
+  adler.t = ADLER.pause + Math.random() * ADLER.streu;
+  const s = audioCtx.createBufferSource(), g = audioCtx.createGain(), p = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+  s.buffer = adler.bufs[Math.floor(Math.random() * adler.bufs.length)]; s.playbackRate.value = 0.92 + Math.random() * 0.16; g.gain.value = ADLER.vol;
+  s.connect(g); if(p){ p.pan.value = Math.random() * 1.4 - 0.7; g.connect(p).connect(audioCtx.destination); } else g.connect(audioCtx.destination);
+  s.start();
+}
+function hookStille(){
+  const ambOrig = updateAmbient;                                                  // global-ok: Engine
+  updateAmbient = function(dt){ const r = ambOrig.apply(this, arguments);
+    if(e3() && eva && typeof ambGullGain !== 'undefined' && ambGullGain){ ambGullGain.gain.value = 0; if(ambOceanGain) ambOceanGain.gain.value = 0; }   // global-ok: Engine
+    adlerSchritt(dt || 0);
+    return r; };
+}
 const hookVorher = window.STORY_HOOK;
-window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookTag(); hookLicht(); hookFlug(); };
+window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookTag(); hookLicht(); hookFlug(); hookStille(); };
 })();

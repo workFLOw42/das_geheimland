@@ -71,15 +71,15 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              holzfuchs = 'HOLZFUCHS_GLB'; schmetterling = 'SCHMETTERLING_GLB';
              # Waldinsel (Etappe 2): Tiere am Festtisch (WildPoly3D, nur die gebrauchten Clips - C:\tmp\gt\tiere.mjs)
              gorilla = 'GORILLA_GLB'; entchen = 'ENTCHEN_GLB'; hase = 'HASE_GLB'; hasenbaby = 'HASENBABY_GLB'; eule = 'EULE_GLB'; elch = 'ELCH_GLB'; reh = 'REH_GLB'; vogel_blau = 'VOGEL_BLAU_GLB'; vogel_meise = 'VOGEL_MEISE_GLB';
-             # Wueste (Etappe 4): das Observatorium des Hamsters ("Welcome to the Observatory" von XelaDoesArt, CC-BY-4.0)
+             # Wueste (Etappe 4): das Observatorium des Lamas ("Welcome to the Observatory" von XelaDoesArt, CC-BY-4.0)
              observatorium = 'OBSERVATORIUM_GLB';
-             # Im Observatorium: Teleskop ("Telescope realistic" von Raphael Grimm) und der Hamster (josephineburns, CC-BY-4.0)
-             teleskop = 'TELESKOP_GLB'; hamster = 'HAMSTER_GLB';
+             # Im Observatorium: Teleskop ("Telescope realistic" von Raphael Grimm) und das Lama (WildPoly3D, CC-BY-NC-4.0; nur idle und lookaround - C:\tmp\gt\tiere.mjs)
+             teleskop = 'TELESKOP_GLB'; lama = 'LAMA_GLB';
              # Durch das Teleskop: Sonne, Mond, Planeten und Pluto (Akshat, CC-BY-4.0; die Erde fehlt – auf ihr steht man)
              planet_sonne = 'PLANET_SONNE_GLB'; planet_merkur = 'PLANET_MERKUR_GLB'; planet_venus = 'PLANET_VENUS_GLB'; planet_mond = 'PLANET_MOND_GLB';
              planet_mars = 'PLANET_MARS_GLB'; planet_jupiter = 'PLANET_JUPITER_GLB'; planet_saturn = 'PLANET_SATURN_GLB'; planet_uranus = 'PLANET_URANUS_GLB';
              planet_neptun = 'PLANET_NEPTUN_GLB'; planet_pluto = 'PLANET_PLUTO_GLB';
-             # Draussen: der Schluessel fuer das Raumschiff des Hamsters ("Key Wooden" von Sam, CC-BY-4.0)
+             # Draussen: der Schluessel fuer das Raumschiff des Lamas ("Key Wooden" von Sam, CC-BY-4.0)
              schluessel = 'SCHLUESSEL_GLB';
              # See der Oase: Meeresschildkroete und Baby (Low Poly, animiert, WildPoly3D, CC-BY-NC-4.0)
              meeresschildkroete = 'MEERESSCHILDKROETE_GLB'; meeresschildkroete_baby = 'MEERESSCHILDKROETE_BABY_GLB' }
@@ -98,7 +98,8 @@ foreach($n in $modelle.Keys){
 # schnitzen: Schnitzgeraeusch (Pixabay: pineframestudios 'carving wood')
 # voegel: Vogelgezwitscher im hellen Waldweg (Pixabay: oliviaaydin 'birds singing')
 # wuestenwind: leichter Wind in der Oase, Etappe 4 (Pixabay: tanweraman 'Desert Wind 2', wie Trip to Japan Etappe 2)
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel', 'wuestenwind')){
+# adler1, adler2: Adlerrufe in Wald und Bergen, Etappe 3 (Pixabay: koiroylers 'eagle', u_jfkxueyart 'eagle')
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel', 'wuestenwind', 'adler1', 'adler2')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)
@@ -108,6 +109,8 @@ foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voeg
 }
 # Moewen kommen fertig aus Spiel_SFG (moewe_glb.js, MOEWE_SITZ_GLB + MOEWE_FLUG_GLB)
 if(Test-Path (Join-Path $root 'moewe_glb.js')){ $skripte += 'moewe_glb.js' }
+# Seil-Textur (Etappe 4, Schnur am Paket): fertig als seil_tex.js ("Rope" von xenosmashgames, CC-BY-4.0; Quelle models/seil.jpg)
+if(Test-Path (Join-Path $root 'seil_tex.js')){ $skripte += 'seil_tex.js' }
 $skripte += 'story.js'
 $skripte += 'pwa.js'
 $skripte += 'objekte.js'
@@ -125,9 +128,9 @@ $skripte += 'notizbuch.js'
 $skripte += 'waldinsel.js'
 $skripte += 'hoehle.js'
 $skripte += 'hoehle_innen.js'
-$skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Hamster)
-$skripte += 'wueste.js'          # Etappe 4: die Wueste mit der Oase des Hamsters
-$skripte += 'observatorium_innen.js'   # Etappe 4: im Observatorium des Hamsters
+$skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Lama)
+$skripte += 'wueste.js'          # Etappe 4: die Wueste mit der Oase des Lamas
+$skripte += 'observatorium_innen.js'   # Etappe 4: im Observatorium des Lamas
 $skripte += 'teleskop.js'              # Etappe 4: durch das Teleskop (Nachthimmel, Planeten, Sternbilder)
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf

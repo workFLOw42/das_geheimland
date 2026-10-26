@@ -1,16 +1,16 @@
-// Das Geheimland – Etappe 4: im Observatorium des Hamsters (Innenraum = eigene Welt, wie Huette und Hoehle). Laedt nach
+// Das Geheimland – Etappe 4: im Observatorium des Lamas (Innenraum = eigene Welt, wie Huette und Hoehle). Laedt nach
 // wueste.js, vor der Engine. Konzept Abschnitt 7, Etappe 4 "Im Observatorium" (Live-Wuensche 23.10.2026):
 //   Groesser und hoeher als die Hoehle; die Decke eine echte Sternwarten-Kuppel (Rippen, Laufring, offener Spalt), durch den
 //   Spalt sieht man den Nachthimmel – drinnen ist draussen NACHT (Sterne, Milchstrasse, Sternbilder), draussen wieder Tag.
 //   In der Mitte das Teleskop auf einem Podest, an den Waenden hohe, volle Buecherregale (wie in Joshis Huette, nur
-//   groesser und vintage), ein Schreibtisch mit Sternkarte und Globus, vorn rechts ein Tisch mit dem Paket und dem Hamster.
-// Ablauf (bisher gebaut):
-//   1. Vor dem Suchblick passiert nichts. X -> der Hamster leuchtet auf.
-//   2. Y beim Hamster: er nagt an der Schnur seines Pakets, ist genervt – er bekommt sie nicht auf, er hat so dolle
-//      Zahnschmerzen. Danach der gruene Messer-Ring am Tisch (der Fuchs zeigt ihn).
-//   3. Messer-Ring: Joshi schneidet die Schnur auf (Messer aus dem Rucksack), die Laschen springen auf. Der Hamster dankt.
-//   4. X (noch einmal umschauen) -> brauner Lupenring vor dem Tisch: kleine Pfotenspuren im Staub (Skizze ins Notizbuch).
-//   Danach (noch offen): B = Spuren vergleichen, den Hamster mit Spur und rotem Fell konfrontieren.
+//   groesser und vintage), ein Schreibtisch mit Sternkarte und Globus, vorn rechts ein Tisch mit dem Paket, dahinter das Lama (Live-Wunsch 26.10.2026: das Lama statt des Hamsters).
+// Ablauf:
+//   1. Vor dem Suchblick passiert nichts. X -> das Lama leuchtet auf.
+//   2. Y beim Lama: es bekommt die Schnur seines Pakets nicht auf, ist genervt – mit Hufen geht kein Knoten auf. Danach der
+//      gruene Messer-Ring am Tisch (der Fuchs zeigt ihn).
+//   3. Messer-Ring: Joshi schneidet die Schnur auf (Messer aus dem Rucksack), die Laschen springen auf. Das Lama dankt.
+//   4. X (noch einmal umschauen) -> brauner Lupenring vor dem Tisch: Hufspuren im Staub (Skizze ins Notizbuch).
+//   Weiter in Teil 2 unten: Spuren vergleichen, Packpapier, Mond-Bewohner, Schluessel, Abflug.
 // Der Raum schwebt weit draussen (RAUM, BODEN_Y = 150 wie Huette und Hoehle) – von der Insel aus nicht zu sehen.
 (function(){
 'use strict';
@@ -23,27 +23,29 @@ const SPALT = { b: 2.8, unten: 0.2 };                  // Kuppelspalt: Breite (m
 const BODEN_Y = 150;
 const TUER = { B: 1.8, H: 2.8 };
 const PODEST = { x: RAUM.x, z: RAUM.z - 1.5, r: 2.0, h: 0.45 };
-const TISCH = { x: RAUM.x + 3.4, z: RAUM.z + 3.6, b: 1.8, t: 0.95, h: 0.78, dreh: -0.5 };   // vorn rechts, gleich im Blick
+// Tisch rechts hinten, die Spur vorn am Eingang (Live-Wunsch 26.10.2026: vorher lagen Spur, Tisch und Lama so dicht, dass zwei Y
+// nah beieinander standen). Vom Teleskop-Podest weit genug weg, dass sich die Y-Bereiche nicht beruehren.
+const TISCH = { x: RAUM.x + 5.6, z: RAUM.z + 1.6, b: 1.8, t: 0.95, h: 0.78, dreh: -0.5 };
 const PULT = { x: RAUM.x - 4.6, z: RAUM.z + 2.2, b: 2.1, t: 1.0, h: 0.8, dreh: 0.9 };       // Schreibtisch vorn links
 const TELE_H = 3.6;                                    // Teleskop (Fuss bis Rohrende) in m
-const HAMSTER_L = 0.34;                                // m Nase bis Hinterteil (gross genug, um ihn zu sehen)
-const oi = story.obsInnen = { drin: false, wechsel: null, sperre: 0, gruppe: null, stufe: 'x', hamster: null, paket: null, t: 0, warDrin: false };
-// stufe: 'x' (vor dem Suchblick) -> 'gesucht' -> 'schnur' (gesprochen, Messer-Ring da) -> 'offen' (Schnur ab, Hamster dankt)
+const LAMA_H = 1.7;                                    // m Hufe bis Ohren (Joshi 1,20 m; bei 1,5 m verschwand die Schnauze hinter dem Paket)
+const oi = story.obsInnen = { drin: false, wechsel: null, sperre: 0, gruppe: null, stufe: 'x', lama: null, paket: null, t: 0, warDrin: false };
+// stufe: 'x' (vor dem Suchblick) -> 'gesucht' -> 'schnur' (gesprochen, Messer-Ring da) -> 'offen' (Schnur ab, das Lama dankt)
 // -> 'spur' (Spur unter der Lupe) -> spaeter: Vergleich, Konfrontation
 
 // ---- Texte (Entwuerfe) ------------------------------------------------------------------------------------------------
 const T = {
-  ankunft: ['Wow! Was für ein großes Observatorium. Und durch die Kuppel siehst du die Sterne.', 'Da drüben auf dem Tisch sitzt der Hamster.'],
+  ankunft: ['Wow! Was für ein großes Observatorium. Und durch die Kuppel siehst du die Sterne.', 'Da drüben am Tisch steht ein Lama.'],
   hinweisX: ['Schau dich im Observatorium genau um. Drück dafür X.'],
-  hinweisHamster: ['Geh doch mal zum Hamster auf dem Tisch.'],
-  joshiHallo: ['Hallo Hamster!'],
-  hamsterGenervt: ['Was ist denn? Siehst du nicht, dass ich zu tun habe?', 'Ich krieg die blöde Schnur von meinem Paket einfach nicht auf. Ich hab so dolle Zahnschmerzen!'],
-  hamsterNochmal: ['Aua, meine Zähne! Die Schnur geht einfach nicht ab.'],
+  hinweisLama: ['Geh doch mal zum Lama am Tisch.'],
+  joshiHallo: ['Hallo Lama!'],
+  lamaGenervt: ['Was ist denn? Siehst du nicht, dass ich zu tun habe?', 'Ich krieg die blöde Schnur von meinem Paket einfach nicht auf. Mit meinen Hufen geht das nicht!'],
+  lamaNochmal: ['Mit Hufen kann man keine Knoten aufmachen. Die Schnur geht einfach nicht ab.'],
   hinweisSchnur: ['Am grünen Kreis steht das Paket. Schneid die Schnur mit deinem Taschenmesser auf.'],
   danke: ['Oh! Danke, das ist lieb von dir. Endlich ist mein Paket offen.'],
-  hamsterBeschaeftigt: ['Danke nochmal! Jetzt muss ich aber auspacken.'],
+  lamaBeschaeftigt: ['Danke nochmal! Jetzt muss ich aber auspacken.'],
   hinweisUmschauen: ['Schau dich noch einmal ganz genau um. Drück dafür X.'],
-  spur: ['Schau mal, kleine Pfotenspuren im Staub. Die kommen in dein Notizbuch.'],
+  spur: ['Schau mal, Spuren im Staub. Die kommen in dein Notizbuch.'],
   hinweisSpur: ['Die Spur kommt dir bekannt vor, oder? Schau doch mal in dein Notizbuch.'],
 };
 story.obsText = T;
@@ -108,8 +110,10 @@ function baueRaum(){
   for(const sx of [-1, 1]){ const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, TUER.H, 0.7), M.holz); p.position.set(sx * (TUER.B / 2 + 0.15), TUER.H / 2, R); p.userData.keinKoerper = true; g.add(p); }
   const oben = new THREE.Mesh(new THREE.BoxGeometry(TUER.B + 0.6, 0.3, 0.7), M.holz); oben.position.set(0, TUER.H + 0.15, R); oben.userData.keinKoerper = true; g.add(oben);
   // draussen die Oase bei Nacht (ein Bild ein Stueck hinter der Oeffnung – hinkommen kann man nur durch die Tuer)
-  const draussen = new THREE.Mesh(new THREE.PlaneGeometry(TUER.B + 0.6, TUER.H + 0.4), new THREE.MeshBasicMaterial({ map: nachtTex(true) }));
-  draussen.position.set(0, TUER.H / 2, R + 1.4); draussen.rotation.y = Math.PI; draussen.userData.deko = true; g.add(draussen);
+  // groesser und naeher an der Wand, ohne Nebel (Live-Befund 26.10.2026: an den Raendern schimmerte es – zwischen Wandausschnitt und
+  // Rahmen sah man am Bild vorbei ins Leere); die runde Wand verdeckt den Ueberstand
+  const draussen = new THREE.Mesh(new THREE.PlaneGeometry(TUER.B + 2.4, TUER.H + 1.4), new THREE.MeshBasicMaterial({ map: nachtTex(true), fog: false }));
+  draussen.position.set(0, TUER.H / 2 + 0.3, R + 0.5); draussen.rotation.y = Math.PI; draussen.userData.deko = true; g.add(draussen);
   // Holzpfosten an der Wand (wie die Balken aussen) und ein Gesims oben, auf dem die Kuppel ruht
   for(let i = 0; i < 16; i++){ const a = (i + 0.5) / 16 * Math.PI * 2; if(Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.35) continue;
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, H, 0.3), M.holz); p.position.set(Math.sin(a) * (R - 0.15), H / 2, Math.cos(a) * (R - 0.15)); p.rotation.y = a; p.userData.keinKoerper = true; g.add(p); }
@@ -144,9 +148,9 @@ function baueRaum(){
     const p = new THREE.PointLight(0xffc27a, 0.45, 9, 1.4); l.add(p); l.traverse(o => { o.userData.keinKoerper = true; }); g.add(l); }
   g.position.set(RAUM.x, BODEN_Y, RAUM.z);
   story.welt(4).add(g); oi.gruppe = g;
-  // Einrichtung: Podest mit Teleskop, Regale, Schreibtisch, Tisch mit Paket und Hamster
+  // Einrichtung: Podest mit Teleskop, Regale, Schreibtisch, Tisch mit Paket und Lama
   baueRegale(); baueSchreibtisch(); baueTisch(); bauePodest();
-  hamsterLaden();
+  lamaLaden();
 }
 // Kuppel: Schalen-Dreiecke einer Kugel (flacher, KUPPEL_Y), ohne die im Spalt; Rippen und Spaltkanten aus Messing-Holz
 function baueKuppel(g){
@@ -288,8 +292,10 @@ function baueSchreibtisch(){
   g.add(stuhl);
   g.position.set(PULT.x, BODEN_Y, PULT.z); g.rotation.y = PULT.dreh;
   story.welt(4).add(g); g.updateMatrixWorld(true); story.ding(g, { welt: 4, typ: 'schreibtisch_obs' });
+  // Funkgeraet (Live-Wunsch 26.10.2026): einfach auf dem Schreibtisch, links vorn neben Sternkarte und Kerze (ohne Kiste)
+  if(story.funkgeraetSetzen) story.funkgeraetSetzen({ welt: 4, innen: true, eltern: g, lokal: { x: -0.78, y: PULT.h, z: 0.2 }, dreh: 0.25 });
 }
-// ---- Tisch mit dem Paket (Hamster kommt in hamsterLaden dazu) -------------------------------------------------------
+// ---- Tisch mit dem Paket (das Lama kommt in lamaLaden dazu) ----------------------------------------------------------
 const PAKET = { b: 0.5, t: 0.36, h: 0.32 };
 function baueTisch(){
   const g = tischGestell(TISCH.b, TISCH.t, TISCH.h);
@@ -319,28 +325,33 @@ function baueTisch(){
   P.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.keinKoerper = true; } });
   g.add(P);
   oi.paket = { g: P, schnur, laschen, auf: 0, offen: false };
-  // Pfotenspuren im Staub vor dem Tisch (Lupenring): der Hamster ist aus der Wueste hereingelaufen
+  seilTex();                                                          // fuer die Szene am Messer-Ring schon jetzt laden
+  // Hufspuren im Staub vor dem Tisch (Lupenring): das Lama ist aus der Wueste hereingelaufen
   const sp = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshLambertMaterial({ map: spurTex(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-  sp.rotation.x = -Math.PI / 2; sp.position.set(SPUR_P.x, BODEN_Y + 0.025, SPUR_P.z); sp.rotation.z = 0.5; sp.renderOrder = 1; sp.userData.deko = true;
+  sp.rotation.x = -Math.PI / 2; sp.position.set(SPUR_P.x, BODEN_Y + 0.025, SPUR_P.z); sp.renderOrder = 1; sp.userData.deko = true;
+  sp.rotation.z = Math.atan2(TISCH.x - SPUR_P.x, TISCH.z - SPUR_P.z) + Math.PI;   // die Hufe zeigen zum Tisch
   story.welt(4).add(sp);
 }
 // Punkte in Tisch-Koordinaten (x laengs der Platte, z nach vorn) -> Welt. Die Ringe stehen auch in notizbuch.js STELLEN
 // (als Zahlen, dort ist diese Datei noch nicht geladen) – beim Verschieben beide anpassen.
 function tischPunkt(lx, lz){ const c = Math.cos(TISCH.dreh), s = Math.sin(TISCH.dreh); return { x: TISCH.x + lx * c + lz * s, z: TISCH.z - lx * s + lz * c }; }
-const MESSER_P = tischPunkt(0.3, 1.2);                      // vor dem Paket (-636,91 / 624,80)
-const SPUR_P = tischPunkt(-1.6, 1.6);                       // daneben, zur Tuer hin (-638,77 / 624,24)
-// Hamsterspur: klein und rund, vier Zehen, im Wechselschritt (wie die Spur auf dem Festtisch, waldinsel.js), sandfarben
-function pfote(g, x, y, dreh, s, farbe){
+const MESSER_P = tischPunkt(0.3, 1.2);                      // vor dem Paket (-634,71 / 622,80)
+const SPUR_P = { x: RAUM.x + 1.6, z: RAUM.z + 6.2 };        // vorn am Eingang, auf dem Weg des Lamas von der Tuer zum Tisch
+const LAMA_P = tischPunkt(0.6, -0.95);                      // hinter dem Tisch, das Paket schraeg vor der Nase (Joshi steht vorn am Messer-Ring)
+// Lamaspur (Live-Wunsch 26.10.2026): zwei laengliche Zehen nebeneinander, vorn leicht gespreizt, mit kleinen Naegeln an der
+// Spitze – im Wechselschritt (wie die Spur auf dem Festtisch, waldinsel.js huf), sandfarben
+function huf(g, x, y, dreh, s, farbe){
   g.save(); g.translate(x, y); g.rotate(dreh); g.fillStyle = farbe;
-  g.beginPath(); g.ellipse(0, s * 0.18, s * 0.32, s * 0.27, 0, 0, 7); g.fill();
-  for(let i = 0; i < 4; i++){ const a = (i / 3 - 0.5) * 1.9; g.beginPath(); g.ellipse(Math.sin(a) * s * 0.42, -Math.cos(a) * s * 0.36, s * 0.11, s * 0.11, a, 0, 7); g.fill(); }
+  for(const sx of [-1, 1]){
+    g.beginPath(); g.ellipse(sx * s * 0.17, s * 0.04, s * 0.14, s * 0.34, sx * 0.12, 0, 7); g.fill();                 // Zehe
+    g.beginPath(); g.ellipse(sx * s * 0.22, -s * 0.36, s * 0.06, s * 0.07, sx * 0.12, 0, 7); g.fill(); }             // Nagel
   g.restore();
 }
 function spurBild(W, farbe, grund){
   const c = document.createElement('canvas'); c.width = c.height = W; const g = c.getContext('2d');
   if(grund){ g.fillStyle = grund; g.fillRect(0, 0, W, W); }
   for(let i = 0; i < 6; i++){ const t = i / 5, seite = i % 2 ? 1 : -1;
-    pfote(g, W * (0.5 + seite * 0.07), W * (0.88 - t * 0.76), 0, W * 0.09, farbe); }
+    huf(g, W * (0.5 + seite * 0.051), W * (0.88 - t * 0.76), 0, W * 0.114, farbe); }   // wie auf der Tischdecke: seitlich 0,09 / 1,33, Huf 0,2 / 1,33 der Weglaenge
   return c;
 }
 function spurTex(){ return new THREE.CanvasTexture(spurBild(512, 'rgba(196,164,108,0.85)')); }
@@ -387,87 +398,105 @@ function teleskopLaden(podest){
   });
 }
 
-// ---- Hamster (josephineburns, CC-BY-4.0): weiss ohne Material -> Fellfarben nach Koerperstelle --------------------------
-// Kopf zeigt im Modell auf -z. Farben (Goldhamster): Ruecken goldbraun, Bauch, Backen und Schnauze creme, Ohren, Pfoten und
-// Nase rosa, Augen schwarz. Eingefaerbt in der Stehhaltung (gehaeutet), damit Pfoten und Ohren dort liegen, wo man sie sieht.
-const HA = { schnuppern: 'Hamster|Hamster_Stand_Snify_anim', laufen: 'Hamster|Hamster_run_loop', stehen: 'Hamster|Hamster_Stop_Running ' };
-function hamsterFaerben(o){
-  const v = new THREE.Vector3(), bb = new THREE.Box3(), meshes = [];
-  o.traverse(m => { if(m.isSkinnedMesh){ meshes.push(m); for(let i = 0; i < m.geometry.attributes.position.count; i++){ m.boneTransform(i, v); v.applyMatrix4(m.matrixWorld); bb.expandByPoint(v); } } });
-  const sz = bb.getSize(new THREE.Vector3()), cx = (bb.min.x + bb.max.x) / 2;
-  const braun = new THREE.Color(0xc8803a), dunkel = new THREE.Color(0xa0602a), creme = new THREE.Color(0xf3e3c6), rosa = new THREE.Color(0xe9a3a8), schwarz = new THREE.Color(0x141010);
-  for(const m of meshes){
-    const n = m.geometry.attributes.position.count, col = new Float32Array(n * 3), c = new THREE.Color();
-    for(let i = 0; i < n; i++){
-      m.boneTransform(i, v); v.applyMatrix4(m.matrixWorld);
-      const vorn = (bb.max.z - v.z) / sz.z, hoch = (v.y - bb.min.y) / sz.y, seit = Math.abs(v.x - cx) / (sz.x / 2);   // vorn: 1 = Nase (-z)
-      if(hoch < 0.1) c.copy(rosa);                                                        // Pfoten
-      else if(vorn > 0.95 && hoch > 0.3 && hoch < 0.7 && seit < 0.3) c.copy(rosa);        // Nase
-      else if(hoch > 0.82 && vorn > 0.5) c.copy(rosa);                                     // Ohren
-      else if(vorn > 0.84 && hoch > 0.55 && hoch < 0.74 && seit > 0.3 && seit < 0.62) c.copy(schwarz);   // Augen
-      else if(hoch < 0.42 || (vorn > 0.76 && hoch < 0.6)) c.copy(creme);                  // Bauch, Backen, Schnauze
-      else c.copy(braun).lerp(dunkel, Math.max(0, (hoch - 0.6) / 0.4));                   // Ruecken (oben etwas dunkler)
-      col.set([c.r, c.g, c.b], i * 3);
-    }
-    m.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const alt = m.material; m.material = new THREE.MeshLambertMaterial({ vertexColors: true, skinning: true }); if(alt && alt.dispose) alt.dispose();
-  }
-  return bb;
-}
-function hamsterLaden(){
-  if(oi.hamster || oi.laedt || !window.HAMSTER_GLB) return; oi.laedt = true;
-  story.ladeGlb(window.HAMSTER_GLB, 'Hamster', (gl) => {
-    const o = gl.scene; o.traverse(m => { if(m.isMesh){ m.frustumCulled = false; m.castShadow = true; } });
-    const mx0 = new THREE.AnimationMixer(o), st = gl.animations.find(a => a.name === HA.schnuppern) || gl.animations[0];
-    if(st){ mx0.clipAction(st).play(); mx0.update(0.01); } o.updateMatrixWorld(true);
-    const bb = hamsterFaerben(o), sz = bb.getSize(new THREE.Vector3()), k = HAMSTER_L / Math.max(0.01, sz.z), c = bb.getCenter(new THREE.Vector3());
+// ---- Lama (WildPoly3D, "Llama – Animated Low Poly", CC-BY-NC-4.0; Live-Wunsch 26.10.2026 statt des Hamsters) ------------
+// Steht hinter dem Tisch, das Paket vor der Nase (Kopf im Modell +z). Nur idle, lookaround und walk (models/lama.glb, gekuerzt mit
+// C:\tmp\gt\tiere.mjs): im Fress-Clip ginge der Kopf bis 0,4 m hinunter – durch den Tisch. Vertexfarben mit Lambert wie die
+// Tiere der Waldinsel (waldinsel.js tierLaden), Groesse in der Stehhaltung gemessen.
+const LA = { stehen: 'idle', umschauen: 'lookaround', laufen: 'walk' };
+const LAMA_DREH_MAX = 0.8;                                  // so weit dreht es sich zu Joshi (rad) – sonst schwenkte das Hinterteil in den Tisch
+function lamaLaden(){
+  if(oi.lama || oi.laedt || !window.LAMA_GLB) return; oi.laedt = true;
+  story.ladeGlb(window.LAMA_GLB, 'Lama', (gl) => {
+    const o = gl.scene;
+    o.traverse(m => { if(m.isMesh){ m.frustumCulled = false; m.castShadow = true;
+      const alt = m.material; m.material = new THREE.MeshLambertMaterial({ vertexColors: true, color: 0xffffff, skinning: !!m.isSkinnedMesh }); if(alt.dispose) alt.dispose(); } });
+    const mx0 = new THREE.AnimationMixer(o), st = gl.animations.find(a => a.name === LA.stehen), v = new THREE.Vector3(), bb = new THREE.Box3();
+    if(st){ mx0.clipAction(st).play(); mx0.update(0.05); } o.updateMatrixWorld(true);
+    o.traverse(m => { if(!m.isSkinnedMesh) return; for(let i = 0; i < m.geometry.attributes.position.count; i += 3){ m.boneTransform(i, v); v.applyMatrix4(m.matrixWorld); bb.expandByPoint(v); } });
+    const k = LAMA_H / Math.max(0.01, bb.max.y - bb.min.y), c = bb.getCenter(new THREE.Vector3());
     o.scale.multiplyScalar(k); o.position.set(-c.x * k, -bb.min.y * k, -c.z * k);
     mx0.stopAllAction(); mx0.uncacheRoot(o);
-    const h = new THREE.Group(); h.add(o); h.name = 'Hamster'; h.userData.agent = true;
-    // auf dem Tisch neben dem Paket, die Nase an der Schnur (Kopf -z -> rotation.y = Blick + PI)
+    const h = new THREE.Group(); h.add(o); h.name = 'Lama'; h.userData.agent = true;
     const pk = new THREE.Vector3(); oi.paket.g.getWorldPosition(pk);
-    const tw = new THREE.Vector3(-0.25, 0, 0.06).applyAxisAngle(new THREE.Vector3(0, 1, 0), TISCH.dreh);
-    h.position.set(TISCH.x + tw.x, BODEN_Y + TISCH.h, TISCH.z + tw.z);
-    h.rotation.y = Math.atan2(pk.x - h.position.x, pk.z - h.position.z) + Math.PI;
-    story.welt(4).add(h); oi.hamster = h; oi.hamsterBlick = h.rotation.y;
+    h.position.set(LAMA_P.x, BODEN_Y, LAMA_P.z);
+    h.rotation.y = Math.atan2(pk.x - h.position.x, pk.z - h.position.z);
+    story.welt(4).add(h); oi.lama = h; oi.lamaBlick = h.rotation.y; if(oi.innenSicht === false) innenZeigen(false);
+    // Saeule als Grenze (Joshi laeuft nicht durch das Lama), wie die Tiere am Festtisch
+    const saeule = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, LAMA_H, 10), new THREE.MeshBasicMaterial({ visible: false }));
+    saeule.position.y = LAMA_H / 2; h.add(saeule); h.updateMatrixWorld(true);
+    story.ding(saeule, { welt: 4, typ: 'tier:lama' });
     oi.mixer = new THREE.AnimationMixer(o); oi.acts = {};
-    for(const [n, name] of Object.entries(HA)){ const a = gl.animations.find(x => x.name === name); if(a) oi.acts[n] = oi.mixer.clipAction(a); }
-    hamsterAnim('schnuppern');
-    // Interaktion (innen: nur im Observatorium). Erst der Suchblick (X) schaltet ihn frei, wie alles.
-    oi.inter = story.interaktion(h, { name: 'Hamster', welt: 4, innen: true, x: TISCH.x, z: TISCH.z, r: 0.8, yx: h.position.x, yz: h.position.z, yHoehe: TISCH.h + 0.7, rolle: 'tierK', aktion: hamsterY });
+    for(const [n, name] of Object.entries(LA)){ const a = gl.animations.find(x => x.name === name); if(a) oi.acts[n] = oi.mixer.clipAction(a); }
+    lamaAnim('stehen');
+    // Interaktion (innen: nur im Observatorium). Erst der Suchblick (X) schaltet es frei, wie alles.
+    oi.inter = story.interaktion(h, { name: 'Lama', welt: 4, innen: true, x: TISCH.x, z: TISCH.z, r: 0.8, yx: h.position.x, yz: h.position.z, yHoehe: LAMA_H + 0.3, rolle: 'tierW', aktion: lamaY });
   });
 }
-function hamsterAnim(n){
+function lamaAnim(n){
   const a = oi.acts[n]; if(!a || oi.cur === n) return;
   const alt = oi.cur && oi.acts[oi.cur]; a.reset(); a.play(); if(alt) a.crossFadeFrom(alt, 0.3, false); oi.cur = n;
 }
 
 // ---- Ablauf ---------------------------------------------------------------------------------------------------------
-function hamsterY(o){
+function lamaY(o){
   if(o.spricht) return; o.spricht = true;
   const fertig = () => { o.spricht = false; };
   oi.zuJoshi = true;                                                // dreht sich zu Joshi, solange er spricht
   const zurueck = () => { oi.zuJoshi = false; fertig(); };
   if(oi.stufe === 'gesucht'){ oi.stufe = 'schnur';
     story.sprich(T.joshiHallo, null, 'joshi');
-    story.sprich(T.hamsterGenervt, () => { zurueck(); fuchsZu('schnur_messer'); }, 'tierK'); return; }
-  if(oi.stufe === 'schnur'){ story.sprich(T.hamsterNochmal, zurueck, 'tierK'); return; }
-  if(hamsterY2(o, zurueck)) return;                                // Teil 2: nach dem Vergleich, nach dem Packpapier
-  story.sprich(T.hamsterBeschaeftigt, zurueck, 'tierK');
+    story.sprich(T.lamaGenervt, () => { zurueck(); fuchsZu('schnur_messer'); }, 'tierW'); return; }
+  if(oi.stufe === 'schnur'){ story.sprich(T.lamaNochmal, zurueck, 'tierW'); return; }
+  if(lamaY2(o, zurueck)) return;                                   // Teil 2: nach dem Vergleich, nach dem Packpapier
+  story.sprich(T.lamaBeschaeftigt, zurueck, 'tierW');
 }
-// Messer-Ring (notizbuch.js STELLEN 'schnur_messer', aktion): Messer aus dem Rucksack, schnipp – die Schnur ist ab, die Laschen
-// springen auf, das Messer kommt zurueck. Dann dankt der Hamster.
-story.obsSchnur = function(fertig){
-  if(eva){ const p = eva.group.position, q = new THREE.Vector3(); oi.paket.g.getWorldPosition(q);
-    eva.yaw = Math.atan2(p.x - q.x, p.z - q.z); eva.group.rotation.y = eva.yaw; }
-  let weiter = false;
-  const schneiden = () => { if(weiter) return; weiter = true;
-    story.spaeter(0.6, () => { schnipp(); oi.paket.schnur.visible = false; oi.paket.offen = true;
-      story.spaeter(1.0, () => { if(story.rucksackZurueck) story.rucksackZurueck();
-        story.spaeter(0.9, () => { oi.stufe = 'offen'; fertig();
-          oi.zuJoshi = true; story.sprich(T.danke, () => { oi.zuJoshi = false; }, 'tierK'); }); }); }); };
-  story.ausRucksack('messer', schneiden);
-  story.spaeter(4, schneiden);                                       // falls das Messer nicht meldet (wie notizbuch.js SZENE_WARTE)
+// Messer-Ring (notizbuch.js STELLEN 'schnur_messer', Live-Wunsch 26.10.2026): eine Szene wie das Schnitzen – das Messer
+// schneidet gross im Bild durch ein Seil (obsSeilModell), danach eine Skizze vom Seil. Ist die Stelle fertig (e4StelleFertig),
+// ist die Schnur am Paket ab, die Laschen springen auf, und das Lama dankt.
+function schnurAuf(){
+  schnipp(); oi.paket.schnur.visible = false; oi.paket.offen = true; oi.stufe = 'offen';
+  story.spaeter(0.6, () => { oi.zuJoshi = true; story.sprich(T.danke, () => { oi.zuJoshi = false; }, 'tierW'); });
+}
+// Das Seil: gerade, mit der Textur von "Rope" (xenosmashgames, CC-BY-4.0, seil_tex.js), laenge 1 in zwei Haelften. seilAuf(k):
+// 0 = ganz, 1 = durchgeschnitten (die Haelften gehen auseinander; Live-Wunsch 26.10.2026: ohne Fasern, ohne Spaene). Live-Wunsch 26.10.2026:
+// das Seil liegt im weissen Oval wie beim Schnitzen und laeuft an beiden Enden darin aus – je Haelfte ein eigenes Bild, die
+// Textur laengs gekachelt, das aeussere Ende wird durchsichtig (so sieht man keine Enden).
+let seilBild = null;
+function seilTex(){ if(!seilBild && window.SEIL_TEX){ seilBild = new Image(); seilBild.src = window.SEIL_TEX; } return seilBild; }
+const SEIL_R = 0.028;
+function seilHaelfteTex(oben){                                      // oben: das aeussere Ende liegt oben im Bild (v = 1)
+  const W = 256, H = Math.round(W * 0.5 / (2 * Math.PI * SEIL_R)), c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const b = seilTex(); if(b && b.complete && b.naturalWidth) for(let y = 0; y < H; y += W) g.drawImage(b, 0, y, W, W); else { g.fillStyle = '#b08a5a'; g.fillRect(0, 0, W, H); }
+  g.globalCompositeOperation = 'destination-in'; const gr = g.createLinearGradient(0, 0, 0, H);
+  if(oben){ gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.55, 'rgba(0,0,0,1)'); } else { gr.addColorStop(0.45, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); }
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  return new THREE.CanvasTexture(c);
+}
+function seilBauen(){
+  const g = new THREE.Group(), haelften = [];
+  for(const sx of [-1, 1]){
+    // rotation.z = PI/2 legt das obere Ende (+y, v = 1) nach -x: links ist das aeussere Ende oben im Bild, rechts unten
+    const mat = new THREE.MeshLambertMaterial({ map: seilHaelfteTex(sx < 0), transparent: true });
+    const h = new THREE.Group(), m = new THREE.Mesh(new THREE.CylinderGeometry(SEIL_R, SEIL_R, 0.5, 18, 1, false), mat);
+    m.rotation.z = Math.PI / 2; m.position.x = sx * 0.25; h.add(m);
+    g.add(h); haelften.push({ h, sx });
+  }
+  g.userData.seilAuf = (k) => { for(const q of haelften){ q.h.position.x = q.sx * 0.05 * k; q.h.rotation.z = -q.sx * 0.08 * k; } };
+  g.userData.seilAuf(0);
+  return g;
+}
+story.obsSeilModell = () => Promise.resolve({ g: seilBauen(), L: 1 });
+// Skizze: das durchgeschnittene Seil (Bleistift, wie die Lama-Skizze) – geschwungen (Live-Wunsch 26.10.2026), zwei Haelften mit
+// einer Luecke in der Mitte, die Enden laufen wie in der Szene aus
+story.obsSeilSkizze = function(){
+  const g = new THREE.Group(), welle = (x) => Math.sin(x * 5.5) * 0.06 + Math.sin(x * 2.3 + 1) * 0.03;
+  for(const sx of [-1, 1]){
+    const pts = []; for(let i = 0; i <= 24; i++){ const x = sx * (0.04 + i / 24 * 0.46); pts.push(new THREE.Vector3(x, welle(x), Math.cos(x * 4) * 0.04)); }
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 64, SEIL_R, 12, false), new THREE.MeshLambertMaterial({ color: 0xb08a5a }));
+    g.add(m);
+  }
+  g.rotation.set(0.45, 0, -0.05);
+  return story.modellBleistift ? story.modellBleistift(g, 0) : null;
 };
 // kurzes Schnipp (gefiltertes Rauschen)
 function schnipp(){
@@ -487,15 +516,16 @@ function fuchsZu(id){
 const AB = (...st) => st.includes(oi.stufe);
 story.obsStelleFrei = function(id){
   if(id === 'schnur_messer') return oi.stufe === 'schnur';
-  if(id === 'hamster_spur') return oi.stufe === 'offen' || oi.stufe === 'spur';
+  if(id === 'lama_spur') return oi.stufe === 'offen' || oi.stufe === 'spur';
   if(id === 'packpapier_lupe') return AB('erzaehlt', 'papier', 'fertig', 'schluessel');
-  if(id === 'hamster_foto') return AB('fertig', 'schluessel');
+  if(id === 'lama_foto') return AB('fertig', 'schluessel');
   if(id === 'obs_skizze') return AB('fertig', 'schluessel') && !!story.teleskopGeschaut;
   if(id === 'schluessel_schnitzen') return AB('fertig', 'schluessel');
   return false;
 };
 story.e4StelleFertig = function(id){
-  if(id === 'hamster_spur' && oi.stufe === 'offen'){ oi.stufe = 'spur'; story.spaeter(0.4, () => story.sprich(story.obsText.nochEineSpur)); }
+  if(id === 'schnur_messer' && oi.stufe === 'schnur') schnurAuf();
+  if(id === 'lama_spur' && oi.stufe === 'offen'){ oi.stufe = 'spur'; story.spaeter(0.4, () => story.sprich(story.obsText.nochEineSpur)); }
   if(id === 'packpapier_lupe' && oi.stufe === 'erzaehlt'){ oi.stufe = 'papier'; story.spaeter(0.4, () => story.sprich(story.obsText.papierFertig)); }
   if(id === 'schluessel_schnitzen' && oi.stufe === 'fertig') oi.stufe = 'schluessel';
 };
@@ -510,7 +540,7 @@ story.e4HinweisInnen = function(){
   if(oi.stufe === 'fertig') return T2.hinweisFertig;
   if(oi.stufe === 'schluessel') return T2.hinweisFliegen;
   if(oi.stufe === 'x') return T.hinweisX;
-  if(oi.stufe === 'gesucht') return T.hinweisHamster;
+  if(oi.stufe === 'gesucht') return T.hinweisLama;
   if(oi.stufe === 'schnur') return T.hinweisSchnur;
   if(oi.stufe === 'offen') return T.hinweisUmschauen;
   return T.hinweisSpur;
@@ -524,35 +554,36 @@ function teleskopMelden(){
   if(oi.teleInter || !oi.podest || !teleskopFrei() || !story.teleskopAuf) return;
   oi.teleInter = story.interaktion(oi.podest, { name: 'Teleskop', welt: 4, innen: true, x: PODEST.x, z: PODEST.z, r: PODEST.r, yHoehe: 3.4,
     aktion: () => story.teleskopAuf() });
-  oi.teleInter.entdeckt = true;                                     // der Hamster hat es angeboten
+  oi.teleInter.entdeckt = true;                                     // das Lama hat es angeboten
 }
 
 
 // ==== Teil 2 (Live-Wunsch 23.10.2026): Spuren vergleichen, Packpapier, Mond-Bewohner, Foto, Skizze, Schluessel, Abflug ====
-// Stufen weiter: 'spur' (Lupe im Staub) -> 'verglichen' (im Notizbuch auf dem Tatortfoto) -> 'erzaehlt' (der Hamster erzaehlt
-// vom verwuesteten Tisch) -> 'papier' (Lupe am Packpapier: Eichhoernchenspur und rotes Fell) -> 'fertig' (der Hamster erzaehlt
+// Stufen weiter: 'spur' (Lupe im Staub) -> 'verglichen' (im Notizbuch auf dem Tatortfoto) -> 'erzaehlt' (das Lama erzaehlt
+// vom verwuesteten Tisch) -> 'papier' (Lupe am Packpapier: Eichhoernchenspur und rotes Fell) -> 'fertig' (das Lama erzaehlt
 // vom Mond-Bewohner und vom X-Wing ohne Schluessel; Teleskop, Foto- und Skizzenring, draussen der Schnitzring am Holzscheit)
 // -> 'schluessel' (Schluessel geschnitzt) -> Joshi fliegt den X-Wing selbst zum roten Punkt -> Globus zum Mond.
 const T2 = {
-  nochEineSpur: ['Oh, noch eine Spur! Vielleicht können wir sie mit der Spur vom Tatort vergleichen.'],
-  hinweisVergleich: ['Schau in deinem Rucksack ins Notizbuch. Such das Foto vom Festtisch.'],
+  nochEineSpur: ['Vergleich sie doch mal mit der Spur vom Tatort.'],   // direkt nach "Schau mal, Spuren im Staub" (keine Wiederholung)
+  hinweisVergleich: ['Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A.'],
   vergleichStart: ['Schau mal genau hin ...'],
-  vergleichPasst: ['Die Spuren passen genau zusammen! Der Hamster war also am Festtisch.', 'Frag ihn doch mal, was er dort gemacht hat.'],
-  hinweisFragen: ['Sprich noch einmal mit dem Hamster.'],
-  joshiSpur: ['Hamster, deine Spur ist auf unserem Festtisch! Wie kommt sie dahin? Was hast du dort gemacht?'],
-  hamsterTisch: ['Ach das! Die Post hat mein Paket aus Versehen auf eure Insel gebracht.',
+  vergleichFalsch: ['Zu den Spuren mit den langen Zehen passt sie nicht.'],
+  vergleichPasst: ['Die Spuren passen genau zusammen! Das Lama war also am Festtisch der Tiere.', 'Frag es doch mal, was es dort gemacht hat.'],
+  hinweisFragen: ['Sprich noch einmal mit dem Lama.'],
+  joshiSpur: ['Lama, deine Spur ist auf dem Festtisch der Tiere! Wie kommt sie dahin? Was hast du dort gemacht?'],   // nicht "unserem" (Live-Wunsch 26.10.2026)
+  lamaTisch: ['Ach das! Die Post hat mein Paket aus Versehen auf die Waldinsel gebracht.',
     'Als ich es abholen wollte, war der Tisch schon ganz verwüstet. Niemand war da, nur der Uhu hat geschlafen.',
-    'Da bin ich einfach über den Tisch gelaufen. Wie sollte ich denn sonst an mein Paket kommen?'],
+    'Da bin ich einfach über den Tisch gestakst. Wie sollte ich denn sonst an mein Paket kommen?'],
   hinweisPapier: ['Am Tisch ist ein brauner Kreis. Schau dir das Packpapier ganz genau an.'],
-  papierFertig: ['Dann hat der Hamster nicht geflunkert. Die großen Spuren auf seinem Paket sind von jemand anderem.', 'Aber wem gehören sie – und das rote Fell?'],
-  hinweisWem: ['Frag doch den Hamster, wem die Spuren gehören könnten.'],
-  joshiWem: ['Weißt du, wem die großen Spuren und das rote Fell gehören?'],
-  hamsterMond: ['Nein, das weiß ich leider nicht.', 'Aber auf dem Mond wohnt seit Kurzem jemand. Der hat bestimmt alles von oben gesehen!',
+  papierFertig: ['Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem.', 'Aber wem gehören sie – und das rote Fell?'],
+  hinweisWem: ['Frag doch das Lama, wem die Spuren gehören könnten.'],
+  joshiWem: ['Weißt du, wem die Spuren mit den langen Zehen und das rote Fell gehören?'],
+  lamaMond: ['Nein, das weiß ich leider nicht.', 'Aber auf dem Mond wohnt seit Kurzem jemand. Der hat bestimmt alles von oben gesehen!',
     'Schau ruhig mal durch mein Teleskop. Man sieht ihn gut, er blinkt immer so lustig.',
     'Und wenn du zu ihm willst: Draußen steht mein Raumschiff. Das darfst du gerne nehmen.',
     'Aber ich habe leider den Schlüssel verloren ...'],
-  hamsterSchluessel: ['Hast du schon einen Schlüssel für mein Raumschiff?'],
-  hamsterGluck: ['Viel Glück auf dem Mond!'],
+  lamaSchluessel: ['Hast du schon einen Schlüssel für mein Raumschiff?'],
+  lamaGluck: ['Viel Glück auf dem Mond!'],
   hinweisFertig: ['Schau doch mal durch das Teleskop. Oder geh hinaus zum Raumschiff.'],
   hinweisScheit: ['Neben dem Raumschiff liegt ein Holzscheit. Vielleicht kannst du daraus einen Schlüssel schnitzen.'],
   hinweisFliegen: ['Du hast einen Schlüssel! Steig in das Raumschiff und flieg zum Mond.'],
@@ -562,7 +593,7 @@ const T2 = {
 Object.assign(story.obsText, T2);
 
 // Packpapier auf dem Tisch (nach dem Aufschneiden): ein Bogen braunes Papier neben dem Paket, leicht zerknittert
-const PAPIER_P = tischPunkt(-0.6, 1.25);                  // Lupenring davor (-637,73 / 624,41)
+const PAPIER_P = tischPunkt(-0.6, 1.25);                  // Lupenring davor (-635,53 / 622,41)
 function papierTex(spuren){
   return leinwand(512, 512, (g, W) => {
     g.fillStyle = '#a8794a'; g.fillRect(0, 0, W, W);
@@ -605,65 +636,145 @@ story.obsPapierSeite = function(){
   return c;
 };
 
-// ---- Spuren vergleichen im Notizbuch (ausruestung.js: story.buchTick jedes Bild bei offenem Buch, story.buchUeber malt) ----
-// Liegt die Seite "Der Festtisch" (Tatortfoto) offen, schiebt sich die neue Spur (Skizze) von rechts ueber die Hamsterspur auf
-// dem Foto (linkes Drittel des Tisches), sie passt – ein gruener Rahmen leuchtet kurz auf.
-const VERGLEICH_T = { hin: 1.6, rahmen: 1.6, weg: 0.6 };
+// ---- Spuren vergleichen im Notizbuch (Live-Wunsch 26.10.2026) -------------------------------------------------------
+// Liegt die neue Seite "Die Spur des Lamas" offen, steht darauf ein gruenes A. A -> das Buch blaettert von selbst zum
+// Tatortfoto ("Der Festtisch"); die frisch gezeichnete Spur kommt von rechts heruebergeflogen, dreht sich und legt sich genau
+// auf die Spur des Eichhoernchens (passt nicht: roter Rahmen), dann genau auf die des Lamas (passt: gruener Rahmen). Wohin sie
+// muss, kommt aus der Kamera des Tatortfotos (notizbuch.js tisch_foto) und den Wegen der Spuren auf dem Tisch (waldinsel.js
+// e2SpurWege) – die Staubspur hat dieselben Abstaende wie die auf der Decke. Danach blaettert es zurueck: unter der Spur steht
+// jetzt das Lama als Skizze, auf derselben Seite.
+// ausruestung.js ruft story.buchA (A im offenen Buch), story.buchSperre, story.buchTick (jedes Bild) und story.buchUeber (malt).
+const SPURSEITE = 'Die Spur des Lamas', FOTOSEITE = 'Der Festtisch';
+const VG = { flug: 1.6, rot: 1.8, gruen: 2.2, weg: 0.6 };
 let spurOverlay = null;
+const seitenIndex = (name) => story.notizSeiten().findIndex(s => s.name === name);
+story.buchSperre = () => !!(oi.vergleich && !oi.vergleich.fertig);
+story.buchA = function(lage){
+  if(!e4() || oi.stufe !== 'spur' || oi.vergleich || !lage || !lage.some(q => q.s && q.s.name === SPURSEITE) || seitenIndex(FOTOSEITE) < 0) return false;
+  oi.vergleich = { phase: 'hin', t: 0 };
+  if(story.gehaltenVergessen){ story.gehaltenVergessen(T2.nochEineSpur); story.gehaltenVergessen(T2.hinweisVergleich); }   // nicht nach dem Inventar wiederholen
+  story.sprich(T2.vergleichStart, null, 'inventar'); return true;
+};
+// Lage einer Spur auf dem Foto: Mitte, Drehung (Spur laeuft im Bild "nach oben"), Laenge – als Anteil der Fotobreite/-hoehe
+const _vk = new THREE.PerspectiveCamera(), _vp = new THREE.Vector3();
+function spurAufFoto(weg){
+  const S = story.stelleInfo && story.stelleInfo('tisch_foto'), W = story.e2SpurWege; if(!S || !W) return null;
+  const b = S.blick; _vk.fov = b.fov; _vk.aspect = 1.5; _vk.near = 0.5; _vk.far = 100; _vk.updateProjectionMatrix();
+  _vk.position.set(b.x, b.y, b.z); _vk.rotation.set(b.pitch, b.yaw, 0, 'YXZ'); _vk.updateMatrixWorld(true);
+  const y = (typeof ISLAND_Y === 'number' ? ISLAND_Y : 0) + W.tisch.H + 0.02;                                             // global-ok: Engine
+  const p = weg.map(q => { _vp.set(W.tisch.x + q.x, y, W.tisch.z + q.z).project(_vk); return { u: (_vp.x + 1) / 2, v: (1 - _vp.y) / 2 }; });
+  return { u: (p[0].u + p[1].u) / 2, v: (p[0].v + p[1].v) / 2, du: p[1].u - p[0].u, dv: p[1].v - p[0].v };
+}
+// Laufende Animation (jedes Bild bei offenem Buch): erst zum Foto blaettern, dann vergleichen, dann zurueck zur Spurseite
 story.buchTick = function(dt, lage){
   if(!e4() || !lage) return false;
-  const foto = lage.find(q => q.s && q.s.name === 'Der Festtisch');
-  if(!oi.vergleich){
-    if(oi.stufe !== 'spur' || !foto) return false;
-    oi.vergleich = { t: 0, gesagt: false };
-    story.sprich(T2.vergleichStart, null, 'inventar');
+  const V = oi.vergleich;
+  if(!V) return oi.stufe === 'spur' && lage.some(q => q.s && q.s.name === SPURSEITE);   // nur das A pulsiert
+  if(V.fertig) return false;
+  if(V.phase === 'hin'){ if(story.buchZuSeite(seitenIndex(FOTOSEITE))){ V.phase = 'vergleich'; V.t = 0; } return true; }
+  if(V.phase === 'vergleich'){
+    const t0 = V.t; V.t += dt;
+    const am = (a) => t0 < a && V.t >= a;
+    if(am(VG.flug)) story.sprich(T2.vergleichFalsch, null, 'inventar');
+    if(am(VG.flug + VG.rot + VG.flug)) story.sprich(T2.vergleichPasst, null, 'inventar');
+    if(V.t > VG.flug * 2 + VG.rot + VG.gruen + VG.weg){ V.phase = 'zurueck'; lamaAufSpurseite(); }
+    return true;
   }
-  const V = oi.vergleich; if(V.fertig) return false;
-  V.t += dt;
-  if(!V.gesagt && V.t > VERGLEICH_T.hin + 0.3){ V.gesagt = true; story.sprich(T2.vergleichPasst, null, 'inventar'); }
-  if(V.t > VERGLEICH_T.hin + VERGLEICH_T.rahmen + VERGLEICH_T.weg + 4){ V.fertig = true; oi.stufe = 'verglichen'; }
-  return true;
+  if(V.phase === 'zurueck'){ if(story.buchZuSeite(seitenIndex(SPURSEITE))){ V.fertig = true; oi.stufe = 'verglichen'; fuchsZumLama(); } return true; }
+  return false;
 };
 story.buchUeber = function(c, lage){
-  const V = oi.vergleich; if(!e4() || !V || V.fertig || !lage) return;
-  const f = lage.find(q => q.s && q.s.name === 'Der Festtisch'); if(!f) return;
+  if(!e4() || !lage) return;
+  const V = oi.vergleich;
+  // gruenes A auf der Spurseite (pulsiert), solange noch nicht verglichen
+  if(!V && oi.stufe === 'spur'){ const f = lage.find(q => q.s && q.s.name === SPURSEITE); if(!f || !story.knopfTextur) return;
+    const a = story.knopfTextur('A').image, g = 90 * (1 + Math.sin(oi.t * 5) * 0.08);
+    c.drawImage(a, f.x + f.w / 2 - g / 2, f.y + f.h + 6, g, g); return; }
+  if(!V || V.fertig || V.phase !== 'vergleich') return;
+  const f = lage.find(q => q.s && q.s.name === FOTOSEITE); if(!f) return;
+  const W2 = story.e2SpurWege, falsch = W2 && spurAufFoto(W2.hoernchen), richtig = W2 && spurAufFoto(W2.lama); if(!falsch || !richtig) return;
   if(!spurOverlay) spurOverlay = spurBild(256, 'rgba(45,28,12,1)');
-  const k = Math.min(1, V.t / VERGLEICH_T.hin), e = 1 - Math.pow(1 - k, 3);
-  const zx = -f.w / 2 + f.w * 0.22, zy = 0, gr = f.w * 0.42;             // Ziel: die Hamsterspur auf dem Foto (linkes Drittel)
-  const sx = f.w * 1.35, x = sx + (zx - sx) * e;                         // kommt von der rechten Seite (der Spur-Skizze) herueber
-  const aus = Math.max(0, Math.min(1, (V.t - VERGLEICH_T.hin - VERGLEICH_T.rahmen) / VERGLEICH_T.weg));
+  // Ziel in Seiten-Pixeln (Mitte des Fotos = 0, 0): Mitte, Drehung, Groesse (die Spur nimmt 0,76 ihres Bildes ein)
+  const ziel = (s) => { const dx = s.du * f.w, dy = s.dv * f.h; return { x: (s.u - 0.5) * f.w, y: (s.v - 0.5) * f.h, r: Math.atan2(dx, -dy), g: Math.hypot(dx, dy) / 0.76 }; };
+  const start = { x: f.w * 1.35, y: 0, r: 0, g: f.w * 0.42 }, A = ziel(falsch), B = ziel(richtig);
+  const mix = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, r: a.r + (b.r - a.r) * k, g: a.g + (b.g - a.g) * k });
+  const w = (k) => k * k * (3 - 2 * k), t = V.t, T1 = VG.flug, T2_ = T1 + VG.rot, T3 = T2_ + VG.flug, T4 = T3 + VG.gruen;
+  let p, rahmen = null, alpha = 0.95;
+  if(t < T1) p = mix(start, A, w(t / T1));
+  else if(t < T2_){ p = A; rahmen = '#e8352b'; }
+  else if(t < T3) p = mix(A, B, w((t - T2_) / VG.flug));
+  else { p = B; rahmen = '#2ecc40'; if(t > T4) alpha = 0.95 * Math.max(0, 1 - (t - T4) / VG.weg); }
   c.save(); c.translate(f.x + f.w / 2, f.y + f.h / 2); c.rotate(f.dreh || 0);
-  c.globalAlpha = 0.95 * (1 - aus); c.shadowColor = 'rgba(255,250,235,1)'; c.shadowBlur = 14;      // heller Schein: hebt sich vom Foto ab
-  c.drawImage(spurOverlay, x - gr / 2, zy - gr / 2, gr, gr); c.drawImage(spurOverlay, x - gr / 2, zy - gr / 2, gr, gr); c.shadowBlur = 0;
-  const r = V.t - VERGLEICH_T.hin;
-  if(r > 0 && r < VERGLEICH_T.rahmen + VERGLEICH_T.weg){ const b = Math.abs(Math.sin(r * 7)) * (1 - aus);
-    c.globalAlpha = 0.5 + 0.5 * b; c.strokeStyle = '#2ecc40'; c.lineWidth = 10; c.strokeRect(zx - gr / 2 - 8, -gr / 2 - 8, gr + 16, gr + 16); }
-  c.restore();
+  c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.globalAlpha = alpha;
+  c.shadowColor = 'rgba(255,250,235,1)'; c.shadowBlur = 14;                                   // heller Schein: hebt sich vom Foto ab
+  c.drawImage(spurOverlay, -p.g / 2, -p.g / 2, p.g, p.g); c.shadowBlur = 0;
+  if(rahmen){ const b = 0.55 + 0.45 * Math.abs(Math.sin(t * 7)); c.globalAlpha = alpha * b; c.strokeStyle = rahmen; c.lineWidth = 10;
+    c.strokeRect(-p.g * 0.2, -p.g * 0.44, p.g * 0.4, p.g * 0.88); }                          // eng um die Spur (sie ist schmal und lang)
+  c.restore(); c.restore();
 };
+// Nach dem Vergleich (Live-Wunsch 26.10.2026): der Fuchs laeuft zum Lama und zeigt es (es leuchtet auf) – sobald das Buch zu ist
+function fuchsZumLama(){
+  if(!oi.inter || !eva || !story.fuchsRundgang) return;
+  story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === oi.inter);
+}
+// Unter die Spur auf derselben Seite: das Lama als Bleistift-Skizze (aus dem Modell im Observatorium, schraeg von vorn)
+function lamaAufSpurseite(){
+  const s = story.notizSeiten()[seitenIndex(SPURSEITE)]; if(!s || s.mitLama || !oi.lama || !story.modellBleistift) return;
+  const lama = story.modellBleistift(oi.lama, -0.7), alt = s.bild, W = alt.width, H = alt.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H * 2 - 40; const g = c.getContext('2d');
+  g.fillStyle = '#f4ecd8'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(alt, 0, 0); g.drawImage(lama, 0, H - 40, W, H);
+  s.bild = c; s.mitLama = true;
+}
 
-// ---- Gespraeche mit dem Hamster (nach der Schnur) --------------------------------------------------------------------
-function hamsterY2(o, zurueck){
+// ---- Gespraeche mit dem Lama (nach der Schnur) ------------------------------------------------------------------------
+function lamaY2(o, zurueck){
   if(oi.stufe === 'verglichen'){ oi.stufe = 'erzaehlt';
-    story.sprich(T2.joshiSpur, null, 'joshi'); story.sprich(T2.hamsterTisch, () => { zurueck(); papierBauen(); fuchsZu('packpapier_lupe'); }, 'tierK'); return true; }
+    story.sprich(T2.joshiSpur, null, 'joshi'); story.sprich(T2.lamaTisch, () => { zurueck(); papierBauen(); fuchsZu('packpapier_lupe'); }, 'tierW'); return true; }
   if(oi.stufe === 'papier'){ oi.stufe = 'fertig';
     story.sprich(T2.joshiWem, null, 'joshi');
-    story.sprich(T2.hamsterMond, () => { zurueck(); if(oi.teleInter){ oi.teleInter.entdeckt = true; } fuchsZu('hamster_foto'); }, 'tierK'); return true; }
-  if(oi.stufe === 'fertig'){ story.sprich(T2.hamsterSchluessel, zurueck, 'tierK'); return true; }
-  if(oi.stufe === 'schluessel'){ story.sprich(T2.hamsterGluck, zurueck, 'tierK'); return true; }
+    story.sprich(T2.lamaMond, () => { zurueck(); if(oi.teleInter){ oi.teleInter.entdeckt = true; } fuchsZu('lama_foto'); }, 'tierW'); return true; }
+  if(oi.stufe === 'fertig'){ story.sprich(T2.lamaSchluessel, zurueck, 'tierW'); return true; }
+  if(oi.stufe === 'schluessel'){ story.sprich(T2.lamaGluck, zurueck, 'tierW'); return true; }
   return false;
 }
-// Foto: der Hamster vor seinem Teleskop (blauer Ring beim Hinausgehen, Blick zur Tuer hin vom Tisch weg zum Teleskop)
-story.obsFotoVorbereiten = function(){ oi.fotoBlick = { x: -637.9, z: 625.6, bis: oi.t + 8 }; };   // = Fotoring (notizbuch.js hamster_foto)
-// Skizze: das Observatorium in der Oase unter dem Nachthimmel mit dem Mond. Gezeichnet wird von draussen (die Oase steht mit
-// in der Szene, drinnen ist dort Nacht); der Mond kommt fuer das Bild als grosse Scheibe an den Himmel (danach wieder weg).
-story.obsSkizzeVorbereiten = function(){
-  const g = new THREE.Mesh(new THREE.CircleGeometry(16, 40), new THREE.MeshBasicMaterial({ color: 0xe8e4d4, fog: false }));
-  const cam = new THREE.Vector3(-1, 2.2, 22), dir = new THREE.Vector3(-0.42, 0.62, -0.66).normalize();
-  g.position.copy(cam).addScaledVector(dir, 420); g.lookAt(cam); g.userData.deko = true; scene.add(g);   // global-ok: nur fuer das Bild
-  story.spaeter(1.5, () => { scene.remove(g); g.geometry.dispose(); g.material.dispose(); });        // global-ok
+// Foto: das Lama, links das Teleskop (blauer Ring beim Hinausgehen, vorn zwischen Tuer und Tisch). Live-Wunsch 26.10.2026: das
+// Lama laeuft dafuer in die freie Flaeche zwischen Tisch und Teleskop (um die Tischecke herum), schaut in die Kamera und geht
+// nach dem Foto wieder an sein Paket (lamaGang).
+const LAMA_UM = { x: RAUM.x + 5.8, z: RAUM.z - 0.1 }, LAMA_FOTO = { x: RAUM.x + 3.2, z: RAUM.z };   // um die Tischecke / zum Foto
+story.obsFotoVorbereiten = function(){ oi.fotoBlick = { x: -637.0, z: 626.0, bis: oi.t + 8 };      // = Fotoring (notizbuch.js lama_foto)
+  if(oi.lama && !oi.gang) oi.gang = { weg: [LAMA_P, LAMA_UM, LAMA_FOTO], i: 1, zurueck: false }; };
+const LAMA_V = 1.3;                                          // m/s
+function lamaGang(dt){
+  const G = oi.gang, h = oi.lama, p = h.position;
+  if(G.i >= G.weg.length){                                    // angekommen
+    if(G.zurueck){ oi.gang = null; return false; }            // wieder am Paket: weiter wie gewohnt (dreht zum Paket zurueck)
+    if(oi.fotoBlick){ const f = oi.fotoBlick; let dw = Math.atan2(f.x - p.x, f.z - p.z) - h.rotation.y; dw = Math.atan2(Math.sin(dw), Math.cos(dw));
+      h.rotation.y += dw * Math.min(1, dt * 4); lamaAnim('stehen'); return true; }
+    G.weg = G.weg.slice().reverse(); G.i = 1; G.zurueck = true;   // Foto vorbei: zurueck
+  }
+  const z = G.weg[G.i], dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz), s = LAMA_V * dt;
+  if(d <= s){ p.x = z.x; p.z = z.z; G.i++; }
+  else { p.x += dx / d * s; p.z += dz / d * s; let dw = Math.atan2(dx, dz) - h.rotation.y; dw = Math.atan2(Math.sin(dw), Math.cos(dw)); h.rotation.y += dw * Math.min(1, dt * 6); }
+  lamaAnim('laufen'); return true;
+}
+// Skizze: das Observatorium in der Oase unter dem Nachthimmel mit dem Mond. Seit 26.10.2026 steht der rote Ring draussen vor
+// dem Observatorium (Live-Wunsch: eine Skizze der Oase zeichnet man nicht drinnen). Nur fuer die Aufnahme selbst (notizbuch.js
+// beiAufnahme, im selben Augenblick): Nacht und der Mond als grosse Scheibe am Himmel – auf dem Bildschirm bleibt es Tag.
+let skizzenMond = null;
+story.obsSkizzeAufnahme = function(an){
+  if(an){
+    himmel(true);
+    skizzenMond = new THREE.Mesh(new THREE.CircleGeometry(16, 40), new THREE.MeshBasicMaterial({ color: 0xe8e4d4, fog: false }));
+    const cam = new THREE.Vector3(-7, 2.2, 9), dir = new THREE.Vector3(-0.37, 0.62, -0.69).normalize();   // = Blick der Skizze, etwas links
+    skizzenMond.position.copy(cam).addScaledVector(dir, 420); skizzenMond.lookAt(cam); skizzenMond.userData.deko = true; scene.add(skizzenMond);   // global-ok
+  } else {
+    himmel(!!oi.drin);
+    if(skizzenMond){ scene.remove(skizzenMond); skizzenMond.geometry.dispose(); skizzenMond.material.dispose(); skizzenMond = null; }   // global-ok
+  }
 };
-// Teleskop zu (teleskop.js): danach erscheint der Skizzenring daneben (der Fuchs zeigt ihn)
-story.teleskopDanach = function(){ if(e4() && oi.drin && oi.stufe !== 'x') fuchsZu('obs_skizze'); };
+// Teleskop zu (teleskop.js): danach ist der Skizzenring draussen frei; der Fuchs zeigt ihn, sobald Joshi hinausgeht
+story.teleskopDanach = function(){ if(!e4() || !oi.drin || oi.stufe === 'x') return; const k = story.kreisZielVon && story.kreisZielVon('obs_skizze'); if(k){ k.frei = true; oi.skizzeZeigen = true; } };
 
 // ---- Draussen: Holzscheit (von Anfang an, ohne Kreis), Schnitzring, Raumschiff mit Schluessel, Abflug -------------------
 const SCHEIT_P = { x: -22.5, z: 9.5 };                    // am Parkplatz (notizbuch.js STELLEN schluessel_schnitzen)
@@ -693,12 +804,13 @@ story.obsSchluesselModell = function(){
     });
   });
 };
-// Raumschiff (der geparkte X-Wing, wueste.js): Y erst, wenn der Hamster davon erzaehlt hat
+// Raumschiff (der geparkte X-Wing, wueste.js): Y erst, wenn das Lama davon erzaehlt hat
 function xwingMelden(){
   const Z = story.e4Zustand; if(oi.xwInter || !Z || !Z.xwing || !(oi.stufe === 'fertig' || oi.stufe === 'schluessel')) return;
   const P = story.oase && story.oase.parkplatz; if(!P) return;
-  oi.xwInter = story.interaktion(Z.xwing, { name: 'Raumschiff', welt: 4, x: P.x, z: P.z, r: 4.5, yHoehe: 4.2, aktion: xwingY });
-  oi.xwInter.entdeckt = true;                                       // der Hamster hat davon erzaehlt
+  // r 6: das Y kommt bis 7,6 m um die Mitte (story.js INTER_Y_R) – auch vorn vor der Nase (6,25 m), nicht nur seitlich
+  oi.xwInter = story.interaktion(Z.xwing, { name: 'Raumschiff', welt: 4, x: P.x, z: P.z, r: 6, yHoehe: 4.2, aktion: xwingY });
+  oi.xwInter.entdeckt = true;                                       // das Lama hat davon erzaehlt
 }
 function xwingY(o){
   if(o.spricht) return;
@@ -753,6 +865,8 @@ function hookFlug4(){
   enterSpace = function(){ if(e4() && xf.an){ xfEnde(); return; } return spaceOrig.apply(this, arguments); };
   const resetOrig = resetPlane;                                                     // global-ok: Engine
   resetPlane = function(){ if(!(e4() && xf.an && !xf.ende)) return resetOrig.apply(this, arguments);
+    // wie die Engine nach einem Absturz aufraeumen (Live-Befund 26.10.2026: Loeschboot und Sirene blieben, die Sirene hoerte nie auf)
+    if(typeof clearRescue === 'function') clearRescue(); state.crashTimer = 0;                    // global-ok: Engine
     xwParken(); story.sprich(['Hoppla! Versuch es gleich noch einmal.']); if(typeof snapCamera === 'function') snapCamera(); };
   const exitOrig = evaExit;                                                         // global-ok: Engine
   evaExit = function(){ if(e4() && xf.an) return; return exitOrig.apply(this, arguments); };   // erst auf dem Mond aussteigen
@@ -764,13 +878,39 @@ function teil2Schritt(dt){
   if(oi.paket && oi.paket.offen) papierBauen();
   if(story.e4Zustand && story.e4Zustand.gebaut) scheitSetzen();
   xwingMelden(); xfSchritt(dt);
-  // Foto: der Hamster schaut zur Kamera
+  // Foto: das Lama schaut zur Kamera
   if(oi.fotoBlick && oi.t > oi.fotoBlick.bis) oi.fotoBlick = null;
 }
 
 // ---- Hinein / hinaus (wie die Hoehle: Blende, eigene Welt; drinnen Nacht, draussen Tag) -------------------------------
 const HUELLE = 15, KOERPER = 0.32;
 function imRaum(x, z){ return Math.hypot(x - RAUM.x, z - RAUM.z) < RAUM.R + HUELLE; }
+// Live-Befund 26.10.2026: der Saal schwebt in 150 m Hoehe – mit dem X-Wing sah man die Kuppel in der Luft und flog dagegen
+// (seine Waende galten in jeder Hoehe). Darum ist er nur zu sehen, solange Joshi drin ist; alle seine Teile liegen bei
+// BODEN_Y im Umkreis (Saal, Regale, Tisch, Podest, Lama, Spur) – und ohne Joshi drinnen gibt es dort keine Grenzen (hookObs).
+// Saal vorwaermen (Live-Befund 26.10.2026: das Betreten ruckelte trotz Vorbauen – drinnen ist Nacht, mit anderem Himmel und
+// Nebel, dafuer braucht three.js eigene Shader; die gemalten Texturen werden erst beim ersten Bild hochgeladen). Darum einmal:
+// Nacht, vier Blicke durch den Saal in einen unsichtbaren Puffer, wieder Tag – alles im selben Augenblick, zu sehen ist nichts.
+function saalVorwaermen(){
+  try {
+    const sd = typeof starDome !== 'undefined' && starDome, rt = new THREE.WebGLRenderTarget(256, 256), k = new THREE.PerspectiveCamera(75, 1, 0.1, 2000);   // global-ok: Engine
+    const alt = renderer.getRenderTarget(); himmel(true); if(sd) sd.visible = true;                                         // global-ok: Engine
+    for(const a of [0, 1.57, 3.14, 4.71]){ k.position.set(RAUM.x, BODEN_Y + 1.6, RAUM.z); k.rotation.set(0.15, a, 0, 'YXZ'); k.updateMatrixWorld(true); renderer.setRenderTarget(rt); renderer.render(scene, k); }   // global-ok: Engine
+    // dazu der Nachthimmel der Engine (Sterne, Milchstrasse, Mond): er wird erst ein Bild spaeter sichtbar – kurz alles Unsichtbare
+    // der Szene zeigen und einmal uebersetzen (gemessen: die letzten vier Shader beim Betreten gehoerten genau dazu)
+    const aus = []; scene.traverse(o => { if(!o.visible && !o.isLight){ aus.push(o); } }); for(const o of aus) o.visible = true;   // global-ok: Engine
+    renderer.setRenderTarget(rt); renderer.render(scene, k); renderer.compile(scene, k); for(const o of aus) o.visible = false;   // global-ok: Engine
+    renderer.setRenderTarget(alt); rt.dispose(); himmel(!!oi.drin);                                                        // global-ok: Engine
+  } catch(e){ console.warn('Saal vorwaermen:', e); }
+}
+// Nur die sichtbaren Teile, nicht die Lichter (Live-Befund 26.10.2026: das Betreten ruckelte weiter – mit dem Saal verschwand die
+// Kerzen-Lampe, die Zahl der Lichter aenderte sich, und three.js uebersetzte beim Hineingehen jedes Material neu; die Lampe hat
+// nur 5 m Reichweite und wirkt draussen nicht)
+function innenZeigen(an){
+  oi.innenSicht = an;
+  for(const o of story.welt(4).children){ const p = o.position; if(p.y > BODEN_Y - 5 && Math.hypot(p.x - RAUM.x, p.z - RAUM.z) < RAUM.R + HUELLE)
+    story.sichtTeile(o, an); }
+}
 function raumTiefe(x, z){
   const lx = x - RAUM.x, lz = z - RAUM.z, d = Math.hypot(lx, lz);
   if(lz > 0 && Math.abs(lx) < TUER.B / 2 - 0.25 && !(story.aktionLaeuft && story.aktionLaeuft())) return lz > RAUM.R + 1.0 ? lz - (RAUM.R + 1.0) : 0;
@@ -787,19 +927,20 @@ function himmel(nacht){
 function setzeUm(ziel){
   const g = eva.group;
   if(ziel === 'innen'){
-    baueRaum(); himmel(true);
+    baueRaum(); innenZeigen(true); himmel(true);
     const x = RAUM.x - 0.6, z = RAUM.z + RAUM.R - 3.4;
-    g.position.set(x, BODEN_Y, z); eva.yaw = 0.25;                                        // Blick in den Saal, leicht nach rechts (Tisch, Hamster)
+    g.position.set(x, BODEN_Y, z); eva.yaw = 0.25;                                        // Blick in den Saal, leicht nach rechts (Tisch, Lama)
     oi.drin = true; story.innen.drin = true; story.innen.wo = 'observatorium';
     if(!oi.warDrin){ oi.warDrin = true; story.spaeter(1.0, () => story.sprich(T.ankunft)); }
     if(story.teleskopTest && story.teleskopAuf) story.spaeter(2.5, () => { if(oi.drin) story.teleskopAuf(); });
   } else {
-    himmel(false);
+    himmel(false); innenZeigen(false);
     const Z = story.e4Zustand, T0 = Z && Z.tuer, p = T0 ? story.freierPlatz(T0.x, T0.z + 2.5, 'joshi') : { x: 0, z: 0 };
     g.position.set(p.x, evaFootY(p.x, p.z), p.z); eva.yaw = Math.PI;                      // vom Observatorium weg
     oi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(Z) Z.drin = false;
     story.spaeter(0.1, () => { if(typeof szeneVorwaermen === 'function' && !oi.drin) szeneVorwaermen(); });
+    if(oi.skizzeZeigen && story.stelleZustand && story.stelleZustand('obs_skizze') === 'offen'){ oi.skizzeZeigen = false; story.spaeter(1.2, () => { if(!oi.drin) fuchsZu('obs_skizze'); }); }
   }
   g.rotation.y = eva.yaw; evaOrbit = 0; evaPitch = 0;
   const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));
@@ -825,6 +966,12 @@ function updateWechsel(dt){
 story.updateObsInnen = function(dt){
   if(!e4()) return;
   oi.t += dt;
+  // Live-Befund 26.10.2026: das erste Betreten ruckelte (Saal, Regale mit gemalten Buchruecken, Teleskop und Lama wurden erst
+  // dann gebaut, ihre Shader erst dann uebersetzt). Darum schon draussen kurz nach der Ankunft bauen (der Saal schwebt weit
+  // weg, von der Oase aus nicht zu sehen) und die Shader vorab uebersetzen.
+  if(!oi.gruppe && !oi.drin && eva && oi.t > 4 && story.e4Zustand && story.e4Zustand.gebaut){
+    baueRaum(); story.spaeter(1.5, () => { saalVorwaermen(); if(!oi.drin) innenZeigen(false); });
+  }
   updateWechsel(dt);
   teil2Schritt(dt);
   if(!oi.drin) return;
@@ -835,22 +982,32 @@ story.updateObsInnen = function(dt){
   const P = oi.paket;
   if(P && P.offen && P.auf < 1){ P.auf = Math.min(1, P.auf + dt * 2.2); const e = 1 - Math.pow(1 - P.auf, 3);
     for(const { l, sz } of P.laschen) l.rotation.x = sz * e * 2.1; }
-  // Hamster: schaut beim Reden zu Joshi, sonst wieder zum Paket (Kopf -z -> Blick + PI)
-  if(oi.hamster && eva){
-    const h = oi.hamster, p = eva.group.position;
-    const ziel = oi.fotoBlick || (oi.zuJoshi ? p : null);
-    const soll = ziel ? Math.atan2(ziel.x - h.position.x, ziel.z - h.position.z) + Math.PI : oi.hamsterBlick;
+  // Lama: schaut beim Reden (und fuers Foto) zu Joshi – hoechstens LAMA_DREH_MAX –, sonst wieder zum Paket; zwischendurch
+  // schaut es sich um (lookaround, 6,4 s)
+  if(oi.lama && oi.gang && lamaGang(dt)){ /* laeuft zum Foto bzw. zurueck */ }
+  else if(oi.lama && eva){
+    const h = oi.lama, p = eva.group.position, ziel = oi.fotoBlick || (oi.zuJoshi ? p : null);
+    let soll = oi.lamaBlick;
+    if(ziel){ let d = Math.atan2(ziel.x - h.position.x, ziel.z - h.position.z) - oi.lamaBlick; d = Math.atan2(Math.sin(d), Math.cos(d)); soll += Math.max(-LAMA_DREH_MAX, Math.min(LAMA_DREH_MAX, d)); }
     let dw = soll - h.rotation.y; dw = Math.atan2(Math.sin(dw), Math.cos(dw)); h.rotation.y += dw * Math.min(1, dt * 3);
-    hamsterAnim(oi.zuJoshi ? 'stehen' : 'schnuppern');
+    if(ziel){ lamaAnim('stehen'); oi.umschauT = 4; }
+    else if((oi.umschauT = (oi.umschauT === undefined ? 6 : oi.umschauT) - dt) <= 0){
+      lamaAnim(oi.cur === 'umschauen' ? 'stehen' : 'umschauen'); oi.umschauT = oi.cur === 'umschauen' ? 6.4 : 6 + Math.random() * 6; }
   }
 };
 
 // ---- Hooks: Boden, Grenzen, Kamera im Observatorium ------------------------------------------------------------------
 function hookObs(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding, wasserOrig = isOpenWater, dinghyOrig = evaEnterDinghy;
+  // Drinnen kein Meer und keine Orcas (Live-Befund 26.10.2026, CPU-Profil: das Betreten ruckelte, weil die Engine um den weit draussen
+  // schwebenden Saal das Meer neu rechnete und dort Orcas aufbaute – drinnen sieht man beides nicht)
+  const seaOrig = updateSea, orcaOrig = updateOrcas;                                                // global-ok: Engine
+  updateSea = function(){ if(e4() && oi.drin) return; return seaOrig.apply(this, arguments); };       // global-ok: Engine
+  updateOrcas = function(){ if(e4() && oi.drin) return; return orcaOrig.apply(this, arguments); };   // global-ok: Engine
   evaSolid = function(x, z){ if(e4() && locale === 'earth' && imRaum(x, z)) return raumFrei(x, z); return solidOrig.apply(this, arguments); };
   evaFootY = function(x, z){ if(e4() && locale === 'earth' && imRaum(x, z)) return BODEN_Y; return fussOrig.apply(this, arguments); };
-  hitsBuilding = function(x, y, z){ if(e4() && locale === 'earth' && imRaum(x, z) && !raumFrei(x, z)) return true; return hitsOrig.apply(this, arguments); };
+  // ohne Joshi drinnen gibt es am Saal nichts, woran ein Flugzeug haengen bleibt (auch nicht Tisch, Regale, Lama: innenZeigen)
+  hitsBuilding = function(x, y, z){ if(e4() && locale === 'earth' && imRaum(x, z)){ if(!oi.drin) return false; if(!raumFrei(x, z)) return true; } return hitsOrig.apply(this, arguments); };
   isOpenWater = function(x, z){ if(e4() && locale === 'earth' && imRaum(x, z)) return false; return wasserOrig.apply(this, arguments); };
   evaEnterDinghy = function(){ if(oi.drin) return; return dinghyOrig.apply(this, arguments); };
   // Kamera: wie in der Hoehle, an der runden Wand geklemmt (der Saal ist groesser: weiter weg und etwas hoeher)

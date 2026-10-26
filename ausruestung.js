@@ -356,6 +356,8 @@ story.stoppe = (mx) => stoppe(mx);
 story.stiftAn = function(u, v, bw, bh){ const r = raus.akt; if(!r) return; r.stift = { u, v, bw, bh }; };
 // Schnitzen: das Messer rechts am Holzklotz, es schabt (dx, dy = kleine Bewegung) – Lupe: gross in der Mitte vor dem Bild
 story.messerAn = function(dx, dy){ const r = raus.akt; if(!r) return; r.halt = { x: 0.55 + dx * 0.4, y: 0.05 + dy, s: 0.6, kipp: -0.6 + dx }; };
+// Schnur am Paket (notizbuch.js seil): das Messer schneidet in der Bildmitte von oben ins Seil
+story.messerSchneidet = function(dx, dy){ const r = raus.akt; if(!r) return; r.halt = { x: 0.34 + dx * 0.2, y: 0.04 + dy, s: 0.6, kipp: -0.6 + dx }; };   // Klinge auf dem Seil, in der Mitte (Live-Wunsch 26.10.2026: vorher darueber in der Luft)
 // Werkzeug wartet auf B (fuer alle gleich): klein und ruhig rechts neben dem Bild, nicht davor (r.stift aus, sonst
 // zeichnete der Stift weiter)
 story.werkzeugRuht = function(){ const r = raus.akt; if(!r) return; r.stift = null; r.halt = { x: 0.95, y: -0.3, s: 0.35, kipp: -0.4 }; };
@@ -604,11 +606,17 @@ function buchOeffnen(){
 }
 function buchSteuern(k){
   const n = story.notizSeiten().length;
+  if(story.buchSperre && story.buchSperre()) return;                 // eine Etappe blaettert gerade selbst (Spurvergleich)
+  if(k.a && story.buchA && story.buchA(buch.lage)) return;           // A auf einer Seite (observatorium_innen.js: Spur vergleichen)
   if(k.b){ buch.offen = false; return; }                             // zu: zurueck ins Inventar
   if(buch.um) return;                                                 // erst fertig umblaettern
   if(k.x > 0 && buch.seite + 2 < n) blaettern(1);
   if(k.x < 0 && buch.seite > 0) blaettern(-1);
 }
+// Von aussen blaettern (observatorium_innen.js): je Aufruf hoechstens ein Blatt Richtung Seite i; true, wenn sie offen liegt
+story.buchZuSeite = function(i){ if(!buch.offen || buch.um) return false; const ziel = i - i % 2; if(buch.seite === ziel) return true; blaettern(ziel > buch.seite ? 1 : -1); return false; };
+story.buchNeuMalen = () => { if(buch.offen && !buch.um) buchMalen(); };
+story.testBuch = () => ({ oeffnen: buchOeffnen, buch });                // Tests
 // Umblaettern (Live-Wunsch 16.10.: nicht das ganze Buch wackeln lassen, nur die Seite): die neue Doppelseite liegt schon
 // darunter, ein Blatt klappt um die Bindung herum – erst die alte Seite (schmaler werdend, dunkler), dann die
 // Rueckseite = neue Seite auf der anderen Seite (breiter werdend). Gemalt aus zwei Canvas-Bildern (alt/neu).
@@ -823,7 +831,8 @@ story.knopfTextur = function(b){
 function updateInventar(dt){
   inv.k += klemme((inv.an ? 1 : 0) - inv.k, -dt * 4, dt * 4);
   if(inv.flaeche) inv.flaeche.visible = inv.k > 0.001;
-  if(inv.k <= 0 && !inv.an){ for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); zeigeAnimLos(d.anim); } inv.dinge = []; return; }
+  // das gruene A mit aus (Live-Befund 26.10.2026: es blieb mit 3 % Deckkraft stehen und kam in der naechsten Skizze dünn mit ins Bild)
+  if(inv.k <= 0 && !inv.an){ for(const d of inv.dinge){ szene.remove(d.p); szene.remove(d.glow); zeigeAnimLos(d.anim); } inv.dinge = []; if(inv.aSp) inv.aSp.visible = false; return; }
   inv.t += dt;
   const s = weich(inv.k), H = hoeheEbene(), B = H * innerWidth / innerHeight;
   // Flaeche: 2/3 der Bildbreite und -hoehe, mittig

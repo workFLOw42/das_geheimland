@@ -203,9 +203,9 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | Hinweis-Taste, solange ein Ring noch offen ist | Erzählerin | Hm... Wer das Essen genommen hat, hat vielleicht eine Spur hinterlassen. · Schau dich am Tisch doch noch einmal ganz genau um. |
 | Hinweis-Taste, Ring noch nicht da | Erzählerin | Schau dich am Tisch noch einmal ganz genau um. Drück dafür X. |
 | Hinweis-Taste, Ring zu sehen (der Fuchs zeigt den blauen Ring) | Erzählerin | Stell dich in den blauen Kreis vor dem Tisch und drück Y. Dann machst du ein Foto. |
-| Foto vom Tisch (blauer Ring) | Erzählerin | Klasse. Jetzt hast du den Tisch auf deinem Foto. Das schauen wir uns später noch ganz genau an. |
+| Foto vom Tisch (blauer Ring) | Erzählerin | Klasse. Jetzt hast du den Tisch auf deinem Foto. |
 | nach dem Foto – Joshi fragt | `joshi` | Da sind ja Spuren auf dem Tisch! Wem gehören die denn? |
-| … der Hase | `tierW` | Meine sind das nicht. Meine Pfoten sind viel größer. |
+| … der Hase | `tierW` | Meine sind das nicht. Meine Pfoten sehen ganz anders aus. |
 | … die Eule | `tierM` | Und ich habe Krallen, keine Pfoten. Hu-huu. |
 | … der Elch | `tierM` | Solche Spuren habe ich hier im Wald noch nie gesehen. |
 | … die Erzählerin | Erzählerin | Merk dir die Spuren gut. Vielleicht findest du später heraus, wem sie gehören. |
@@ -221,7 +221,7 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | zu früh im Wald | Erzählerin | Hier geht ein Weg in den Wald. Schau dich vorher noch genau auf der Lichtung um. |
 | nach dem Globus (Ende des bisher Gebauten) | Erzählerin | Joshi ist auf dem Weg zum Gorilla. Wie es weitergeht, erfährst du bald. |
 
-**Tatortfoto:** Erst wenn alle Tiere erzählt haben **und** Joshi sich danach noch einmal mit X umschaut, zeigt der Fuchs den blauen Ring vor dem Tisch. Das Foto zeigt den Tisch senkrecht von oben in voller Länge – ohne Tiere und Fuchs, nur die Reste und zwei Fußspuren: links klein und rund im Wechselschritt (Hamster), rechts groß mit langen Zehen in Sprüngen (Eichhörnchen). Wem sie gehören, sagt noch niemand.
+**Tatortfoto:** Erst wenn alle Tiere erzählt haben **und** Joshi sich danach noch einmal mit X umschaut, zeigt der Fuchs den blauen Ring vor dem Tisch. Das Foto zeigt den Tisch senkrecht von oben in voller Länge – ohne Tiere und Fuchs, nur die Reste und zwei Fußspuren: links Hufe mit zwei länglichen Zehen im Wechselschritt (Lama), rechts lange Zehen in Sprüngen (Eichhörnchen). Wem sie gehören, sagt noch niemand.
 
 **Lupe am Waldweg:** Der braune Ring liegt am Eingang des Waldwegs (Wegweiser) und erscheint mit demselben X wie der Fotoring. Unter der Lupe: die Bananenschale von oben, Ameisen krabbeln in einer Reihe darüber; als Skizze ins Notizbuch.
 
@@ -235,7 +235,7 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 
 | Wann / wer | Stimme | Text |
 |---|---|---|
-| Ankunft (nach dem Globus) | Erzählerin | Du bist auf der anderen Seite des Waldes. Da vorne im Berg ist eine Höhle. · Dort wohnt bestimmt der Gorilla. Hörst du ihn? |
+| Ankunft (nach dem Globus) | Erzählerin | Du bist auf der anderen Seite des Waldes. Dort vorn in der Höhle wohnt der Gorilla. · Du kannst ihn schon hören. |
 | Hinweis-Taste | Erzählerin | Geh doch mal zur Höhle im Berg. Dort wohnt der Gorilla. |
 
 Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme) – nur bis Joshi einmal drin war. Die Mustang hat vor dem Gorilla kein Y.
@@ -273,10 +273,10 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | … Elch | `tierM` | Wie schön, dass die Bananen wieder da sind! |
 | … Hase | `tierW` | Wir gehen ihn gleich mal besuchen. |
 | … Joshi | `joshi` | Weißt du, von wem das rote Fell ist? |
-| … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal den Hamster. Der weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
+| … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
 | (danach erscheint der blaue Fotoring, der Fuchs zeigt ihn – ohne Ansage) | | |
 | Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. *(„Geh hinaus zum Flugzeug …“ nur über die Hilfe-Taste)* |
-| Y beim Gorilla danach | `tierM` | Danke, Joshi! Viel Glück beim Hamster. |
+| Y beim Gorilla danach | `tierM` | Danke, Joshi! Viel Glück beim Lama. |
 | Hinweis-Taste | Erzählerin | je nach Stand: X drücken · „Geh doch mal zum Gorilla.“ · brauner Kreis · mit dem Gorilla sprechen · schnitzen · Lupe am Korb · Foto · zum Flugzeug |
 
 ### Abflug
@@ -289,16 +289,44 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | nach einem Absturz | Erzählerin | Hoppla! Versuch es gleich noch einmal. |
 | nach dem Globus | – | *(weiter in Etappe 4: Joshi fliegt allein auf die Wüste zu)* |
 
-## Etappe 4 – Die Wüste mit der Oase des Hamsters *(im Code, alles **Entwurf**)*
+## Etappe 4 – Die Wüste mit der Oase des Lamas *(im Code, alles **Entwurf**)*
 
 | Wann | Stimme | Text |
 |---|---|---|
 | nach dem Globus, das Flugzeug kreist über der Oase (über ihm ein rotes B) | Erzählerin | Du bist über dem Ziel angekommen. Du kannst jederzeit abspringen, wenn Du bereit bist. Das Flugzeug fliegt dann automatisch zum Gorilla zurück. |
 | noch nicht gesprungen (nach 40 s) | Erzählerin | Drück B, dann springst du ab! |
-| gelandet (und nach dem Neuladen) | Erzählerin | Super gelandet! Du bist am Observatorium angekommen. Hier wohnt der Hamster. |
+| gelandet (und nach dem Neuladen) | Erzählerin | Super gelandet! Du bist am Observatorium angekommen. Hier wohnt das Lama. |
 | Hinweis-Taste draußen | Erzählerin | Schau doch mal, ob du ins Observatorium kommst. |
 | Y am See | Erzählerin | Ein kleiner See mitten in der Wüste. Das Wasser ist ganz klar. |
-| durch die offene Tür (Blende, vorerst Ende) | Erzählerin | Joshi ist im Observatorium beim Hamster. Wie es weitergeht, erfährst du bald. |
+| Y vor der Tür des Observatoriums | Erzählerin | Die Tür ist offen. Ob jemand zu Hause ist? Geh doch einfach hinein. |
+| durch die offene Tür | – | *(Blende, drinnen das Observatorium)* |
+
+### Im Observatorium – beim Lama *(observatorium_innen.js; seit 26.10.2026 das Lama statt des Hamsters)*
+
+| Wann / wer | Stimme | Text |
+|---|---|---|
+| hineingekommen | Erzählerin | Wow! Was für ein großes Observatorium. Und durch die Kuppel siehst du die Sterne. · Da drüben am Tisch steht ein Lama. |
+| Hinweis vor dem Umschauen | Erzählerin | Schau dich im Observatorium genau um. Drück dafür X. |
+| Hinweis nach dem Umschauen | Erzählerin | Geh doch mal zum Lama am Tisch. |
+| Y beim Lama – Joshi | `joshi` | Hallo Lama! |
+| … Lama | `tierW` | Was ist denn? Siehst du nicht, dass ich zu tun habe? · Ich krieg die blöde Schnur von meinem Paket einfach nicht auf. Mit meinen Hufen geht das nicht! |
+| Y beim Lama noch einmal | `tierW` | Mit Hufen kann man keine Knoten aufmachen. Die Schnur geht einfach nicht ab. |
+| Hinweis Messer | Erzählerin | Am grünen Kreis steht das Paket. Schneid die Schnur mit deinem Taschenmesser auf. |
+| Messer-Ring: Seil durchgeschnitten (Skizze ins Notizbuch) | Erzählerin | Schnipp! Die Schnur ist durch. |
+| Schnur ab – Lama | `tierW` | Oh! Danke, das ist lieb von dir. Endlich ist mein Paket offen. |
+| Y danach | `tierW` | Danke nochmal! Jetzt muss ich aber auspacken. |
+| Lupe: Spur im Staub | Erzählerin | Schau mal, Spuren im Staub. Die kommen in dein Notizbuch. · Vergleich sie doch mal mit der Spur vom Tatort. |
+| Hinweis-Taste nach der Lupe | Erzählerin | Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A. |
+| A auf der Spurseite im Notizbuch | Erzählerin | Schau mal genau hin ... |
+| … Spur liegt auf der Eichhörnchenspur (roter Rahmen) | Erzählerin | Zu den Spuren mit den langen Zehen passt sie nicht. |
+| … Spur liegt auf der Lamaspur (grüner Rahmen) | Erzählerin | Die Spuren passen genau zusammen! Das Lama war also am Festtisch der Tiere. · Frag es doch mal, was es dort gemacht hat. |
+| Y beim Lama – Joshi | `joshi` | Lama, deine Spur ist auf dem Festtisch der Tiere! Wie kommt sie dahin? Was hast du dort gemacht? |
+| … Lama | `tierW` | Ach das! Die Post hat mein Paket aus Versehen auf die Waldinsel gebracht. · Als ich es abholen wollte, war der Tisch schon ganz verwüstet. Niemand war da, nur der Uhu hat geschlafen. · Da bin ich einfach über den Tisch gestakst. Wie sollte ich denn sonst an mein Paket kommen? |
+| Lupe am Packpapier | Erzählerin | Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder rotes Fell! · Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem. · Aber wem gehören sie – und das rote Fell? |
+| Y beim Lama – Joshi | `joshi` | Weißt du, wem die Spuren mit den langen Zehen und das rote Fell gehören? |
+| … Lama | `tierW` | Nein, das weiß ich leider nicht. · Aber auf dem Mond wohnt seit Kurzem jemand. Der hat bestimmt alles von oben gesehen! · Schau ruhig mal durch mein Teleskop. Man sieht ihn gut, er blinkt immer so lustig. · Und wenn du zu ihm willst: Draußen steht mein Raumschiff. Das darfst du gerne nehmen. · Aber ich habe leider den Schlüssel verloren ... |
+| Y danach / mit Schlüssel | `tierW` | Hast du schon einen Schlüssel für mein Raumschiff? / Viel Glück auf dem Mond! |
+| Foto beim Hinausgehen | Erzählerin | Klasse! Das Lama vor seinem Teleskop. |
 
 ---
 

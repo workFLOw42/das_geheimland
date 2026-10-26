@@ -21,7 +21,7 @@ const ORTE = [
   { name: 'Die Höhle des Gorillas', lat: 38.2, lon: 28.4 },           // Fall 1, Etappe 3 (hoehle.js)
   // Live-Wunsch 23.10.2026: der Ankunftspunkt liegt in der Mitte der Wuesteninsel (WUESTE) – dort ist die Oase (wueste.js)
   { name: 'Die Wüste', lat: 6, lon: 66 },                              // Fall 1, Etappe 4 (wueste.js)
-  // Live-Wunsch 23.10.2026: mit dem Raumschiff des Hamsters zum Mond – der Globus zoomt heraus und wandert nach unten, oben im
+  // Live-Wunsch 23.10.2026: mit dem Raumschiff des Lamas zum Mond – der Globus zoomt heraus und wandert nach unten, oben im
   // Nord-Nord-Osten erscheint der Mond, der rote Faden geht im Bogen von der Wueste zu ihm hinauf (mond: true)
   { name: 'Der Mond', mond: true, folgt: '🌙', satz: 'Joshi fliegt zum Mond. Wie es weitergeht, erfährst du bald.' },
 ];
@@ -43,10 +43,17 @@ function latLon(lat, lon, r){
   const phi = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180;
   return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
 }
+// Auflage am Mond (Live-Befund 26.10.2026: Faden und Gesicht verschwanden hinter dem Mond): die Stelle auf seiner Oberflaeche,
+// zwischen "zur Erde hin" und "zur Kamera am Ende der Reise" (kamera, k = 1) – dort endet der Faden, dort sitzt das Gesicht
+function mondAuflage(a){
+  const m = mondPos(), s = latLon(a.lat, a.lon, GLOBUS_R * 1.02), v = latLon(a.lat, a.lon, 1).normalize();
+  const kam = v.multiplyScalar(4.2 + 2.6).add(m.clone().multiplyScalar(0.42));
+  return s.sub(m).normalize().lerp(kam.sub(m).normalize(), 0.75).normalize();
+}
 // Grosskreis zwischen zwei Orten, in der Mitte leicht ueber der Oberflaeche
 function bogen(a, b, n){
   if(b.mond){
-    const s = latLon(a.lat, a.lon, GLOBUS_R * 1.02), m = mondPos(), ende = m.clone().addScaledVector(m.clone().sub(s).normalize(), -MOND.r * 1.02);
+    const s = latLon(a.lat, a.lon, GLOBUS_R * 1.02), m = mondPos(), ende = m.clone().addScaledVector(mondAuflage(a), MOND.r * 1.02);
     const ctrl = s.clone().add(ende).multiplyScalar(0.5).addScaledVector(s.clone().normalize(), 0.9), out = [];
     for(let i = 0; i <= n; i++){ const t = i / n, u = 1 - t; out.push(new THREE.Vector3().addScaledVector(s, u * u).addScaledVector(ctrl, 2 * u * t).addScaledVector(ende, t * t)); }
     return out;
@@ -199,7 +206,15 @@ function zeichnen(anteil){
   if(gl.mond) gl.mond.visible = r.some(n => ORTE[n] && ORTE[n].mond);
   // Joshis Gesicht wandert an der Spitze des Fadens mit, am Ziel bleibt es dort
   gl.gesicht.visible = !!spitze;
-  if(spitze) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(Math.max(GLOBUS_R * 1.09, spitzeHoch + 0.03));
+  const zumMond = ORTE[r[r.length - 1]] && ORTE[r[r.length - 1]].mond;
+  if(spitze && !zumMond) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(Math.max(GLOBUS_R * 1.09, spitzeHoch + 0.03));
+  // zum Mond (Live-Befund 26.10.2026): von der Erdmitte aus nach aussen geschoben lag das Gesicht am Ende IM Mond und verschwand
+  // dahinter; der Faden endet auf der Seite, die zur Kamera schaut (mondAuflage).
+  // Live-Befund 26.10.2026 (2): Faden und Gesicht liefen nicht gemeinsam, und der Faden endete ueber dem Bild. Jetzt sitzt das Gesicht
+  // immer genau auf der Fadenspitze, ein Stueck zur Kamera hin, und wird zuletzt gezeichnet – so liegt das Fadenende darunter.
+  else if(spitze){ const zurKamera = gl.erde.worldToLocal(gl.kam.position.clone()).sub(spitze).normalize();
+    gl.gesicht.position.copy(spitze).addScaledVector(zurKamera, 0.06); }
+  gl.gesicht.material.depthTest = !(spitze && zumMond); gl.gesicht.renderOrder = spitze && zumMond ? 20 : 0;
 }
 function kamera(k){
   const a = ORTE[gl.von], b = ORTE[gl.nach], e = k * k * (3 - 2 * k);

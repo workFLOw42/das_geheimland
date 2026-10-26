@@ -1,5 +1,5 @@
 // Das Geheimland – Fallschirmsprung als Baustein (Live-Wunsch 22.10.2026: "wie beim SFG-Spiel"; gebraucht beim Einstieg in
-// die Hamster-Etappe, Konzept Abschnitt 7 / Etappe 4: ueber der Wueste mit B abspringen, der Autopilot bringt das Flugzeug
+// die Lama-Etappe, Konzept Abschnitt 7 / Etappe 4: ueber der Wueste mit B abspringen, der Autopilot bringt das Flugzeug
 // zurueck – das wird nur gesagt, nicht gezeigt). Laedt nach story.js, vor der Engine.
 // Uebernommen aus dem Finale von Trip to Japan (finale.js: abspringen, schirmAuf, sprungSchritt, freiflugSchritt/Pose,
 // fahrtwind, Sprung-Kamera mit Seitenblick) – dort laeuft es seit Wochen. Unterschiede:

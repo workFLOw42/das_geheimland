@@ -90,11 +90,12 @@ NC-Lizenzen bedeuten: **nicht kommerziell** – das Spiel darf mit diesen Werken
 | [Gazelle – Animated Low Poly](https://sketchfab.com/3d-models/gazelle-animated-low-poly-37a48d154e934f8fb3c4e03066dd881d) | **WildPoly3D** | CC-BY-NC-4.0 | als Reh am Festtisch |
 | [Bird 3 – Animated Low Poly](https://sketchfab.com/3d-models/bird-3-animated-low-poly-2ed5c072ecaa480aad2bf205651dc028) | **WildPoly3D** | CC-BY-NC-4.0 | kleiner blauer Vogel |
 | [Bird 4 – Animated Low Poly](https://sketchfab.com/3d-models/bird-4-animated-low-poly-c1746868085e4009ac1eea8df3d9ef18) | **WildPoly3D** | CC-BY-NC-4.0 | Meise |
-| [Welcome to the Observatory](https://sketchfab.com/3d-models/welcome-to-the-observatory-258ad7a70f204856b2de319d2756383e) | **XelaDoesArt** | CC-BY-4.0 | Observatorium des Hamsters (Wüste, Etappe 4) |
+| [Welcome to the Observatory](https://sketchfab.com/3d-models/welcome-to-the-observatory-258ad7a70f204856b2de319d2756383e) | **XelaDoesArt** | CC-BY-4.0 | Observatorium des Lamas (Wüste, Etappe 4) |
 | [Telescope (Realistic)](https://sketchfab.com/3d-models/telescope-realistic-b61ba4deb13a4833ae7cd340983823f1) | **Raphael Grimm** | CC-BY-4.0 | Teleskop im Observatorium (Texturen verkleinert) |
-| [Hamster](https://sketchfab.com/3d-models/hamster-364b9958d9fa463f80b9ba99eb533d5a) | **josephineburns** | CC-BY-4.0 | der Hamster (im Spiel eingefärbt) |
+| [Llama – Animated Low Poly](https://sketchfab.com/3d-models/llama-animated-low-poly-9118d94e506b4020a6cc0e27da16a050) | **WildPoly3D** | CC-BY-NC-4.0 | das Lama im Observatorium (nur die gebrauchten Clips) |
+| [Rope](https://sketchfab.com/3d-models/rope-6b90ae62da674207ab7558e1a82f0c18) | **xenosmashgames** | CC-BY-4.0 | die Textur des Seils am Paket (nur das Farbbild, auf einem geraden Seil) |
 | Sun, Mercury, Venus, Moon, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto ([Sketchfab](https://sketchfab.com/3d-models/sun-cd65c13799fd47a1aeb4c8ac018b2914)) | **Akshat** | CC-BY-4.0 | Sonne, Mond, Planeten und Pluto im Teleskop |
-| [Key Wooden](https://sketchfab.com/3d-models/key-wooden-6448c643b4614815a10115861db8d05c) | **Sam** | CC-BY-4.0 | der geschnitzte Schlüssel für das Raumschiff des Hamsters |
+| [Key Wooden](https://sketchfab.com/3d-models/key-wooden-6448c643b4614815a10115861db8d05c) | **Sam** | CC-BY-4.0 | der geschnitzte Schlüssel für das Raumschiff des Lamas |
 | [Sea Turtle – Animated Low Poly](https://sketchfab.com/3d-models/sea-turtle-animated-low-poly-d2c766bc36724d5998b62f8b2150acb9) | **WildPoly3D** | CC-BY-NC-4.0 | Meeresschildkröte im See der Oase |
 | [SeaTurtle Baby – Animated Low Poly](https://sketchfab.com/3d-models/seaturtle-baby-animated-low-poly-d6a5a74b67df418585c33ed37873531a) | **WildPoly3D** | CC-BY-NC-4.0 | Schildkröten-Baby im See der Oase |
 | [Ring-Billed Gull](https://sketchfab.com/3d-models/ring-billed-gull-3df7913df7f34b90b152b05e12737c43) | **Oregon State University Ecampus** (osuecampus) | CC-BY-4.0 | sitzende Möwen |
@@ -135,6 +136,8 @@ NC-Lizenzen bedeuten: **nicht kommerziell** – das Spiel darf mit diesen Werken
 |---|---|---|---|
 | Searching the Radio Noise (Pixabay-ID 33807) | **freesound_community** (Pixabay) | Pixabay-Lizenz | Funkrauschen beim Funkspruch |
 | Owl (humanatone, Pixabay-ID 102805) | **freesound_community** (Pixabay) | Pixabay-Lizenz | Eulenruf im Wald |
+| Eagle (Pixabay-ID 355831) | **koiroylers** (Pixabay) | Pixabay-Lizenz | Adlerruf in Wald und Bergen (Etappe 3) |
+| Eagle (Pixabay-ID 281163) | **u_jfkxueyart** (Pixabay) | Pixabay-Lizenz | Adlerruf in Wald und Bergen (Etappe 3) |
 | Breaking Wood (Pixabay-ID 356120) | **Dragon Studio** (Pixabay) | Pixabay-Lizenz | Holzknacken im Wald |
 | Silverback Gorilla Roar (Pixabay-ID 491076) | **flutie8211** (Pixabay) | Pixabay-Lizenz | Brummen aus der Gorilla-Höhle |
 | Carving Wood (Pixabay-ID 546387) | **pineframestudios** (Pixabay) | Pixabay-Lizenz | Schnitzgeräusch |

@@ -446,7 +446,7 @@ story.updateSteg = function(dt){
   }
   if(s.sperre > 0) s.sperre -= dt;
   // Y am Einstieg (bzw. im Boot zum Aussteigen)
-  const zeigen = !s.wechsel && (amEinstieg() || s.imBoot);
+  const zeigen = !s.wechsel && (amEinstieg() || s.imBoot) && story.yErlaubt();   // Y-Standard (story.js)
   if(zeigen && !s.zeichen){ s.zeichen = yZeichen(); story.welt(story.etappe).add(s.zeichen); }
   if(s.zeichen){
     s.zeichen.visible = zeigen;

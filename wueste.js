@@ -366,7 +366,7 @@ function gelandet(){
   blickZumPlanetarium();
   const p = eva.group.position;
   if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: p.x + 1.3, z: p.z + 0.4, blick: eva.yaw + Math.PI, modus: 'streifen', sitzt: false, warte: 1 });
-  story.spaeter(1.0, () => story.sprich(TEXT_GELANDET));
+  story.einleitung(1.0, TEXT_GELANDET);                            // das X erst danach (story.einleitung)
 }
 // ---- Tiere im See (Live-Wunsch 23.10.2026: "nur Fische und zwei Seeloewen und ein Manta"): die Vorlagen der Engine
 // (strandGLB: Forelle, Seeloewe, Rochen), hier selbst gesetzt; das Strandleben der Engine ist in Etappe 4 aus
@@ -529,7 +529,11 @@ function updateE4(dt){
   if(!e4()) return;
   baue();
   if(typeof strandleben !== 'undefined' && strandleben.an) strandleben.an = false;   // global-ok: Strandleben der Engine aus (eigene Tiere)
-  tiereBauen(); tiereUpdate(dt || 0);
+  // Live-Wunsch 29.10.2026: nicht im Augenblick der Landung (sie hing) – erst zu Fuss, ueber die Warteschlange (story.vorbereiten)
+  if(!tiere.an && eva && !tiere.angemeldet && story.vorbereiten){ tiere.angemeldet = true;
+    const versuch = () => { tiereBauen(); if(!tiere.an) story.spaeter(0.5, () => story.vorbereiten(versuch, 'tiere')); };
+    story.spaeter(2.0, () => story.vorbereiten(versuch, 'tiere')); }
+  tiereUpdate(dt || 0);
   tuerPruefen();
   if(w4.phase !== 'anflug' || eva) return;
   w4.t += dt;
@@ -556,7 +560,7 @@ story.e4StartSzene = function(){
   camera.position.copy(eva.group.position).addScaledVector(back, 5).add(new THREE.Vector3(0, 2, 0));   // global-ok: Engine
   if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: x + 1.3, z: z + 0.4, blick: eva.yaw + Math.PI, modus: 'streifen', sitzt: false, warte: 1 });
 };
-story.e4Los = () => { story.spaeter(1.0, () => story.sprich(TEXT_GELANDET)); };
+story.e4Los = () => { story.einleitung(1.0, TEXT_GELANDET); };
 story.updateE4 = updateE4;
 story.e4Zustand = w4;
 story.e4Kroeten = () => tiere.kroeten;                                             // fuer Tests                                                              // fuer Tests

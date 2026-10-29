@@ -12,14 +12,27 @@ Stand: 21.10.2026 – alles mit **im Code** ist so im Spiel; **Entwurf** = Vorsc
 
 ## 🎙️ Rollen & Stimmen
 
-| Rolle im Code | Stimme | Wer spricht | Funkrauschen |
-|---|---|---|---|
-| *(keine)* | **weiblich** | Erzählerin | – |
-| `funkRahmen` | **weiblich** | Erzählerin, am Funkgerät | 1 s davor und danach |
-| `radio` | **männlich** (Chrome: Microsoft Stefan) | Stimme über Funk | 1 s davor und danach |
-| `tierM` | männlich, tief | Elch, Eule (Waldinsel) | – |
-| `tierW` | weiblich, etwas höher | Hase, Reh | – |
-| `tierK` | weiblich, hoch und etwas schneller | Hasenbaby, Meise, blauer Vogel | – |
+**Standard seit 29.10.2026:** Jede Sprechrolle hat ihre eigene Zeile in `story.stimmen` (story.js) – auch wenn sie noch gleich
+klingt. So lässt sich jede später einzeln ändern. `funk:<rolle>` spricht mit derselben Stimme über Funk (1 s Rauschen davor und
+danach). `inventar` und `funkRahmen` sind Sprechweisen der Erzählerin. Die genauen Stimmen legen wir noch fest.
+
+| Rolle im Code | Wer spricht | Stimme (vorerst) |
+|---|---|---|
+| *(keine)* / `erzaehlerin` | Erzählerin | weiblich |
+| `funkRahmen` | Erzählerin, am Funkgerät (mit Rauschen) | weiblich |
+| `joshi` | Joshi | kindlich (die helle Stimme, wie bis zum 26.10.) |
+| `eich` | das Eichhörnchen (am Ende auch über Funk) | kindlich, männlich, anders als Joshi |
+| `elch`, `radio` | der Elch, auch der Funk in Etappe 1 (Chrome: Microsoft Stefan) | tief, männlich |
+| `eule` | der Uhu (sein „Hu-huu“ steht im Text selbst) | männlich |
+| `gorilla`, `gorillaTraurig` | der Gorilla (zu Beginn traurig) | männlich |
+| `lama` | das Lama (nach dem Strahler auch über Funk) | weiblich, eine andere Stimme als Joshi (die zweite Frauenstimme des Browsers) |
+| `alienG`, `alienK` | die beiden Aliens | tief / sehr hoch |
+| `hase`, `reh` | Hase, Reh | weiblich |
+| `hasenbaby`, `vogel_blau`, `vogel_meise` | Hasenbaby, die Vögel | hoch |
+| `tiereAmTisch` | der gemeinsame kurze Text der Tiere am Tisch | weiblich |
+
+*Hinweis:* In den Tabellen weiter unten steht in der Spalte „Rolle“ teils noch die frühere Sammelrolle (`tierM`, `tierW`,
+`tierK`). Im Code spricht jede Figur mit ihrer eigenen Rolle aus dieser Tabelle.
 
 Kommt ein Funkspruch (`radio`), erscheint unten rechts (dort, wo sonst der Rucksack steht) das **Funkgerät** und wackelt und blinkt wie das echte am Lagerfeuer. Im Funk wird **nie „over“** gesagt.
 
@@ -258,7 +271,7 @@ Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme) – nur
 | … Gorilla (trommelt vor Freude) | `tierM` | Für mich? Oh, danke! Das ist ja wunderschön! · Es tut mir leid, dass ich die Bananen genommen habe. Ich wollte eigentlich nur die anderen Tiere besuchen, aber der Uhu hat geschlafen und alle anderen Tiere waren nicht da. Der Tisch war verwüstet und nur noch die Bananen standen rum. Deshalb hab ich sie einfach mitgenommen. Bitte nimm sie wieder mit. |
 | (er schiebt den Korb hin, daran der braune Lupenring – der Fuchs zeigt ihn) · Hinweis-Taste | Erzählerin | Am Korb ist ein brauner Kreis. Schau dort ganz genau hin. |
 | Y beim Gorilla, nachdem er den Korb hingeschoben hat | `tierM` | Danke, ich bin so glücklich. |
-| Lupe am Korb | Erzählerin | Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch. *(der Bananenkorb ist danach im Inventar)* |
+| Lupe am Korb | Erzählerin | Schau mal, am Korb klebt Fell – weiß mit rotbraunen Streifen. Das kommt in dein Notizbuch. *(der Bananenkorb ist danach im Inventar)* |
 | Inventar: Bananenkorb (A) | Erzählerin | Das sind die Bananen, die der Gorilla vom Tisch genommen hat. |
 
 ### Zurück an der Lichtung (freiwillig, mit dem Bananenkorb im Inventar)
@@ -272,7 +285,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | … Eule | `tierM` | Hu-huu. Wir hätten mal nach ihm sehen sollen. |
 | … Elch | `tierM` | Wie schön, dass die Bananen wieder da sind! |
 | … Hase | `tierW` | Wir gehen ihn gleich mal besuchen. |
-| … Joshi | `joshi` | Weißt du, von wem das rote Fell ist? |
+| … Joshi | `joshi` | Weißt du, von wem das gestreifte Fell ist? |
 | … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
 | (danach erscheint der blaue Fotoring, der Fuchs zeigt ihn – ohne Ansage) | | |
 | Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. *(„Geh hinaus zum Flugzeug …“ nur über die Hilfe-Taste)* |
@@ -322,13 +335,156 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | … Spur liegt auf der Lamaspur (grüner Rahmen) | Erzählerin | Aber diese hier passen ganz genau! Das Lama war also am Festtisch der Tiere. · Frag es doch mal, was es dort gemacht hat. |
 | Y beim Lama – Joshi | `joshi` | Lama, deine Spur ist auf dem Festtisch der Tiere! Wie kommt sie dahin? Was hast du dort gemacht? |
 | … Lama | `tierW` | Ach das! Die Post hat mein Paket aus Versehen auf die Waldinsel gebracht. · Als ich es abholen wollte, war der Tisch schon ganz verwüstet. Niemand war da, nur der Uhu hat geschlafen. · Da bin ich einfach über den Tisch gestakst. Wie sollte ich denn sonst an mein Paket kommen? |
-| Lupe am Packpapier | Erzählerin | Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder rotes Fell! · Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem. · Aber wem gehören sie – und das rote Fell? |
-| Y beim Lama – Joshi | `joshi` | Weißt du, wem die Spuren mit den langen Zehen und das rote Fell gehören? |
+| Lupe am Packpapier | Erzählerin | Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder das gestreifte Fell! · Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem. · Aber wem gehören sie – und das rote Fell? |
+| Y beim Lama – Joshi | `joshi` | Weißt du, wem die Spuren mit den langen Zehen und das gestreifte Fell gehören? |
 | … Lama | `tierW` | Nein, das weiß ich leider nicht. · Aber auf dem Mond wohnt seit Kurzem jemand. Der hat bestimmt alles von oben gesehen! · Schau ruhig mal durch mein Teleskop. Man sieht ihn gut, er blinkt immer so lustig. · Und wenn du zu ihm willst: Draußen steht mein Raumschiff. Das darfst du gerne nehmen. · Aber ich habe leider den Schlüssel verloren ... |
 | Y danach / mit Schlüssel | `tierW` | Hast du schon einen Schlüssel für mein Raumschiff? / Viel Glück auf dem Mond! |
 | Foto beim Hinausgehen | Erzählerin | Klasse! Das Lama vor seinem Teleskop. |
 
 ---
+
+## Etappe 5 – Auf dem Mond *(mond.js, alles **Entwurf**)*
+
+| Wann | Wer | Text |
+|---|---|---|
+| Nach dem Globus, der X-Wing fliegt den Anflug von allein | Erzählerin | Da ist der Mond! Der X-Wing fliegt jetzt von allein zur Mondbasis und landet. |
+| Aufgesetzt | Erzählerin | Gelandet! Steig mit Y aus. |
+| Ausgestiegen (einmal) | Erzählerin | Wow, du bist auf dem Mond! Hier bist du ganz leicht und kannst richtig hoch springen. · Lauf mit Fuchsi zur Mondbasis. Der Eingang ist vorn am kleinen Kuppelhaus. |
+| Hinweis-Taste zu Fuß | Erzählerin | Lauf zur Mondbasis. Der Eingang ist vorn am kleinen Kuppelhaus. Drück dort Y. |
+| Hinweis-Taste im gelandeten X-Wing | Erzählerin | Steig mit Y aus. |
+| Y am Eingang | – | hinein in die Mondbasis (Blende) |
+
+### In der Mondbasis – beim Eichhörnchen *(mondbasis_innen.js)*
+
+| Wann | Wer | Text |
+|---|---|---|
+| Erstes Hereinkommen (es hüpft vor Freude) | Eichhörnchen | Oh! Besuch! Endlich Besuch! · Hallo! Ich bin so froh, dass du da bist. Hier oben kommt sonst nie jemand. |
+| Y beim Eichhörnchen | Joshi | Hallo Eichhörnchen! Sag mal, hast du gesehen, wer den Tisch der Tiere verwüstet und das ganze Essen gestohlen hat? |
+| … | Eichhörnchen | Ähm … keine Ahnung. · Aber kannst du mir helfen? Draußen liegen ganz viele Steine, und ich hab keine Kraft mehr, sie alle reinzubringen. |
+| danach | Erzählerin | Schau dich draußen um. Drück X, dann zeigt dir Fuchsi die Steine. |
+| Y bei einem Mondstein (sechs Stück) | Erzählerin | Noch fünf Steine. … Noch ein Stein. · Das war der letzte Stein! Bring sie zum Eichhörnchen in die Mondbasis. |
+| Y beim Eichhörnchen, noch nicht alle | Eichhörnchen | Draußen liegen noch Steine. Bringst du sie mir? |
+| Y beim Eichhörnchen, alle Steine (vorerst Ende) | Eichhörnchen | Wow, alle Steine! Danke, Joshi! Die muss ich gleich alle untersuchen. |
+| Y an der Tür hinten | Erzählerin | Die Tür ist verschlossen. |
+
+### Das Mikroskop *(mikroskop.js – links/rechts blättern, B hinaus; Pflanzen, Wasserkugel, Kristalle sowie Feder und Hammer laufen als 3D-Experiment, die anderen sind gemalt)*
+
+| Bild | Text |
+|---|---|
+| Pflanzen im Weltall | Im Weltall wachsen Salat und Blumen – ihre Wurzeln wissen dort gar nicht, wo unten ist. · So lernen wir, wie man Gemüse auch dort anbaut, wo es wenig Platz und Wasser gibt. |
+| Die Wasserkugel | Ohne Schwerkraft wird Wasser zu einer schwebenden Kugel. · Daran sieht man, wie Flüssigkeiten sich bewegen – das hilft zum Beispiel bei besseren Wasserfiltern. |
+| Kristalle | Im Weltall wachsen Kristalle besonders groß und schön. · Mit ihnen entwickeln Forscher neue Medikamente für kranke Menschen. |
+| Mondstaub | Unter dem Mikroskop sieht Mondstaub aus wie winzige, spitze Glassplitter. · Er verrät uns, wie der Mond entstanden ist – und vielleicht auch etwas über unsere Erde. |
+| Feder und Hammer | Auf dem Mond gibt es keine Luft. Lässt man eine Feder und einen Hammer los, fallen beide gleich schnell. · So verstehen wir die Schwerkraft – auf dem Mond und auf der Erde. |
+| Starke Knochen | Wer lange schwebt, dessen Muskeln und Knochen werden schwächer. Darum turnen Astronauten jeden Tag. · Das hilft Ärzten, auch älteren Menschen auf der Erde zu helfen. |
+| Die Erde von oben | Von hier oben sieht man Wolken, Stürme und Wälder auf der Erde. · Damit kann man das Wetter vorhersagen und die Natur schützen. |
+
+
+## Etappe 5 – die Geschichte auf dem Mond *(Live-Wunsch 28.10.2026, **Entwurf**, ersetzt die Steine-Texte oben; noch nicht gebaut)*
+
+### Draußen
+
+| Wann | Wer | Text |
+|---|---|---|
+| Anflug und Landung | – | ohne Ansage (Blende, Globus, Blende, Anflug mit Schwenk, Landung); danach ein Y über dem X-Wing *(gebaut)* |
+| Ausgestiegen (einmal), danach Detektivhut und blaues X | Erzählerin | Du bist auf dem Mond gelandet! Hier bist du ganz leicht und kannst richtig hoch springen. *(gebaut)* |
+| Hinweis-Taste, noch nicht umgeschaut | Erzählerin | Schau dich mal um. Drück X. |
+| X | – | Fuchsi zeigt die Mondbasis und den Strahler *(gebaut)* |
+| Y am Strahler | Erzählerin | Ein Strahler – und er morst das Wort HALLO. *(gebaut; danach zeigt Fuchsi den Skizzenring ohne Ansage)* |
+| Skizze fertig (Basis, Erde, Sternschnuppe) | Erzählerin | Wow. Die Mondbasis, dahinter die Erde – und eine Sternschnuppe! *(gebaut)* |
+| Hinweis-Taste nach dem Umschauen | Erzählerin | Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Drück dort Y. |
+
+### Im Büro – das erste Gespräch
+
+| Wann | Wer | Text |
+|---|---|---|
+| Hinweis-Taste im Büro | Erzählerin | Schau dich mal um. Drück X. |
+| X im Büro | – | Fuchsi zeigt nur das Eichhörnchen |
+| Y beim Eichhörnchen | Eichhörnchen | Oh! Besuch! Endlich Besuch! · Du bist der Erste, der mich hier oben besucht. Vor dir war noch nie jemand da! · Hier oben ist es so einsam und so langweilig. Und endlich hat jemand meine Morsezeichen gesehen! · Ich hätte so gern ein bisschen Hilfe. Ich hab nämlich ganz schön viel zu tun. |
+| … | Joshi | Ich helfe dir gern! Aber ich hab auch eine Frage. · Bei den Tieren ist das ganze Essen gestohlen worden, und ich suche es. · Meine Freundin, das Lama, hat gesagt, dass du vielleicht von hier oben etwas gesehen hast. *(Joshi sagt bewusst nicht, wo – sonst funktioniert der Verplapperer später nicht)* |
+| … | Eichhörnchen | Davon weiß ich nichts. Von hier oben kann ich gar nicht bis zur Waldinsel oder zum Observatorium schauen. · Aber hilfst du mir? Für mein Experiment brauche ich noch Steine. Draußen liegen fünf Stück. Bringst du sie mir? |
+| danach | Erzählerin | Geh nach draußen und sammle die fünf Steine. Drück X, dann zeigt dir Fuchsi die Steine. |
+| Teleskop im Büro, A bei den drei Bildern | Erzählerin | Ein guter Blick auf die Waldinsel und den Festtisch. · Die Höhle des Gorillas. · Das Observatorium. *(gebaut)* |
+
+### Die Steine
+
+| Wann | Wer | Text |
+|---|---|---|
+| Y beim 1. bis 4. Stein | – | still, der Stein kommt ins Inventar *(gebaut)* |
+| Y beim 5. Stein | Erzählerin | Das war der letzte Stein! *(gebaut; die Skizze des Steinhaufens kommt still ins Notizbuch)* |
+| Hinweis-Taste mit allen Steinen | Erzählerin | Bring die Steine zum Eichhörnchen in die Mondbasis. *(gebaut)* |
+| A im Inventar bei den Steinen | Erzählerin | Mondsteine für das Experiment des Eichhörnchens. *(gebaut)* |
+| Y beim Eichhörnchen, noch nicht alle | Eichhörnchen | Draußen liegen noch Steine. Bringst du sie mir? |
+| Y beim Eichhörnchen, alle fünf | Eichhörnchen | Super, alle fünf Steine! Danke, Joshi! · Bring sie bitte ins Labor und leg sie auf den großen Tisch. Die Tür ist jetzt offen. |
+| Y am Labortisch | Erzählerin | Die Steine liegen jetzt auf dem Labortisch. |
+
+### Im Labor – die Spuren
+
+| Wann | Wer | Text |
+|---|---|---|
+| Hinweis-Taste im Labor | Erzählerin | Schau dich im Labor um. Drück X. |
+| X im Labor | – | Fuchsi zeigt das Mikroskop und zwei braune Lupenringe |
+| Lupe am Boden | Erzählerin | Eine Spur im Staub! Vielleicht kannst du sie mit den Spuren in deinem Notizbuch vergleichen. |
+| Lupe am langen Tisch | Erzählerin | Ein Haarbüschel! Weiß mit rotbraunen Streifen. Vergleich es doch mal mit dem Fell vom Tatort. |
+| Notizbuch, Spur verglichen (A) | Erzählerin | Die Spur passt genau! Es ist die Spur vom Packpapier. |
+| Notizbuch, Haare verglichen (A) | Erzählerin | Die Haare passen zum Fell vom Tatort. · Jetzt weißt du es: Das Eichhörnchen war am Tisch der Tiere. |
+
+### Das Geständnis
+
+| Wann | Wer | Text |
+|---|---|---|
+| Y beim Eichhörnchen | Joshi | Eichhörnchen, hast du das Essen der Tiere genommen? |
+| … | Eichhörnchen | Ich? Nein! Ich war schon ganz lange nicht mehr auf der Waldinsel. |
+| … | Joshi | Moment mal … Ich hab doch gar nicht gesagt, dass das Essen auf der Waldinsel gestohlen wurde! · Und am Tisch lagen überall Haare. Genau die gleichen Haare liegen hier in deinem Labor. |
+| … | Eichhörnchen | Ähm … die sind bestimmt vom Hamster! Der wohnt nämlich auch hier oben und hat genau so ein Fell. |
+| … | Joshi | Ein Hamster? Du hast doch vorhin gesagt, dass vor mir noch nie jemand hier oben war. · Und diese Haare sind weiß mit rotbraunen Streifen. Genau wie deine! |
+| … | Eichhörnchen | Du hast recht … Ich war es. Ich hab das ganze Essen genommen. · Aber es ist noch alles da, drüben im großen Saal. · Seit Wochen sende ich Signale, aber keiner hat geantwortet, und keiner ist mich besuchen gekommen. Da war ich so sauer, dass ich die anderen Tiere ärgern wollte. · Es tut mir total leid. Hilfst du mir, alles wieder zurückzubringen? |
+| … | Joshi | Ich verstehe dich. So ganz allein hier oben wäre ich auch traurig. · Ich hab vielleicht eine bessere Idee! |
+| danach | Erzählerin | Geh ins Büro zum Computer und drück Y. |
+
+### Der Computer und der Strahler
+
+| Wann | Wer | Text |
+|---|---|---|
+| Y am Computer | – | Joshi tippt; die Worte erscheinen auf dem Bildschirm |
+| Blick nach draußen, der Strahler morst „KOMMT ALLE“ (rot / blau) zur Erde | Erzählerin | Hallo Lama. Sag den anderen Tieren Bescheid. Das Weihnachtsessen ist gerettet. Kommt alle zum Mond! |
+| nach dem Strahler, über Funk | Lama | Hallo Joshi, hier ist das Lama! Deine Nachricht ist angekommen. · Ich hab allen Bescheid gesagt – wir sind schon alle auf dem Weg zum Mond! *(gebaut)* |
+| zurück beim Eichhörnchen | Joshi | Jetzt schmücken wir hier alles zusammen. Das wird ein ganz besonderes Weihnachtsfest! |
+| … | Eichhörnchen | Au ja! Ein richtiges Weihnachtsfest! *(gebaut)* |
+| Y beim Eichhörnchen auf dem Fest | Eichhörnchen | Danke, Joshi! Das ist das schönste Weihnachtsfest, das es hier oben je gab! *(gebaut)* |
+| Y bei einem Alien | Alien | Hallo, ich bin [Piep-Blöp-Ton] … Mein Freund [anderer Ton] und ich waren neugierig, wer hier wohnt. · Es freut uns, euch kennenzulernen und mit euch zu feiern! *(gebaut; Namen: Piep-Blöp-Piep (groß), Blöp-Piep-Blöp (klein); danach die Skizze der beiden)* |
+| Gruppenfoto fertig | Erzählerin | Klasse! Alle zusammen an einer Tafel – das schönste Weihnachtsfest! *(gebaut)* |
+| Schnitzen fertig | Erzählerin | Toll! Ein kleiner Planet – mit dir und Fuchsi obendrauf. *(gebaut)* |
+| in der Rakete | Erzählerin | Gib mit dem rechten Stick Schub, bis der Balken voll ist. *(gebaut)* |
+| Y an der Tür zum Saal | – | im großen Saal: alle Tiere, Gorilla und Lama, Samu mit Barki und die beiden Aliens *(Ablauf offen)* |
+
+## Der Rahmen: der Traum *(Live-Wunsch 28.10.2026, gebaut; Texte vom 29.10.2026)*
+
+### Etappe 0 – Intro im Kinderzimmer
+
+| Wann | Wer | Text |
+|---|---|---|
+| Start, Joshi steht in seinem Zimmer | Erzählerin | Es ist spät am Abend. Joshi ist in seinem Zimmer und hat viel gespielt. Er hatte einen tollen Tag. Aber jetzt ist er müde und möchte ins Bett gehen. |
+| Hinweis-Taste | Erzählerin | Geh zu deinem Bett und drück Y. |
+| Y am Bett, Joshi legt sich hin (Fuchsi sitzt als Kuscheltier auf dem Kissen) | Erzählerin | Das Bett ist sehr kuschelig und warm. Bestimmt wird Joshi sehr schnell einschlafen und etwas Schönes träumen. |
+| Traum-Übergang | – | Joshi steht mit Fuchsi draußen vor der Hütte (Etappe 1) |
+
+### Heimkehr – wieder auf Joshis Insel
+
+| Wann | Wer | Text |
+|---|---|---|
+| Funkgerät ruft (alle 15 s, bis Joshi rangeht; erst nach X) | Eichhörnchen (Funk) | Hallo Joshi! |
+| Y am Funkgerät | Eichhörnchen (Funk) | Hallo Joshi. Ich wollte mich ganz herzlich bei dir bedanken. · Du hast Weihnachten gerettet, und dank dir hatten wir das tollste Fest der Welt – ach quatsch, des ganzen Universums! · Piep-Blöp-Piep und Blöp-Piep-Blöp haben uns herzlich zu sich auf ihren Planeten eingeladen. Also besuch sie ruhig mal, wenn du wieder hier bist. · Und mich kannst du auch jederzeit besuchen. Bis bald! *(die Namen als Piep-Blöp-Töne)* |
+| danach, die Hütte leuchtet auf | Erzählerin | Schau doch mal in deine Hütte. |
+| Y am Bett | – | Joshi legt sich hin, der Traum-Übergang |
+
+### Outro
+
+| Wann | Wer | Text |
+|---|---|---|
+| Joshi wacht in seinem Zimmer auf (die Objekte und Fotos sind noch da, Fuchsi ist wieder ein Kuscheltier) | Erzählerin | Guten Morgen, Joshi. Es ist Zeit zum Aufstehen. Ich hoffe, Du hattest einen schönen Traum und bist bereit für einen tollen Tag im Kindergarten. |
+| Abspann | Erzählerin | Joshi hat seinen ersten kniffligen Fall gelöst und viele neue Freunde gefunden. Wir sind gespannt, was er beim nächsten Mal erleben wird. |
+| Abspann, unten | – | Für Joshi! Hab' dich lieb! · Copyright … |
 
 ## Sternbilder *(Entwurf – Wissens-Thema, z. B. wenn man lange in den Himmel schaut)*
 

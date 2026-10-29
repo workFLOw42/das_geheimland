@@ -610,6 +610,15 @@ story.updateObjekte = function(dt){
 };
 
 // ---- Einhaengen: als AEUSSERSTE Huelle um hitsBuilding (nach allen anderen Hooks, also zum Start) ----------------
+// Auf dem Mond fragt die Engine hitsBuilding beim Laufen nicht (updateEva: nur in der Erdwelt) – dort sperren die Dinge ueber
+// evaSolid (mond.js), mit derselben Regel wie unten: nur Joshis eigener Schritt, wer schon drinsteckt, darf hinaus
+// (Live-Befund 29.10.2026: durch den Holzscheit auf dem Mond lief man hindurch)
+story.dingSperrt = function(x, z){
+  if(!dinge.length) return false; const von = story.schrittVon && story.schrittVon(); if(!von) return false;
+  const luft = story.figurInLuft && story.figurInLuft() ? SPRUNG : 0, f0 = Math.max(evaFootY(von.x, von.z), von.y) + luft;
+  const t = tiefe(x, z, f0, FIGUR.h, FIGUR.r, FIGUR.stufe);
+  return t > 0 && t > tiefe(von.x, von.z, f0, FIGUR.h, FIGUR.r, FIGUR.stufe) + 1e-6;
+};
 function hookAussen(){
   const hitsOrig = hitsBuilding;
   story.hitsOhneDinge = function(){ return hitsOrig.apply(this, arguments); };

@@ -54,20 +54,20 @@ const TIERE = [
   // Elch: Moose_Sit hebt das ganze Modell um 0,7 m an (Wurzelknochen, gemessen) – die Groesse kommt darum aus dem Stehen
   // (mass), die Hoehe aus der Sitzhaltung: er sitzt auf dem Boden (Live-Wunsch 21.10.2026)
   { id: 'elch', glb: 'ELCH_GLB', name: 'Elch', gross: 1.95, clips: ['Moose_Sit'], mass: 'Moose_Idle_A', x: -4.1, z: 67.6, blick: Math.PI / 2 + 0.35, sitz: 'boden', r: 0.8,
-    vor: { x: -3.9, z: 69.6 }, rolle: 'tierM',
+    vor: { x: -3.9, z: 69.6 }, rolle: 'elch',
     text: ['Oh, hallo Joshi. Schön, dass du da bist.', 'Wir wollten heute ein großes Weihnachtsessen feiern. Alle zusammen, hier am Tisch.',
       'Aber als wir kamen, war alles weg. Das ganze Essen!'] },
-  { id: 'vogel_meise', glb: 'VOGEL_MEISE_GLB', name: 'Meise', gross: 0.2, clips: ['idle'], x: -2.1, z: TISCH.z + 0.15, blick: -0.3, sitz: 'tisch', r: 0.12, rolle: 'tierK',
+  { id: 'vogel_meise', glb: 'VOGEL_MEISE_GLB', name: 'Meise', gross: 0.2, clips: ['idle'], x: -2.1, z: TISCH.z + 0.15, blick: -0.3, sitz: 'tisch', r: 0.12, rolle: 'vogel_meise',
     text: ['Piep, piep! Kannst du uns helfen? Du bist doch ein Detektiv.'] },
-  { id: 'hase', glb: 'HASE_GLB', name: 'Hase', gross: 0.78, clips: ['Rabbit_idle', 'Rabbit_lookaround'], x: -1.25, z: HINTEN, blick: 0.1, sitz: 'bank', r: 0.28, rolle: 'tierW',
+  { id: 'hase', glb: 'HASE_GLB', name: 'Hase', gross: 0.78, clips: ['Rabbit_idle', 'Rabbit_lookaround'], x: -1.25, z: HINTEN, blick: 0.1, sitz: 'bank', r: 0.28, rolle: 'hase',
     text: ['Ich hatte so viele Möhren mitgebracht. Und jetzt ist keine einzige mehr da.'] },
-  { id: 'hasenbaby', glb: 'HASENBABY_GLB', name: 'Hasenbaby', gross: 0.34, clips: ['idle', 'wash', 'lookaround'], x: -0.4, z: TISCH.z - 0.25, blick: 0, sitz: 'tisch', r: 0.18, rolle: 'tierK',
+  { id: 'hasenbaby', glb: 'HASENBABY_GLB', name: 'Hasenbaby', gross: 0.34, clips: ['idle', 'wash', 'lookaround'], x: -0.4, z: TISCH.z - 0.25, blick: 0, sitz: 'tisch', r: 0.18, rolle: 'hasenbaby',
     text: ['Ich hab so großen Hunger.'] },
-  { id: 'reh', glb: 'REH_GLB', name: 'Reh', gross: 1.45, clips: ['Dear_idle', 'Dear_look'], x: 0.45, z: HINTEN - 0.75, blick: 0, sitz: 'boden', r: 0.4, rolle: 'tierW',
+  { id: 'reh', glb: 'REH_GLB', name: 'Reh', gross: 1.45, clips: ['Dear_idle', 'Dear_look'], x: 0.45, z: HINTEN - 0.75, blick: 0, sitz: 'boden', r: 0.4, rolle: 'reh',
     text: ['Wer macht denn so etwas? Der ganze Tisch ist durcheinander.'] },
-  { id: 'eule', glb: 'EULE_GLB', name: 'Eule', gross: 0.62, clips: ['idle', 'headtwist'], x: 1.3, z: HINTEN, blick: -0.1, sitz: 'bank', r: 0.26, rolle: 'tierM',
+  { id: 'eule', glb: 'EULE_GLB', name: 'Eule', gross: 0.62, clips: ['idle', 'headtwist'], x: 1.3, z: HINTEN, blick: -0.1, sitz: 'bank', r: 0.26, rolle: 'eule',
     text: ['Hu-huu. Ich habe die ganze Nacht aufgepasst. Aber gesehen habe ich niemanden.'] },
-  { id: 'vogel_blau', glb: 'VOGEL_BLAU_GLB', name: 'blauer Vogel', gross: 0.2, clips: ['idle'], x: 2.15, z: TISCH.z + 0.15, blick: 0.3, sitz: 'tisch', r: 0.12, rolle: 'tierK',
+  { id: 'vogel_blau', glb: 'VOGEL_BLAU_GLB', name: 'blauer Vogel', gross: 0.2, clips: ['idle'], x: 2.15, z: TISCH.z + 0.15, blick: 0.3, sitz: 'tisch', r: 0.12, rolle: 'vogel_blau',
     text: ['Piep! Nicht mal ein Krümel ist übrig geblieben.'] },
 ];
 // Radius des Standplatzes (story.interaktion r; Y zeigt sich bis r + 1,6 m – story.js INTER_Y_R – nimmt aber immer das
@@ -632,7 +632,7 @@ function tierLaden(T){
 const tierGruppe = new THREE.Group();
 function tischInteraktion(){
   const andere = wi.tiere.filter(t => t.T.id !== 'elch').sort((a, b) => TIERE.indexOf(a.T) - TIERE.indexOf(b.T));
-  story.interaktion(tierGruppe, { name: 'Tiere am Tisch', welt: 2, x: 0, z: VORN, r: 1.6, yx: 0, yz: TISCH.z, rolle: 'tierW',
+  story.interaktion(tierGruppe, { name: 'Tiere am Tisch', welt: 2, x: 0, z: VORN, r: 1.6, yx: 0, yz: TISCH.z, rolle: 'tiereAmTisch',
     yHoehe: TISCH.H + 1.15, einmal: true, aktion: (o) => tiereErzaehlen(o, andere) });
 }
 // Erzaehlen: Saetze der Tiere nacheinander, jedes in seiner Stimme; vor seinem ersten Satz schaut es auf
@@ -717,8 +717,8 @@ story.e2StelleFertig = function(){
   const foto = story.stelleZustand('tisch_foto') === 'fertig', lupe = story.stelleZustand('weg_lupe') === 'fertig';
   if(foto && !wi.spurGefragt){
     wi.spurGefragt = true;
-    story.spaeter(1.2, () => gespraech([['joshi', TEXT_SPUR_JOSHI], ['tierW', TEXT_SPUR_HASE, 'hase'], ['tierM', TEXT_SPUR_EULE, 'eule'],
-      ['tierM', TEXT_SPUR_ELCH, 'elch'], [undefined, TEXT_SPUR_MERKEN]], () => {
+    story.spaeter(1.2, () => gespraech([['joshi', TEXT_SPUR_JOSHI], ['hase', TEXT_SPUR_HASE, 'hase'], ['eule', TEXT_SPUR_EULE, 'eule'],
+      ['elch', TEXT_SPUR_ELCH, 'elch'], [undefined, TEXT_SPUR_MERKEN]], () => {
       wi.spurBesprochen = true;
       // Lupe noch offen (Live-Wunsch 21.10.2026): der Fuchs laeuft noch einmal zum braunen Ring und zeigt ihn
       // Lupe noch offen (Live-Wunsch 21.10.2026): sobald die Erzaehlerin fertig ist, laeuft der Fuchs von selbst zum braunen
@@ -729,7 +729,7 @@ story.e2StelleFertig = function(){
   }
   if(lupe && !wi.gorillaGesagt){
     wi.gorillaGesagt = true;
-    story.spaeter(1.2, () => gespraech([['joshi', TEXT_JOSHI_FRAGT], ['tierM', TEXT_GORILLA_EULE, 'eule'], ['tierM', TEXT_GORILLA_ELCH, 'elch']], () => {
+    story.spaeter(1.2, () => gespraech([['joshi', TEXT_JOSHI_FRAGT], ['eule', TEXT_GORILLA_EULE, 'eule'], ['elch', TEXT_GORILLA_ELCH, 'elch']], () => {
       wi.gorillaBesprochen = true;
       if(story.stelleZustand('tisch_foto') !== 'fertig') story.sprich(TEXT_ERST_FOTO); else wegPruefen();
     }));
@@ -961,7 +961,7 @@ story.e2StartSzene = function(){ baue(); setzeStart(); };
 // Nach "Los geht's" bzw. direkt nach dem Globus: kurz warten, dann die Erzaehlerin
 story.e2Los = function(){
   if(wi.angekommen || wi.losGerufen) return; wi.losGerufen = true;
-  story.spaeter(1.2, () => { if(wi.angekommen) return; wi.angekommen = true; story.sprich(TEXT_ANKUNFT); });   // Testzugang setzt angekommen vorher
+  story.einleitung(1.2, TEXT_ANKUNFT, null, () => { if(wi.angekommen) return false; wi.angekommen = true; return true; });   // Testzugang setzt angekommen vorher
 };
 // Testzugaenge (story.js Startbildschirm): 'spuren' = die Tiere haben erzaehlt, beide Ringe sind offen; 'weg' = dazu Foto
 // und Lupe gemacht (echte Bilder im Notizbuch), beide Gespraeche vorbei, der Weg in den Wald frei. Wartet, bis die Tiere
@@ -1048,7 +1048,7 @@ function korbAngebot(){
 }
 function korbZurueckgeben(o){
   o.erledigt = true; if(o.zeichen) o.zeichen.visible = false; o.spricht = true;
-  gespraech([['joshi', TEXT_KORB_JOSHI], ['tierW', TEXT_KORB_HASE, 'hase'], ['tierM', TEXT_KORB_EULE, 'eule'], ['tierM', TEXT_KORB_ELCH, 'elch'], ['tierW', TEXT_KORB_BESUCH, 'hase']], () => { o.spricht = false; });
+  gespraech([['joshi', TEXT_KORB_JOSHI], ['hase', TEXT_KORB_HASE, 'hase'], ['eule', TEXT_KORB_EULE, 'eule'], ['elch', TEXT_KORB_ELCH, 'elch'], ['hase', TEXT_KORB_BESUCH, 'hase']], () => { o.spricht = false; });
   // der Korb wandert aus dem Rucksack auf den Tisch, sobald Joshi ihn uebergibt (nach seinen Saetzen)
   story.spaeter(TEXT_KORB_JOSHI.reduce((s, x) => s + 0.6 + x.length / 14, 0), () => {
     if(story.ausruestung) story.ausruestung.bananen = false; wi.korbZurueck = true;

@@ -314,7 +314,7 @@ function yZeichen(){
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: yTex, depthTest: false, transparent: true })); sp.scale.setScalar(0.8); sp.renderOrder = 999; sp.userData.deko = true; return sp;
 }
 function updateMustangY(){
-  const zeigen = !!(eva && story.e3MustangFrei && !eva.boat && !(story.innen && story.innen.drin) && evaCanBoard() && !(story.pause && story.pause()));
+  const zeigen = !!(eva && story.e3MustangFrei && !eva.boat && !(story.innen && story.innen.drin) && evaCanBoard() && story.yErlaubt());   // Y-Standard (story.js)
   if(zeigen && !hw.y){ hw.y = yZeichen(); story.welt(3).add(hw.y); }
   if(!hw.y) return;
   hw.y.visible = zeigen;
@@ -370,7 +370,7 @@ function setzeStart(){
   if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: x + 1.3, z: z - 0.6, blick: eva.yaw + Math.PI, modus: 'streifen', sitzt: false, warte: 1 });
 }
 function los(){ if(hw.angekommen) return; hw.angekommen = true;
-  story.spaeter(1.2, () => story.sprich(TEXT_ANKUNFT)); story.spaeter(4, () => brummen()); brummTakt(); }
+  story.einleitung(1.2, TEXT_ANKUNFT); story.spaeter(4, () => brummen()); brummTakt(); }
 // (danach einmal vorwaermen – sonst ruckelte es beim ersten Einsteigen in die Mustang: Engine szeneVorwaermen)
 story.e3StartSzene = function(){ story.e3Besucht = true; if(story.standSetzen) story.standSetzen('e3Besucht', true); baue(); if(story.e2Bauen) story.e2Bauen(); mustangParken(); setzeStart(); story.spaeter(0.3, () => { if(typeof szeneVorwaermen === 'function') szeneVorwaermen(); }); };
 story.e3Los = los;

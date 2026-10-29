@@ -55,6 +55,8 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 
 Neu bauen (nach Änderungen an Engine, Modellen oder Tönen): `powershell -File tools/build_engine.ps1`
 
+Stand der Engine, Unterschiede zu Spiel_SFG und alle überschriebenen Engine-Funktionen: [ENGINE.md](ENGINE.md).
+
 **Spielfigur:** Mixamo-Rig, Clips (60 fps) `idle walk run jump roll kneel swim fly hang skate guitar drums look`.
 Pipeline: Mixamo-FBX → `FBX2glTF --binary --anim-framerate bake60` → `_mixamo/merge_clips.py` → `models/figur.glb`.
 
@@ -98,6 +100,23 @@ NC-Lizenzen bedeuten: **nicht kommerziell** – das Spiel darf mit diesen Werken
 | [Key Wooden](https://sketchfab.com/3d-models/key-wooden-6448c643b4614815a10115861db8d05c) | **Sam** | CC-BY-4.0 | der geschnitzte Schlüssel für das Raumschiff des Lamas |
 | [Sea Turtle – Animated Low Poly](https://sketchfab.com/3d-models/sea-turtle-animated-low-poly-d2c766bc36724d5998b62f8b2150acb9) | **WildPoly3D** | CC-BY-NC-4.0 | Meeresschildkröte im See der Oase |
 | [SeaTurtle Baby – Animated Low Poly](https://sketchfab.com/3d-models/seaturtle-baby-animated-low-poly-d6a5a74b67df418585c33ed37873531a) | **WildPoly3D** | CC-BY-NC-4.0 | Schildkröten-Baby im See der Oase |
+| [All Plants](https://sketchfab.com/3d-models/all-plants-1e2cfedbe5424e028bff6972e4ff6d92) | **Svea_99** | CC-BY-4.0 | der Farn im Mikroskop (nur eine Pflanze, Texturen verkleinert) |
+| [drop of water](https://sketchfab.com/3d-models/drop-of-water-dcbdc5e8905449ad95a47720e4d3c57c) | **furret** (Sketchfab-Konto ff.ferretti02) | CC-BY-4.0 | die Wasserkugel im Mikroskop (verkleinert, eigenes Wasser-Material) |
+| [Cristal](https://sketchfab.com/3d-models/cristal-973f867fe02f4962b4393ee368674545) | **lobach.dre** | CC-BY-4.0 | bunte Kristalle im Mikroskop (umgefärbt) |
+| [CRISTAL OSCURO_](https://sketchfab.com/3d-models/cristal-oscuro-2c5c4d6387af46a09e8a52c8a41206d7) | **iorko** | CC-BY-4.0 | der große Kristall im Mikroskop (stark verkleinert, umgefärbt) |
+| [Lab Tube for P.A.L](https://sketchfab.com/3d-models/lab-tube-for-pal-ae74e0f761464bedb1a5e06635941472) | **Charlotte Kimberly Andreassen** | CC-BY-4.0 | das Laborglas, in dem die Kristalle wachsen |
+| [Day 1. Feather](https://sketchfab.com/3d-models/day-1-feather-771e62e4f43d4c3c81f7d35a8884578c) | **tuturu** | CC-BY-4.0 | die Feder (Feder und Hammer auf dem Mond) |
+| [Hammer Game Ready](https://sketchfab.com/3d-models/hammer-game-ready-eb371236ff14403dabb065506ac124eb) | **re1monsen** | CC-BY-4.0 | der Hammer (gerade ausgerichtet, Texturen verkleinert) |
+| [Bone](https://sketchfab.com/3d-models/bone-f84a0805c2dc448fae864ee67f4c5836) | **Zab** | CC-BY-4.0 | der Knochen (Starke Knochen im Mikroskop) |
+| [Earth](https://sketchfab.com/3d-models/earth-41fc80d85dfd480281f21b74b2de2faa) | **Akshat** | CC-BY-4.0 | die Erde am Mondhimmel (Textur als JPEG) |
+| [Old retro-futuristic spaceship computer](https://sketchfab.com/3d-models/old-retro-futuristic-spaceship-computer-a16baecd33574620ae43b73fdcf22506) | **Julius** (Sketchfab-Konto darlingjulia0) | CC-BY-4.0 | der Computer im Büro der Mondbasis (verkleinert) |
+| [Guitarra](https://sketchfab.com/3d-models/guitarra-f707c447de664e438d67d4e9c9a54968) | **yimmyramiro** | CC-BY-4.0 | die Gitarre im Saal der Mondbasis (stark verkleinert) |
+| [Drum Set](https://sketchfab.com/3d-models/drum-set-4502f25b448c474ab35028cec545fbf5) | **YieldingMist206** | CC-BY-4.0 | das Schlagzeug im Saal (verkleinert) |
+| [Rocket](https://sketchfab.com/3d-models/rocket-48bf0206b9724a28814d299d93b7602a) | **stevespencer** | CC-BY-4.0 | die Rakete für den Heimflug (verkleinert) |
+| [Alien Hip Hop Dancing](https://sketchfab.com/3d-models/alien-hip-hop-dancing-fac7a402b9f940aa955da87f8eb0619c) | **nonny** | CC-BY-4.0 | das große Alien auf der Weihnachtsfeier (aus Spiel_SFG) |
+| Funky Alien (Rigged & Animated) | **Jungle Jim** (jungle_jim) | CC-BY-4.0 | das kleine Alien auf der Weihnachtsfeier (aus Spiel_SFG) |
+| Shiba Inu Doggy | **aaadragon** | CC-BY-4.0 | Barki, Samus Hund, auf der Weihnachtsfeier (aus Spiel_SFG) |
+| [3rd - Chemistry // Old Lab Tubes](https://sketchfab.com/3d-models/3rd-chemistry-old-lab-tubes-9467a293daf04c58a4edae02a89783e6) | **Ringo Gunther** | CC-BY-4.0 | Reagenzgläser auf dem Forschungstisch der Mondbasis (Texturen verkleinert) |
 | [Ring-Billed Gull](https://sketchfab.com/3d-models/ring-billed-gull-3df7913df7f34b90b152b05e12737c43) | **Oregon State University Ecampus** (osuecampus) | CC-BY-4.0 | sitzende Möwen |
 | [Ring-Billed Gull – in Flight](https://sketchfab.com/3d-models/ring-billed-gull-in-flight-fba809cd4766411bb8c4236e9da606bc) | **Oregon State University Ecampus** (osuecampus) | CC-BY-4.0 | fliegende Möwen |
 

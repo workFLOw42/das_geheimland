@@ -52,6 +52,7 @@ function mondAuflage(a){
 }
 // Grosskreis zwischen zwei Orten, in der Mitte leicht ueber der Oberflaeche
 function bogen(a, b, n){
+  if(a.mond) return bogen(b, a, n).reverse();   // vom Mond zurueck (Live-Befund 29.10.2026: blieb schwarz – der Mond hat keine Lage)
   if(b.mond){
     const s = latLon(a.lat, a.lon, GLOBUS_R * 1.02), m = mondPos(), ende = m.clone().addScaledVector(mondAuflage(a), MOND.r * 1.02);
     const ctrl = s.clone().add(ende).multiplyScalar(0.5).addScaledVector(s.clone().normalize(), 0.9), out = [];
@@ -206,7 +207,8 @@ function zeichnen(anteil){
   if(gl.mond) gl.mond.visible = r.some(n => ORTE[n] && ORTE[n].mond);
   // Joshis Gesicht wandert an der Spitze des Fadens mit, am Ziel bleibt es dort
   gl.gesicht.visible = !!spitze;
-  const zumMond = ORTE[r[r.length - 1]] && ORTE[r[r.length - 1]].mond;
+  // zum Mond – oder vom Mond zurueck, solange die Spitze noch draussen im All ist
+  const zumMond = (ORTE[r[r.length - 1]] && ORTE[r[r.length - 1]].mond) || !!(spitze && spitze.length() > GLOBUS_R * 1.15);
   if(spitze && !zumMond) gl.gesicht.position.copy(spitze).normalize().multiplyScalar(Math.max(GLOBUS_R * 1.09, spitzeHoch + 0.03));
   // zum Mond (Live-Befund 26.10.2026): von der Erdmitte aus nach aussen geschoben lag das Gesicht am Ende IM Mond und verschwand
   // dahinter; der Faden endet auf der Seite, die zur Kamera schaut (mondAuflage).
@@ -218,6 +220,10 @@ function zeichnen(anteil){
 }
 function kamera(k){
   const a = ORTE[gl.von], b = ORTE[gl.nach], e = k * k * (3 - 2 * k);
+  if(a.mond){                                                    // vom Mond heim: der Blick kommt vom Mond zurueck zur Kugel
+    const v = latLon(b.lat, b.lon, 1).normalize(), m = mondPos(), u = 1 - e, ziel = m.clone().multiplyScalar(0.42 * u);
+    gl.kam.position.copy(v).multiplyScalar(4.2 + 2.6 * u).add(ziel); gl.kam.up.set(0, 1, 0); gl.kam.lookAt(ziel); return;
+  }
   if(b.mond){
     const v = latLon(a.lat, a.lon, 1).normalize(), m = mondPos(), ziel = m.clone().multiplyScalar(0.42 * e);   // Blick wandert zum Mond hin
     gl.kam.position.copy(v).multiplyScalar(4.2 + 2.6 * e).add(ziel); gl.kam.up.set(0, 1, 0); gl.kam.lookAt(ziel); return;

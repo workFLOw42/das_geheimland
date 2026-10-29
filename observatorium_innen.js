@@ -74,6 +74,7 @@ const kuppelTex = () => leinwand(512, 256, (g, W, H) => {
   g.fillStyle = '#3a2a1e'; g.fillRect(0, 0, W, H);
   for(let x = 0; x < W; x += 32){ const v = 54 + Math.floor(rnd() * 14); g.fillStyle = 'rgb(' + v + ',' + Math.round(v * 0.72) + ',' + Math.round(v * 0.5) + ')'; g.fillRect(x + 1, 0, 30, H); }
 });
+const FENSTER = [Math.PI * 0.5, Math.PI * 0.78, Math.PI * 1.22, Math.PI * 1.5];   // Winkel der Bogenfenster an der Wand
 // Nachthimmel fuer Fenster und Tuer: dunkelblau mit Sternen (Tuer: unten Palmen der Oase als Schattenriss)
 function nachtTex(palmen){
   return leinwand(256, 320, (g, W, H) => {
@@ -117,7 +118,10 @@ function baueRaum(){
   const draussen = story.tuerKasten(nachtTex(true), TUER.B + 0.04, TUER.H + 0.03, 1.6);
   draussen.position.set(0, 0, R - 0.3); g.add(draussen);
   // Holzpfosten an der Wand (wie die Balken aussen) und ein Gesims oben, auf dem die Kuppel ruht
-  for(let i = 0; i < 16; i++){ const a = (i + 0.5) / 16 * Math.PI * 2; if(Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.35) continue;
+  // Live-Befund 29.10.2026: zwei Pfosten lagen mitten ueber den beiden hinteren Fenstern – sie stehen jetzt dicht neben den beiden
+  // mittleren Regalen (die Fenster sind dafuer nach aussen gerueckt): Pfosten, Regal, Fenster, Pfosten ... symmetrisch zur Rueckwand
+  for(let i = 0; i < 16; i++){ let a = (i + 0.5) / 16 * Math.PI * 2; if(Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.35) continue;
+    if(Math.abs(a - Math.PI * 0.8125) < 0.01) a = Math.PI * 0.87; else if(Math.abs(a - Math.PI * 1.1875) < 0.01) a = Math.PI * 1.13;
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, H, 0.3), M.holz); p.position.set(Math.sin(a) * (R - 0.15), H / 2, Math.cos(a) * (R - 0.15)); p.rotation.y = a; p.userData.keinKoerper = true; g.add(p); }
   const gesims = new THREE.Mesh(new THREE.TorusGeometry(R - 0.2, 0.22, 8, 80), M.dunkel); gesims.rotation.x = Math.PI / 2; gesims.position.y = H; gesims.userData.keinKoerper = true; g.add(gesims);
   // Kuppel: Bretter innen, mit offenem Spalt zur Rueckseite (-z) ueber den Scheitel; dort sieht man den Nachthimmel der Engine
@@ -134,7 +138,7 @@ function baueRaum(){
   teppich.rotation.x = -Math.PI / 2; teppich.position.set(PODEST.x - RAUM.x, 0.02, PODEST.z - RAUM.z); teppich.userData.begehbar = true; g.add(teppich);
   // Bogenfenster mit Nachthimmel zwischen den Regalen
   const nt = nachtTex(false);
-  for(const a of [Math.PI * 0.5, Math.PI * 0.82, Math.PI * 1.18, Math.PI * 1.5]){
+  for(const a of FENSTER){
     const f = new THREE.Group(); f.position.set(Math.sin(a) * (R - 0.08), 2.4, Math.cos(a) * (R - 0.08)); f.rotation.y = a + Math.PI;
     const glas = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 2.0), new THREE.MeshBasicMaterial({ map: nt })); f.add(glas);
     const bogen = new THREE.Mesh(new THREE.CircleGeometry(0.65, 24, 0, Math.PI), new THREE.MeshBasicMaterial({ map: nt })); bogen.position.y = 1.0; f.add(bogen);
@@ -454,7 +458,7 @@ function lamaLaden(){
     for(const [n, name] of Object.entries(LA)){ const a = gl.animations.find(x => x.name === name); if(a) oi.acts[n] = oi.mixer.clipAction(a); }
     lamaAnim('stehen');
     // Interaktion (innen: nur im Observatorium). Erst der Suchblick (X) schaltet es frei, wie alles.
-    oi.inter = story.interaktion(h, { name: 'Lama', welt: 4, innen: true, x: TISCH.x, z: TISCH.z, r: 0.8, yx: h.position.x, yz: h.position.z, yHoehe: LAMA_H + 0.3, rolle: 'tierW', aktion: lamaY });
+    oi.inter = story.interaktion(h, { name: 'Lama', welt: 4, innen: true, x: TISCH.x, z: TISCH.z, r: 0.8, yx: h.position.x, yz: h.position.z, yHoehe: LAMA_H + 0.3, rolle: 'lama', aktion: lamaY });
   });
 }
 function lamaAnim(n){
@@ -470,17 +474,17 @@ function lamaY(o){
   const zurueck = () => { oi.zuJoshi = false; fertig(); };
   if(oi.stufe === 'gesucht'){ oi.stufe = 'schnur';
     story.sprich(T.joshiHallo, null, 'joshi');
-    story.sprich(T.lamaGenervt, () => { zurueck(); fuchsZu('schnur_messer'); }, 'tierW'); return; }
-  if(oi.stufe === 'schnur'){ story.sprich(T.lamaNochmal, zurueck, 'tierW'); return; }
+    story.sprich(T.lamaGenervt, () => { zurueck(); fuchsZu('schnur_messer'); }, 'lama'); return; }
+  if(oi.stufe === 'schnur'){ story.sprich(T.lamaNochmal, zurueck, 'lama'); return; }
   if(lamaY2(o, zurueck)) return;                                   // Teil 2: nach dem Vergleich, nach dem Packpapier
-  story.sprich(T.lamaBeschaeftigt, zurueck, 'tierW');
+  story.sprich(T.lamaBeschaeftigt, zurueck, 'lama');
 }
 // Messer-Ring (notizbuch.js STELLEN 'schnur_messer', Live-Wunsch 26.10.2026): eine Szene wie das Schnitzen – das Messer
 // schneidet gross im Bild durch ein Seil (obsSeilModell), danach eine Skizze vom Seil. Ist die Stelle fertig (e4StelleFertig),
 // ist die Schnur am Paket ab, die Laschen springen auf, und das Lama dankt.
 function schnurAuf(){
   schnipp(); oi.paket.schnur.visible = false; oi.paket.offen = true; oi.stufe = 'offen';
-  story.spaeter(0.6, () => { oi.zuJoshi = true; story.sprich(T.danke, () => { oi.zuJoshi = false; }, 'tierW'); });
+  story.spaeter(0.6, () => { oi.zuJoshi = true; story.sprich(T.danke, () => { oi.zuJoshi = false; }, 'lama'); });
 }
 // Das Seil: gerade, mit der Textur von "Rope" (xenosmashgames, CC-BY-4.0, seil_tex.js), laenge 1 in zwei Haelften. seilAuf(k):
 // 0 = ganz, 1 = durchgeschnitten (die Haelften gehen auseinander; Live-Wunsch 26.10.2026: ohne Fasern, ohne Spaene). Live-Wunsch 26.10.2026:
@@ -618,9 +622,9 @@ const T2 = {
     'Als ich es abholen wollte, war der Tisch schon ganz verwüstet. Niemand war da, nur der Uhu hat geschlafen.',
     'Da bin ich einfach über den Tisch gestakst. Wie sollte ich denn sonst an mein Paket kommen?'],
   hinweisPapier: ['Am Tisch ist ein brauner Kreis. Schau dir das Packpapier ganz genau an.'],
-  papierFertig: ['Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem.', 'Aber wem gehören sie – und das rote Fell?'],
+  papierFertig: ['Dann hat das Lama nicht geflunkert. Die Spuren mit den langen Zehen auf seinem Paket sind von jemand anderem.', 'Aber wem gehören sie – und das gestreifte Fell?'],
   hinweisWem: ['Frag doch das Lama, wem die Spuren gehören könnten.'],
-  joshiWem: ['Weißt du, wem die Spuren mit den langen Zehen und das rote Fell gehören?'],
+  joshiWem: ['Weißt du, wem die Spuren mit den langen Zehen und das gestreifte Fell gehören?'],
   lamaMond: ['Nein, das weiß ich leider nicht.', 'Aber auf dem Mond wohnt seit Kurzem jemand. Der hat bestimmt alles von oben gesehen!',
     'Schau ruhig mal durch mein Teleskop. Man sieht ihn gut, er blinkt immer so lustig.',
     'Und wenn du zu ihm willst: Draußen steht mein Raumschiff. Das darfst du gerne nehmen.',
@@ -649,9 +653,9 @@ function papierTex(spuren){
       for(let i = 0; i < zehen; i++){ const a = (i / (zehen - 1) - 0.5) * 1.8; g.beginPath(); g.ellipse(Math.sin(a) * s * 0.42, -Math.cos(a) * s * 0.36 - (lang ? s * 0.12 : 0), s * (lang ? 0.08 : 0.1), s * (lang ? 0.17 : 0.1), a, 0, 7); g.fill(); }
       g.restore(); };
     for(const y0 of [140, 360]){ for(const sx of [-1, 1]){ pf(256 + sx * 52, y0, 70, 5, true); pf(256 + sx * 24, y0 + 90, 40, 4, false); } }
-    // rotes Fell
+    // Fell, weiss und rotbraun (wie das Eichhoernchen)
     for(let i = 0; i < 26; i++){ const x = 360 + rnd() * 90, y = 230 + rnd() * 80, a = -0.8 + rnd() * 0.6, L = 40 + rnd() * 50;
-      g.strokeStyle = i % 3 ? 'rgba(196,74,30,.95)' : 'rgba(150,50,20,.9)'; g.lineWidth = 2 + rnd() * 2; g.lineCap = 'round';
+      g.strokeStyle = i % 3 ? 'rgba(168,80,42,.95)' : 'rgba(242,239,232,.95)'; g.lineWidth = 2 + rnd() * 2; g.lineCap = 'round';
       g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * L * 0.5 + 8, y + Math.sin(a) * L * 0.5, x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); }
   });
 }
@@ -672,8 +676,11 @@ story.obsPapierSeite = function(){
   g.fillStyle = '#f4ecd8'; g.fillRect(0, 0, W, H);
   const bild = papierTex(true).image, k = document.createElement('canvas'); k.width = k.height = 512; const kg = k.getContext('2d');
   kg.drawImage(bild, 0, 0); const id = kg.getImageData(0, 0, 512, 512), d = id.data;
-  for(let i = 0; i < d.length; i += 4){ const r = d[i], gg = d[i + 1], b = d[i + 2], rot = r > 140 && r > gg * 1.6;   // Fell rot lassen, Rest Bleistift
-    if(rot) continue; const v = (r + gg + b) / 3, dunkel = v < 90; d[i] = d[i + 1] = d[i + 2] = dunkel ? 70 : 244; d[i + 3] = dunkel ? 230 : 0; }
+  // Fell rot lassen; die weissen Haare grau wie beim Bananenkorb (hoehle_innen.js fellBild – Live-Befund 29.10.2026: sie fehlten,
+  // das Helle wurde mit dem Papier durchsichtig); der Rest Bleistift
+  for(let i = 0; i < d.length; i += 4){ const r = d[i], gg = d[i + 1], b = d[i + 2], rot = r > 140 && r > gg * 1.6, hell = r > 200 && gg > 190 && b > 170;
+    if(rot) continue; if(hell){ d[i] = 120; d[i + 1] = 110; d[i + 2] = 100; d[i + 3] = 165; continue; }
+    const v = (r + gg + b) / 3, dunkel = v < 90; d[i] = d[i + 1] = d[i + 2] = dunkel ? 70 : 244; d[i + 3] = dunkel ? 230 : 0; }
   kg.putImageData(id, 0, 0); g.drawImage(k, (W - 600) / 2, (H - 600) / 2, 600, 600);
   g.strokeStyle = 'rgba(60,55,50,.5)'; g.lineWidth = 3; g.strokeRect((W - 640) / 2, (H - 640) / 2, 640, 640);
   return c;
@@ -708,6 +715,7 @@ function spurAufFoto(weg){
   const p = weg.map(q => { _vp.set(W.tisch.x + q.x, y, W.tisch.z + q.z).project(_vk); return { u: (_vp.x + 1) / 2, v: (1 - _vp.y) / 2 }; });
   return { u: (p[0].u + p[1].u) / 2, v: (p[0].v + p[1].v) / 2, du: p[1].u - p[0].u, dv: p[1].v - p[0].v };
 }
+story.spurAufFoto = spurAufFoto;                                     // mondbasis_innen.js: die Spur im Labor auf dem Tatortfoto
 // Laufende Animation (jedes Bild bei offenem Buch): erst zum Foto blaettern, dann vergleichen, dann zurueck zur Spurseite
 story.buchTick = function(dt, lage){
   if(!e4() || !lage) return false;
@@ -773,12 +781,12 @@ function lamaAufSpurseite(){
 // ---- Gespraeche mit dem Lama (nach der Schnur) ------------------------------------------------------------------------
 function lamaY2(o, zurueck){
   if(oi.stufe === 'verglichen'){ oi.stufe = 'erzaehlt';
-    story.sprich(T2.joshiSpur, null, 'joshi'); story.sprich(T2.lamaTisch, () => { zurueck(); papierBauen(); fuchsZu('packpapier_lupe'); }, 'tierW'); return true; }
+    story.sprich(T2.joshiSpur, null, 'joshi'); story.sprich(T2.lamaTisch, () => { zurueck(); papierBauen(); fuchsZu('packpapier_lupe'); }, 'lama'); return true; }
   if(oi.stufe === 'papier'){ oi.stufe = 'fertig';
     story.sprich(T2.joshiWem, null, 'joshi');
-    story.sprich(T2.lamaMond, () => { zurueck(); if(oi.teleInter){ oi.teleInter.entdeckt = true; } fuchsZu('lama_foto'); }, 'tierW'); return true; }
-  if(oi.stufe === 'fertig'){ story.sprich(T2.lamaSchluessel, zurueck, 'tierW'); return true; }
-  if(oi.stufe === 'schluessel'){ story.sprich(T2.lamaGluck, zurueck, 'tierW'); return true; }
+    story.sprich(T2.lamaMond, () => { zurueck(); if(oi.teleInter){ oi.teleInter.entdeckt = true; } fuchsZu('lama_foto'); }, 'lama'); return true; }
+  if(oi.stufe === 'fertig'){ story.sprich(T2.lamaSchluessel, zurueck, 'lama'); return true; }
+  if(oi.stufe === 'schluessel'){ story.sprich(T2.lamaGluck, zurueck, 'lama'); return true; }
   return false;
 }
 // Foto: das Lama, links das Teleskop (blauer Ring beim Hinausgehen, vorn zwischen Tuer und Tisch). Live-Wunsch 26.10.2026: das
@@ -885,7 +893,7 @@ function xwEinsteigen(){
   xf.an = true; xf.ende = false; xf.gesagt = false; xf.ziel = Object.assign({}, XW_ZIEL);
   story.sprich(['Los geht es! Gib Gas, steig hoch und flieg zum roten Punkt auf dem Radar.']);
 }
-function xfEnde(){ if(xf.ende) return; xf.ende = true; state.throttle = 0; if(story.globusReise) story.globusReise(4); }   // Ort 4 = der Mond (globus.js)
+function xfEnde(){ if(xf.ende) return; xf.ende = true; state.throttle = 0; if(story.globusReise) story.globusReise(4, story.e5Wechsel ? () => story.e5Wechsel() : null); }   // Ort 4 = der Mond (globus.js), weiter in mond.js
 function xfSchritt(dt){
   if(!xf.an || xf.ende || eva) return;
   if(locale !== 'earth'){ xfEnde(); return; }
@@ -971,17 +979,20 @@ function setzeUm(ziel){
   const g = eva.group;
   if(ziel === 'innen'){
     baueRaum(); innenZeigen(true); himmel(true);
+    // in der Schwarzblende vorwaermen (Saal, Nachthimmel): Shader und Texturen jetzt, nicht beim ersten Hinsehen (story.js Vorbereiten)
+    if(!oi.gewaermt){ oi.gewaermt = true; saalVorwaermen(); innenZeigen(true); himmel(true); }   // saalVorwaermen stellt am Ende den Himmel nach oi.drin (noch false)
     const x = RAUM.x - 0.6, z = RAUM.z + RAUM.R - 3.4;
     g.position.set(x, BODEN_Y, z); eva.yaw = 0.25;                                        // Blick in den Saal, leicht nach rechts (Tisch, Lama)
     oi.drin = true; story.innen.drin = true; story.innen.wo = 'observatorium';
-    if(!oi.warDrin){ oi.warDrin = true; story.spaeter(1.0, () => story.sprich(T.ankunft)); }
+    if(!oi.warDrin){ oi.warDrin = true; story.einleitung(1.0, T.ankunft); }   // das X erst danach
     // die Tuer draussen (wueste.js, "Observatorium") ist damit gefunden – sonst verlangte das Spiel beim Hinausgehen noch X
     // (Live-Befund 26.10.2026: wer gleich hineinlief, sollte draussen X druecken, obwohl die Ringe schon da waren)
     for(const o of story.interListe || []) if(o.welt === 4 && o.name === 'Observatorium' && !o.innen) o.erledigt = true;
     if(story.teleskopTest && story.teleskopAuf) story.spaeter(2.5, () => { if(oi.drin) story.teleskopAuf(); });
   } else {
     himmel(false); innenZeigen(false);
-    const Z = story.e4Zustand, T0 = Z && Z.tuer, p = T0 ? story.freierPlatz(T0.x, T0.z + 2.5, 'joshi') : { x: 0, z: 0 };
+    // (Live-Wunsch 29.10.2026, gilt fuer jedes Gebaeude: so weit draussen, dass die Kamera hinter Joshi nicht im Gebaeude haengt)
+    const Z = story.e4Zustand, T0 = Z && Z.tuer, p = T0 ? story.freierPlatz(T0.x, T0.z + 6.8, 'joshi') : { x: 0, z: 0 };
     g.position.set(p.x, evaFootY(p.x, p.z), p.z); eva.yaw = Math.PI;                      // vom Observatorium weg
     oi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(Z) Z.drin = false;
@@ -1015,8 +1026,10 @@ story.updateObsInnen = function(dt){
   // Live-Befund 26.10.2026: das erste Betreten ruckelte (Saal, Regale mit gemalten Buchruecken, Teleskop und Lama wurden erst
   // dann gebaut, ihre Shader erst dann uebersetzt). Darum schon draussen kurz nach der Ankunft bauen (der Saal schwebt weit
   // weg, von der Oase aus nicht zu sehen) und die Shader vorab uebersetzen.
-  if(!oi.gruppe && !oi.drin && eva && oi.t > 4 && story.e4Zustand && story.e4Zustand.gebaut){
-    baueRaum(); story.spaeter(1.5, () => { saalVorwaermen(); if(!oi.drin) innenZeigen(false); });
+  // Live-Wunsch 29.10.2026: nicht alles auf einmal (die Landung mit dem Fallschirm hing) – nach der Landung, auf dem Weg zur Tuer,
+  // nach und nach (story.vorbereiten): Saal bauen, seine Teile vorwaermen, zuletzt der Nachthimmel (saalVorwaermen)
+  if(!oi.vorbereitet && !oi.drin && eva && oi.t > 4 && story.e4Zustand && story.e4Zustand.gebaut && story.vorbereiten){ oi.vorbereitet = true;
+    story.vorbereiten(() => { baueRaum(); if(!oi.drin) innenZeigen(false); }, 'saal');
   }
   updateWechsel(dt);
   teil2Schritt(dt);

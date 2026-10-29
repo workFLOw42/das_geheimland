@@ -58,7 +58,7 @@ const T = {
     'Ich wollte eigentlich nur die anderen Tiere besuchen, aber der Uhu hat geschlafen und alle anderen Tiere waren nicht da.',
     'Der Tisch war verwüstet und nur noch die Bananen standen rum. Deshalb hab ich sie einfach mitgenommen.',
     'Bitte nimm sie wieder mit.'],
-  joshiFell: ['Weißt du, von wem das rote Fell ist?'],
+  joshiFell: ['Weißt du, von wem das gestreifte Fell ist?'],
   gorillaFell: ['Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden.',
     'Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm.'],
   foto: ['Klasse! Der Gorilla lacht wieder.'],
@@ -157,10 +157,10 @@ function baueKorb(){
   // Bananen (gelbe Boegen) im Korb
   const gelb = new THREE.MeshLambertMaterial({ color: 0xf0cf3c });
   for(let i = 0; i < 5; i++){ const ba = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 10, 1.6), gelb); ba.position.set((i - 2) * 0.09, 0.3, (i % 2 - 0.5) * 0.12); ba.rotation.set(0.2, i * 0.6, 1.2 + i * 0.1); ba.userData.keinKoerper = true; g.add(ba); }
-  // rotes Fell am Rand (ein paar rote Haare, nur aus der Naehe zu sehen)
-  const rot = new THREE.MeshLambertMaterial({ color: 0xc0451c });
+  // Fell am Rand: ein paar Haare, weiss und rotbraun wie das Fell des Eichhoernchens (Live-Wunsch 28.10.2026), nur aus der Naehe zu sehen
+  const rot = [new THREE.MeshLambertMaterial({ color: 0xa8502a }), new THREE.MeshLambertMaterial({ color: 0xf2efe8 })];
   const fell = new THREE.Group(); fell.position.set(0.38, 0.28, 0.12); fell.userData.keinKoerper = true; g.add(fell);
-  for(let i = 0; i < 7; i++){ const h = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.006, 0.12, 4), rot); h.position.set((i - 3) * 0.008, 0, (i % 2) * 0.01); h.rotation.set(0.4 + i * 0.12, 0, 0.9 - i * 0.08); fell.add(h); }
+  for(let i = 0; i < 7; i++){ const h = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.006, 0.12, 4), rot[i % 2]); h.position.set((i - 3) * 0.008, 0, (i % 2) * 0.01); h.rotation.set(0.4 + i * 0.12, 0, 0.9 - i * 0.08); fell.add(h); }
   g.userData.fell = fell; fell.visible = false;                   // kommt erst mit dem Korb in Sicht (stufe 'froh')
   return g;
 }
@@ -238,7 +238,7 @@ function gorillaLaden(){
     gorillaAnim('sitzen');
     // Interaktion (innen: true – nur in der Hoehle). Erst der Suchblick (X) schaltet ihn frei, wie alles.
     const vorn = { x: GORILLA.x + Math.sin(GORILLA.blick) * 1.25, z: GORILLA.z + Math.cos(GORILLA.blick) * 1.25 };
-    hi.inter = story.interaktion(h, { name: 'Gorilla', welt: 3, innen: true, x: vorn.x, z: vorn.z, r: 0.9, yx: GORILLA.x, yz: GORILLA.z, yHoehe: 2.3, rolle: 'tierM', aktion: gorillaY });
+    hi.inter = story.interaktion(h, { name: 'Gorilla', welt: 3, innen: true, x: vorn.x, z: vorn.z, r: 0.9, yx: GORILLA.x, yz: GORILLA.z, yHoehe: 2.3, rolle: 'gorilla', aktion: gorillaY });
   });
 }
 function gorillaAnim(n, einmal){
@@ -256,33 +256,33 @@ function gorillaY(o){
   if(o.spricht) return; o.spricht = true;
   const fertig = () => { o.spricht = false; };
   // erstes Mal: "Lass mich in Ruhe" – danach erscheint der Lupenring, der Fuchs zeigt ihn (ohne Ansage)
-  if(hi.stufe === 'gesucht'){ hi.stufe = 'ruhe'; sprichDann(T.inRuhe, 'tierM', () => { fertig(); fuchsZu('entchen_lupe'); }); return; }
-  if(hi.stufe === 'ruhe'){ sprichDann(T.inRuhe, 'tierM', fertig); return; }
+  if(hi.stufe === 'gesucht'){ hi.stufe = 'ruhe'; sprichDann(T.inRuhe, 'gorillaTraurig', () => { fertig(); fuchsZu('entchen_lupe'); }); return; }
+  if(hi.stufe === 'ruhe'){ sprichDann(T.inRuhe, 'gorillaTraurig', fertig); return; }
   if(hi.stufe === 'lupe'){
     hi.stufe = 'erzaehlt';
     sprichDann(T.joshiFragt, 'joshi'); gorillaAnim('schauen');
     // danach erscheint der gruene Schnitzring – ohne Ansage (Live-Wunsch 22.10.2026), der Fuchs zeigt ihn
-    sprichDann(T.gorillaErzaehlt, 'tierM', () => { gorillaAnim('sitzen'); fertig(); fuchsZu('entchen_schnitzen'); });
+    sprichDann(T.gorillaErzaehlt, 'gorillaTraurig', () => { gorillaAnim('sitzen'); fertig(); fuchsZu('entchen_schnitzen'); });
     return;
   }
   // nach seiner Geschichte, bis das neue Entchen da ist (Live-Wunsch 22.10.2026: kein Hilfetext beim Gorilla)
-  if(hi.stufe === 'erzaehlt'){ sprichDann(T.traurig, 'tierM', fertig); return; }
+  if(hi.stufe === 'erzaehlt'){ sprichDann(T.traurig, 'gorillaTraurig', fertig); return; }
   if(hi.stufe === 'geschnitzt'){
     hi.stufe = 'froh';
     // er bekommt das Entchen und trommelt vor Freude (zweimal), waehrend er sich bedankt; dann schiebt er Joshi den Korb hin.
     // Daran das rote Fell – am Korb erscheint der braune Lupenring, der Fuchs zeigt ihn. Das Gespraech ueber das Fell kommt
     // erst nach der Lupe (e3StelleFertig 'fell_lupe').
     sprichDann(T.schenken, 'joshi', () => { entchenZeigen(); gorillaAnim('freuen', 2); story.spaeter(4.6, () => { if(hi.cur === 'freuen') gorillaAnim('stehen'); }); });
-    sprichDann(T.froh, 'tierM', () => {
-      korbZurueck(); sprichDann(T.korb, 'tierM', () => {
+    sprichDann(T.froh, 'gorilla', () => {
+      korbZurueck(); sprichDann(T.korb, 'gorilla', () => {
         if(hi.korb && hi.korb.userData.fell) hi.korb.userData.fell.visible = true;
         hi.stufe = 'korb'; fertig(); fuchsZu('fell_lupe'); }); });
     return;
   }
   // nach dem Korb (Live-Wunsch 22.10.2026): kein Hilfetext, er ist einfach froh – den Lupenring nennt nur die Hilfe-Taste
-  if(hi.stufe === 'korb' || hi.stufe === 'geschenkt'){ sprichDann(T.gluecklich, 'tierM', fertig); return; }
-  if(hi.stufe === 'fell' || hi.stufe === 'foto'){ sprichDann(['Danke, ' + 'Joshi! Viel Glück beim Lama.'], 'tierM', fertig); return; }
-  sprichDann(T.inRuhe, 'tierM', fertig);
+  if(hi.stufe === 'korb' || hi.stufe === 'geschenkt'){ sprichDann(T.gluecklich, 'gorilla', fertig); return; }
+  if(hi.stufe === 'fell' || hi.stufe === 'foto'){ sprichDann(['Danke, ' + 'Joshi! Viel Glück beim Lama.'], 'gorilla', fertig); return; }
+  sprichDann(T.inRuhe, 'gorillaTraurig', fertig);
 }
 // Das neue Entchen (das geschnitzte) haelt er dann in den Haenden – vor ihm auf dem Boden, gut zu sehen
 function entchenZeigen(){
@@ -305,7 +305,7 @@ function fellBild(){
   let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   g.lineCap = 'round';
   for(let i = 0; i < 46; i++){ const x = 470 + rnd() * 260, y = 300 + rnd() * 200, a = -0.9 + rnd() * 0.5, L = 110 + rnd() * 150;
-    g.strokeStyle = i % 3 ? 'rgba(196,74,30,.85)' : 'rgba(150,50,20,.8)'; g.lineWidth = 2 + rnd() * 2.5;
+    g.strokeStyle = i % 3 ? 'rgba(168,80,42,.85)' : 'rgba(120,110,100,.6)'; g.lineWidth = 2 + rnd() * 2.5;   // rotbraun und weiss (Bleistift)
     g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * L * 0.5 + 18, y + Math.sin(a) * L * 0.5, x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); }
   // Bleistift-Rahmen: Klebeband-Umriss wie ein Fundstueck
   g.strokeStyle = 'rgba(60,55,50,.55)'; g.lineWidth = 3; g.strokeRect(400, 220, 420, 360);
@@ -319,7 +319,7 @@ story.e3FellModell = function(){
   const g = new THREE.Group(), braun = new THREE.MeshLambertMaterial({ color: 0x9a6b3a }), dunkel = new THREE.MeshLambertMaterial({ color: 0x6e4a26 });
   g.add(new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 0.05), braun));
   for(let i = 0; i < 6; i++){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.085, 0.054), dunkel); s.position.x = -0.135 + i * 0.054; g.add(s); }
-  const rot = [new THREE.MeshLambertMaterial({ color: 0xc44a1e }), new THREE.MeshLambertMaterial({ color: 0x96321a })];
+  const rot = [new THREE.MeshLambertMaterial({ color: 0xa8502a }), new THREE.MeshLambertMaterial({ color: 0xf2efe8 })];   // rotbraun und weiss
   let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
   for(let i = 0; i < 16; i++){ const L = 0.07 + rnd() * 0.07, h = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.004, L, 5), rot[i % 2]);
     h.position.set(-0.06 + rnd() * 0.12, -0.01 - L * 0.35 + rnd() * 0.03, 0.03); h.rotation.set(0, 0, -0.6 + rnd() * 1.2); g.add(h); }
@@ -346,7 +346,7 @@ story.e3StelleFertig = function(id){
   // ... und der Korb ist ab jetzt in Joshis Rucksack (Live-Wunsch 22.10.2026): in der Hoehle verschwindet er
   if(id === 'fell_lupe'){ bananenEinpacken(); }
   if(id === 'fell_lupe' && hi.stufe === 'korb'){ hi.stufe = 'fell';
-    story.spaeter(0.6, () => { sprichDann(T.joshiFell, 'joshi'); sprichDann(T.gorillaFell, 'tierM', () => {
+    story.spaeter(0.6, () => { sprichDann(T.joshiFell, 'joshi'); sprichDann(T.gorillaFell, 'gorilla', () => {
       story.e3MustangFrei = true;                                  // hoehle.js: Y an der Mustang, der Weg wird hell
       fuchsZu('gorilla_foto'); }); }); }   // ohne "Mach doch noch ein Foto" (Live-Wunsch 22.10.2026): der Fuchs zeigt den Ring
   if(id === 'gorilla_foto') hi.stufe = 'foto';            // "Geh hinaus zum Flugzeug" nur ueber die Hilfe-Taste (Live-Wunsch 22.10.2026)
@@ -357,6 +357,9 @@ function bananenEinpacken(){
 }
 // Das kaputte Entchen ist nach dem Schnitzen weg (Live-Wunsch 22.10.2026) – auch nicht mehr auf dem Foto
 function kaputtWeg(){ if(hi.kaputt && !hi.kaputtWeg){ hi.kaputtWeg = true; story.entferne(hi.kaputt); } }
+// ... und zwar schon, wenn das Schnitzen beginnt (Live-Wunsch 29.10.2026: dann faellt nicht auf, dass es danach fehlt) – notizbuch.js
+// ruft das noch in der Blende zum Arbeitsplatz
+story.e3KaputtWeg = kaputtWeg;
 // Bedingungen der Stellen (notizbuch.js STELLEN): Lupe nach dem Suchblick; der Schnitzring erst nach dem Gespraech (vorher
 // ist er gar nicht da, Live-Wunsch 22.10.2026); der Lupenring am Fell, wenn der Korb zurueck ist; Foto am Schluss
 const AB = (...stufen) => stufen.includes(hi.stufe);
@@ -377,7 +380,9 @@ const STROH = { x: RAUM.x - RAUM.R + 2.4, z: RAUM.z - 1.8, y: 0.25 };   // wie i
 const FREUDE_POSE = 0.45;                                                // Anteil des Clips: die Faeuste an der Brust
 story.e3FotoVorbereiten = function(){ if(!hi.gorilla) return; story.fotoLaeuft = true;
   hi.gorilla.rotation.y = Math.atan2(FOTO_P.x - GORILLA.x, FOTO_P.z - GORILLA.z);
-  const a = hi.acts.freuen; if(a){ for(const x of Object.values(hi.acts)) x.stop(); a.reset(); a.play(); a.paused = true; a.time = a.getClip().duration * FREUDE_POSE; hi.cur = 'freuen'; hi.mixer.update(0); }
+  // im Sucher trommelt er sich auf die Brust (Live-Wunsch 29.10.2026: vorher stand er dabei – und danach – starr in der Pose); nur
+  // fuer die Aufnahme selbst haelt er genau in der Freuden-Pose an (story.e3FotoAufnahme, notizbuch.js beiAufnahme)
+  const a = hi.acts.freuen; if(a){ for(const x of Object.values(hi.acts)) x.stop(); a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.paused = false; a.play(); hi.cur = 'freuen'; }
   else gorillaAnim('stehen');
   if(hi.entchen){ const e = hi.entchen; story.welt(3).attach(e);                    // aus seinen Haenden aufs Stroh
     // schaut im 60-Grad-Winkel zum Gorilla (Live-Wunsch 22.10.2026): der Schnabel des Modells zeigt auf -x, also um die
@@ -395,7 +400,12 @@ story.e3FotoVorbereiten = function(){ if(!hi.gorilla) return; story.fotoLaeuft =
     const bb = new THREE.Box3().setFromObject(e), c = bb.getCenter(new THREE.Vector3());
     e.position.x += STROH.x + 0.5 - c.x; e.position.z += STROH.z + 0.6 - c.z; e.position.y += BODEN_Y + STROH.y - bb.min.y; }
   if(hi.korb){ hi.korbWeg = null; hi.korb.position.set(GORILLA.x + 1.1, BODEN_Y, GORILLA.z + 0.4); }   // (nach der Lupe ist er im Rucksack)
-  story.spaeter(8, () => { story.fotoLaeuft = false; }); };
+  story.spaeter(8, () => { story.fotoLaeuft = false; if(hi.cur === 'freuen') gorillaAnim('stehen'); }); };   // danach wieder wie sonst
+story.e3FotoAufnahme = function(an){
+  const a = hi.acts.freuen; if(!a || !hi.mixer) return;
+  if(an){ for(const x of Object.values(hi.acts)) if(x !== a) x.stop(); a.setEffectiveWeight(1); a.play(); a.paused = true; a.time = a.getClip().duration * FREUDE_POSE; hi.cur = 'freuen'; hi.mixer.update(0); }
+  else a.paused = false;                                                        // weiter trommeln
+};
 story.e3Hinweis = function(){
   if(hi.drin){
     if(hi.stufe === 'x') return T.hinweisX;
@@ -448,13 +458,16 @@ function setzeUm(ziel){
   const g = eva.group;
   if(ziel === 'innen'){
     baueRaum(); innenZeigen(true);
+    // in der Schwarzblende einmal von innen rendern: Shader und Texturen jetzt, nicht beim ersten Hinsehen (story.innenRendern)
+    if(!hi.gerendert && story.innenRendern){ hi.gerendert = true; story.innenRendern(RAUM.x, BODEN_Y + 1.6, RAUM.z); }
     const x = RAUM.x, z = RAUM.z + RAUM.R - 3.6;              // ein Stueck in der Hoehle: hinter ihm hat die Kamera Platz
     g.position.set(x, BODEN_Y, z); eva.yaw = 0;                 // Blick in die Hoehle (-z): Feuer und Gorilla
     hi.drin = true; story.innen.drin = true; story.innen.wo = 'hoehle';
-    if(!hi.warDrin){ hi.warDrin = true; story.spaeter(1.0, () => story.sprich(T.ankunft)); }
+    if(!hi.warDrin){ hi.warDrin = true; story.einleitung(1.0, T.ankunft); }   // das X erst danach
   } else {
     innenZeigen(false);
-    const H = story.hoehle.eingang, { x, z } = story.freierPlatz(H.x, H.z + 4.5, 'joshi');
+    // (Live-Wunsch 29.10.2026, gilt fuer jedes Gebaeude: so weit draussen, dass die Kamera hinter Joshi nicht im Gebaeude haengt)
+    const H = story.hoehle.eingang, { x, z } = story.freierPlatz(H.x, H.z + 7.0, 'joshi');
     g.position.set(x, evaFootY(x, z), z); eva.yaw = Math.PI;      // Blick vom Berg weg (Wiese, Piste)
     hi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(story.e3Draussen) story.e3Draussen();
@@ -494,6 +507,11 @@ function updateWechsel(dt){
 story.updateHoehleInnen = function(dt){
   if(!e3()) return;
   hi.t += dt;
+  // Live-Befund 29.10.2026: das erste Betreten hielt das Spiel 2 s an (Hoehle gebaut, Shader uebersetzt). Darum schon auf dem Weg
+  // dorthin bauen und vorwaermen, nach und nach (story.vorbereiten) – die Hoehle schwebt weit weg und ist von draussen nicht zu sehen
+  if(!hi.vorbereitet && !hi.drin && eva && hi.t > 2 && story.vorbereiten){ hi.vorbereitet = true;
+    story.vorbereiten(() => { baueRaum(); if(!hi.drin) innenZeigen(false); }, 'hoehle');
+  }
   updateWechsel(dt);
   if(hi.mixer) hi.mixer.update(dt);
   if(hi.korbWeg){ const w = hi.korbWeg; w.t += dt; const k = Math.min(1, w.t / 1.2), e = k * k * (3 - 2 * k);

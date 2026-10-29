@@ -18,8 +18,15 @@ const GLEIT = 3.2;                      // wie schnell das Teleskop zum gewaehlt
 // ---- Die Objekte: Richtung (Azimut 0 = Nord, 90 = Ost; Hoehe), Groesse am Himmel (Grad), Name, Fakten -----------------
 // Fakten fuer Kinder: Entfernungen in km und Lichtminuten (Licht ist schnell: 300.000 km in einer Sekunde), Tag und Jahr,
 // woraus er besteht, Alter, eine Besonderheit. Planeten: kleinste Entfernung zur Erde ("wenn er uns am naechsten ist").
+// Modus 'mond' (story.teleskopAuf('mond'), Buero der Mondbasis, Live-Wunsch 28.10.2026): der Mond fehlt (auf ihm steht man),
+// dafuer ist die Erde da; davor in der Runde zuerst drei Bilder von oben (ORTE, teleskop_bilder.js).
 const PLANETEN = [
-  { id: 'mond', glb: 'PLANET_MOND_GLB', name: 'Der Mond', az: 100, h: 30, gr: 3.2, fakten: [
+  { id: 'erde', glb: 'PLANET_ERDE_GLB', name: 'Die Erde', az: 100, h: 30, gr: 3.6, nurMond: true, fakten: [
+    'Die Erde – unser Zuhause!',
+    'Vom Mond aus ist sie ungefähr 384.000 Kilometer weit weg. Ihr Licht braucht etwas mehr als eine Sekunde bis hierher.',
+    'Von hier oben sieht man die blauen Meere, die grünen Wälder und die weißen Wolken.',
+    'Die Erde ist ungefähr 4,5 Milliarden Jahre alt. Sie ist der einzige Planet, auf dem wir Pflanzen und Tiere kennen.'] },
+  { id: 'mond', glb: 'PLANET_MOND_GLB', nichtMond: true, name: 'Der Mond', az: 100, h: 30, gr: 3.2, fakten: [
     'Der Mond.',
     'Er ist unser Nachbar im Weltall und ungefähr 384.000 Kilometer von der Erde weg. Sein Licht braucht nur etwas mehr als eine Sekunde bis zu uns.',
     'Bis zur Sonne sind es 150 Millionen Kilometer – das Licht braucht dafür gut 8 Minuten.',
@@ -97,6 +104,11 @@ const PLANETEN = [
     'Die Sonne dreht sich in ungefähr 25 Tagen einmal um sich selbst. Und für eine Runde um die Mitte der Milchstraße braucht sie 230 Millionen Jahre.',
     'Sie ist ungefähr 4,6 Milliarden Jahre alt.',
     'Schau aber nie mit bloßen Augen oder einem Fernrohr direkt in die echte Sonne – das ist gefährlich für die Augen!'] },
+];
+const ORTE = [
+  { id: 'tisch', bild: 'tisch', name: 'Die Waldinsel', az: 76, h: 22, gr: 6, fakten: ['Ein guter Blick auf die Waldinsel und den Festtisch.'] },
+  { id: 'hoehle', bild: 'hoehle', name: 'Die Höhle des Gorillas', az: 86, h: 14, gr: 6, fakten: ['Die Höhle des Gorillas.'] },
+  { id: 'oase', bild: 'oase', name: 'Das Observatorium', az: 96, h: 22, gr: 6, fakten: ['Das Observatorium.'] },
 ];
 const MILCHSTRASSE = { id: 'milchstrasse', name: 'Die Milchstraße', az: 300, h: 62, gr: 9, fakten: [
   'Die Milchstraße.',
@@ -176,12 +188,26 @@ function bauen(){
   // Gruenes A (Live-Wunsch 23.10.2026): klein unten mittig halb ueberlappend am Ring des gewaehlten Objekts – A = mehr erfahren
   tk.a = new THREE.Sprite(new THREE.SpriteMaterial({ map: story.knopfTextur ? story.knopfTextur('A') : null, transparent: true, depthTest: false, depthWrite: false })); tk.a.renderOrder = 11; s.add(tk.a);
   // Objekte
-  for(const P of PLANETEN) tk.objekte.push({ art: 'planet', P, id: P.id, name: P.name, fakten: P.fakten, dir: dirAus(P.az, P.h), gr: P.gr, obj: null });
+  const mond = tk.modus === 'mond';
+  if(mond && window.TELESKOP_BILDER) for(const O of ORTE) tk.objekte.push(ortBauen(O));
+  for(const P of PLANETEN) if(!(mond && P.nichtMond) && !(!mond && P.nurMond)) tk.objekte.push({ art: 'planet', P, id: P.id, name: P.name, fakten: P.fakten, dir: dirAus(P.az, P.h), gr: P.gr, obj: null });
   tk.objekte.push({ art: 'milchstrasse', id: 'milchstrasse', name: MILCHSTRASSE.name, fakten: MILCHSTRASSE.fakten, dir: mDir, gr: MILCHSTRASSE.gr });
   sternbilderBauen();
   for(const o of tk.objekte) if(o.art === 'planet') planetLaden(o);
-  // Start: der Mond
-  tk.wahl = tk.objekte.findIndex(o => o.id === 'mond'); tk.blick.copy(tk.objekte[tk.wahl].dir);
+  // Start: der Mond (im Buero der Mondbasis: der Festtisch)
+  tk.wahl = Math.max(0, tk.objekte.findIndex(o => o.id === (mond ? 'tisch' : 'mond'))); tk.blick.copy(tk.objekte[tk.wahl].dir);
+}
+// Ein Bild von oben am Himmel: rund, mit hellem Rand; gross (A) als runde Scheibe im Okular
+function ortTex(O){ const im = new Image(); im.src = window.TELESKOP_BILDER[O.bild];
+  const t = new THREE.Texture(im); im.onload = () => { t.needsUpdate = true; }; return t; }
+function ortBauen(O){
+  const o = { art: 'bild', O, id: O.id, name: O.name, fakten: O.fakten, dir: dirAus(O.az, O.h), gr: O.gr, tex: ortTex(O) };
+  const g = new THREE.Group(), d = R_HIMMEL * 0.9, rad = d * Math.tan(o.gr / 2 * Math.PI / 180);
+  const k = new THREE.Group(); g.add(k); g.userData.k = k;
+  k.add(new THREE.Mesh(new THREE.CircleGeometry(rad, 40), new THREE.MeshBasicMaterial({ map: o.tex })));
+  const rand = new THREE.Mesh(new THREE.RingGeometry(rad, rad * 1.08, 40), new THREE.MeshBasicMaterial({ color: 0xdfe8ff })); rand.position.z = 0.01; k.add(rand);
+  g.position.copy(o.dir).multiplyScalar(d); g.lookAt(0, 0, 0); tk.szene.add(g); o.obj = g;
+  return o;
 }
 // Sternbilder aus sternbilder.js (b.punkte: dort schon an ihren Platz gesetzt) – eigene Sterne und Linien, hier in der Szene
 function sternbilderBauen(){
@@ -254,6 +280,10 @@ function nahZeigen(o){
     const g = new THREE.Group(), k = o.vorlage.clone(true); g.add(k); g.userData.k = k;
     if(o.P.leuchtet){ const sch = new THREE.Sprite(new THREE.SpriteMaterial({ map: leuchtTex('rgba(255,235,170,0.8)', 'rgba(255,170,60,0.3)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); sch.scale.setScalar(3.4); g.add(sch); }
     if(o.id === 'mond') g.userData.blink = blinkLicht(g, 1);
+    tk.szene.add(g); tk.nah = g;
+  } else if(o.art === 'bild'){
+    const g = new THREE.Group(), k = new THREE.Group(); g.add(k); g.userData.k = k;           // k dreht sich in schritt (hier leer)
+    g.add(new THREE.Mesh(new THREE.CircleGeometry(1.6, 64), new THREE.MeshBasicMaterial({ map: o.tex })));
     tk.szene.add(g); tk.nah = g;
   } else tk.fovSoll = Math.max(14, Math.min(64, o.gr * 1.3));     // Sternbild, Milchstrasse: so, dass es ganz ins Okular passt
   if(o.linien) o.linien.opacity = 0.85;
@@ -333,8 +363,10 @@ function okularBauen(){
     + 'box-shadow:0 0 0 1.2vmin rgba(201,160,70,.75), inset 0 0 6vmin rgba(0,0,0,.8);';
   okular.appendChild(ring); document.body.appendChild(okular);
 }
-function auf(){
+function auf(modus){
   if(tk.an || !story.pauseSetzen) return;
+  modus = modus === 'mond' ? 'mond' : 'himmel';
+  if(tk.modus !== modus){ if(tk.szene) tk.szene = null; tk.objekte = []; tk.wahl = 0; tk.modus = modus; }   // anderer Ort: Himmel neu
   bauen(); okularBauen();
   tk.an = true; tk.eingabe = liesEingabe(); tk.sperre = 0.5; tk.fov = tk.fovSoll = FOV; nahWeg();
   story.pauseSetzen('teleskop'); okular.style.display = 'block';

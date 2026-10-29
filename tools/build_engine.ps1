@@ -1,4 +1,4 @@
-﻿# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
+# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
 # Aufruf aus dem Projektordner:  powershell -File tools/build_engine.ps1
 # Die Engine bleibt UNVERAENDERT – die Spiellogik haengt sich in story.js per Wrapper ein.
 $ErrorActionPreference = 'Stop'
@@ -38,7 +38,7 @@ $engine = "// AUTOMATISCH ERZEUGT aus ../Flugspiel/Flugspiel.html (tools/build_e
 $noetig = 'loop','updateEva','makeAstronaut','findStart','placeAtStart','evaExit','updateHUD','updateSpaceBlend',
           'cycleModel','spawnFire','aiFindFireIsland','_islandInfoCalc','carrierInfo','preloadHarbor','preloadHangar',
           'preloadFord','enterHangar','harborSubNear','harborBoatLocal','evaStartJet','evaFootY','islandInfo',
-          'isOnLand','hitsBuilding','toggleSound','flashFade'
+          'isOnLand','hitsBuilding','toggleSound','flashFade','updatePads','stepPhysics','updateCamera','showBeacon','evaFootY','buttonY','buttonB','evaCanBoard','driftKindNow'
 $fehlt = $noetig | Where-Object { $engine -notmatch ('(?m)^function ' + [regex]::Escape($_) + '\(') }
 if($fehlt){ throw ('Engine-Funktionen fehlen (umbenannt?): ' + ($fehlt -join ', ')) }
 [IO.File]::WriteAllText((Join-Path $dst 'engine.js'), $engine, $utf8)
@@ -53,7 +53,8 @@ foreach($ln in $lines[0..($start-1)]){
   $ln = $ln -replace '<meta name="theme-color" content="[^"]*">', '<meta name="theme-color" content="#0e1a3a">'
   # Engine-Modelle, die dieses Spiel nie zeigt (Analyse 23.10.2026: kein Weltall, kein Modellwechsel ...) - nicht mitliefern,
   # dann passen auch die Danksagungen (README) genau zu dem, was im Spiel ist. Alle Lader der Engine pruefen, ob die Datei da ist.
-  if($ln -match '<script src="([a-z0-9_]+)_glb\.js"></script>' -and (' canadair alphajet airbus transall parachute falcon astronaut dinghy ford harbor xwing_alt earth crater mars sun spacedrive asteroid marsground moonbase iss shuttle razor serenity rover lunar destroyer enterprise rocket pad ' -match (' ' + $Matches[1] + ' '))){ continue }
+  # Etappe 5 (Mond, mond.js): Kraterboden (crater) und Mondbasis (moonbase) der Engine werden gebraucht
+  if($ln -match '<script src="([a-z0-9_]+)_glb\.js"></script>' -and (' canadair alphajet airbus transall parachute falcon astronaut dinghy ford harbor xwing_alt earth mars sun spacedrive asteroid marsground iss shuttle razor serenity rover lunar destroyer enterprise rocket pad ' -match (' ' + $Matches[1] + ' '))){ continue }
   # Todesstern (Lizenz CC-BY-NC-ND): gehoert nicht zu diesem Spiel - die Datei wird gar nicht erst kopiert (story.js ohneTodesstern)
   if($ln -match '<script src="deathstar_glb\.js"></script>'){ continue }
   # Hangar: in diesem Spiel landet man nirgends im Hangar (story.js ohneTodesstern) - das Modell wird nicht kopiert
@@ -82,7 +83,22 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              # Draussen: der Schluessel fuer das Raumschiff des Lamas ("Key Wooden" von Sam, CC-BY-4.0)
              schluessel = 'SCHLUESSEL_GLB';
              # See der Oase: Meeresschildkroete und Baby (Low Poly, animiert, WildPoly3D, CC-BY-NC-4.0)
-             meeresschildkroete = 'MEERESSCHILDKROETE_GLB'; meeresschildkroete_baby = 'MEERESSCHILDKROETE_BABY_GLB' }
+             meeresschildkroete = 'MEERESSCHILDKROETE_GLB'; meeresschildkroete_baby = 'MEERESSCHILDKROETE_BABY_GLB';
+             # Mondbasis (Etappe 5): das Eichhoernchen (WildPoly3D, CC-BY-NC-4.0; Idle, lookaround, run, sleep, snow - C:\tmp\gt\tiere.mjs) und das Mikroskop (Binocular Microscope von Michael Perez)
+             eichhoernchen = 'EICHHOERNCHEN_GLB'; mikroskop = 'MIKROSKOP_GLB';
+             # Im Mikroskop: die Experimente in 3D (alle CC-BY-4.0, verkleinert mit C:\tmp\gt\opt.mjs / sloppy.mjs / behalte.mjs): Farn ("All Plants" von Svea_99, nur "Pflanze 1"),
+             # Wassertropfen ("drop of water" von furret), Kristalle ("Cristal" von lobach.dre, "CRISTAL OSCURO_" von iorko), Laborglas ("Lab Tube for P.A.L" von Charlotte Kimberly Andreassen),
+             # Feder ("Day 1. Feather" von tuturu), Hammer ("Hammer Game Ready" von re1monsen); auf dem Forschungstisch der Reagenzglas-Staender ("3rd - Chemistry // Old Lab Tubes" von Ringo Gunther)
+             pflanze = 'PFLANZE_GLB'; tropfen = 'TROPFEN_GLB'; kristall = 'KRISTALL_GLB'; kristall_dunkel = 'KRISTALL_DUNKEL_GLB'; laborglas = 'LABORGLAS_GLB';
+             feder = 'FEDER_GLB'; hammer = 'HAMMER_GLB'; reagenzglaeser = 'REAGENZGLAESER_GLB';
+             # Starke Knochen im Mikroskop ("Bone" von Zab, CC-BY-4.0, Live-Wunsch 29.10.2026)
+             knochen = 'KNOCHEN_GLB';
+             # Etappe 5: die Erde am Mondhimmel und in der Skizze ("Earth" von Akshat, CC-BY-4.0, Textur als JPEG)
+             planet_erde = 'PLANET_ERDE_GLB';
+             # Etappe 5, Ende (Live-Wuensche 28.10.2026, alle CC-BY-4.0, verkleinert mit C:\tmp\gt\opt.mjs): Computer im Buero ("Old retro-futuristic
+             # spaceship computer" von Julius), Gitarre und Schlagzeug im Saal ("Guitarra" von yimmyramiro, "Drum Set" von YieldingMist206),
+             # die Rakete fuer den Heimflug ("Rocket" von stevespencer); Samu aus Spiel_SFG (nur idle, walk, dance_hiphop, dance_silly - C:\tmp\gt\tiere.mjs)
+             computer = 'COMPUTER_GLB'; gitarre_saal = 'GITARRE_SAAL_GLB'; schlagzeug = 'SCHLAGZEUG_GLB'; rakete = 'RAKETE_GLB'; samu = 'SAMU_GLB' }
 $skripte = @()
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
@@ -99,7 +115,8 @@ foreach($n in $modelle.Keys){
 # voegel: Vogelgezwitscher im hellen Waldweg (Pixabay: oliviaaydin 'birds singing')
 # wuestenwind: leichter Wind in der Oase, Etappe 4 (Pixabay: tanweraman 'Desert Wind 2', wie Trip to Japan Etappe 2)
 # adler1, adler2: Adlerrufe in Wald und Bergen, Etappe 3 (Pixabay: koiroylers 'eagle', u_jfkxueyart 'eagle')
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel', 'wuestenwind', 'adler1', 'adler2')){
+# weihnachtslied: "Tinsel and Tremolo" (vom Spieler selbst mit Gemini erstellt), Weihnachtsfeier im Saal der Mondbasis (Etappe 5)
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voegel', 'wuestenwind', 'adler1', 'adler2', 'weihnachtslied')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)
@@ -109,6 +126,8 @@ foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'voeg
 }
 # Moewen kommen fertig aus Spiel_SFG (moewe_glb.js, MOEWE_SITZ_GLB + MOEWE_FLUG_GLB)
 if(Test-Path (Join-Path $root 'moewe_glb.js')){ $skripte += 'moewe_glb.js' }
+# Gaeste der Weihnachtsfeier fertig aus Spiel_SFG: die Aliens (ALIEN_GROSS_GLB, ALIEN_KLEIN_GLB) und Barki (SHIBA_GLB)
+foreach($n in @('alien_glb.js', 'shiba_glb.js')){ if(Test-Path (Join-Path $root $n)){ $skripte += $n } }
 # Seil-Textur (Etappe 4, Schnur am Paket): fertig als seil_tex.js ("Rope" von xenosmashgames, CC-BY-4.0; Quelle models/seil.jpg)
 if(Test-Path (Join-Path $root 'seil_tex.js')){ $skripte += 'seil_tex.js' }
 $skripte += 'story.js'
@@ -119,6 +138,7 @@ $skripte += 'texturen.js'
 $skripte += 'insel.js'
 $skripte += 'steg.js'
 $skripte += 'huette_innen.js'
+$skripte += 'kinderzimmer.js'          # Etappe 0: Joshis Kinderzimmer und der Traum-Uebergang (Intro, spaeter Outro)
 $skripte += 'ausruestung.js'
 $skripte += 'joshi_kopf.js'
 $skripte += 'segeln.js'
@@ -131,7 +151,14 @@ $skripte += 'hoehle_innen.js'
 $skripte += 'fallschirm.js'      # Fallschirmsprung als Baustein (Etappe 4: zum Lama)
 $skripte += 'wueste.js'          # Etappe 4: die Wueste mit der Oase des Lamas
 $skripte += 'observatorium_innen.js'   # Etappe 4: im Observatorium des Lamas
+$skripte += 'teleskop_bilder.js'       # Etappe 5: Bilder fuer das Teleskop im Buero (Festtisch, Hoehle, Oase von oben)
 $skripte += 'teleskop.js'              # Etappe 4: durch das Teleskop (Nachthimmel, Planeten, Sternbilder)
+$skripte += 'mond.js'                  # Etappe 5: Landeanflug auf den Mond, zur Mondbasis
+$skripte += 'mondbasis_innen.js'       # Etappe 5: in der Mondbasis beim Eichhoernchen
+$skripte += 'mikroskop.js'             # Etappe 5: durch das Mikroskop (Experimente im Weltall)
+$skripte += 'mondfest.js'              # Etappe 5: die Weihnachtsfeier im grossen Saal
+$skripte += 'heimflug.js'              # Etappe 5: nach dem Fest – Schnitzen, Rakete, Heimflug
+$skripte += 'heimkehr.js'              # Ende von Spiel 1: Landung zu Hause, Funk, Huette, Aufwachen, Abspann
 
 # Startbild schon waehrend des Ladens (statt des blauen Engine-HUDs) – direkt nach <body>; story.js zeigt spaeter den Knopf
 $ladebild = [IO.File]::ReadAllText((Join-Path $root 'tools/ladebild.html'), $utf8).Trim()

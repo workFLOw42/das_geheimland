@@ -15,6 +15,7 @@ const RAUM = { x: 0, z: -620, B: 9, T: 7, H: 3.2 };   // Mitte, Breite (x), Tief
 const BODEN_Y = 150;
 const TUER_B = 1.1, TUER_H = 2.1;
 const innen = story.innen = { drin: false, gruppe: null, blende: 0, wechsel: null, sperre: 0 };
+story.huetteRaumBauen = (art) => baueRaum(art);   // kinderzimmer.js: dieselbe Einrichtung als Joshis Zimmer
 
 // Texturen (Tapete, Dielen, Verkleidung, Strassenteppich) kommen gemeinsam aus texturen.js (story.tex)
 function canvasTex(w, h, mal){
@@ -24,8 +25,11 @@ function canvasTex(w, h, mal){
 }
 
 // ---- Raum bauen ------------------------------------------------------------------------------
-function baueRaum(){
-  if(innen.gruppe) return;
+// zimmer: dieselbe Einrichtung als Joshis Kinderzimmer (kinderzimmer.js) – ohne Tisch und Stuehle, groesserer Spielteppich,
+// Spielsachen statt des Bagger-Bords; dann nur { g, R } zurueck (R statt innen: die Huette bleibt unberuehrt)
+function baueRaum(zimmer){
+  if(!zimmer && innen.gruppe) return;
+  const R = zimmer ? {} : innen;
   const g = new THREE.Group();
   const B = RAUM.B, T = RAUM.T, H = RAUM.H;
   const tapM = new THREE.MeshLambertMaterial({ map: story.tex.tapete() });
@@ -106,60 +110,69 @@ function baueRaum(){
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, T), dunkel); b.position.set(x, H - 0.11, 0); g.add(b);
   }
   // Moebel: Bett (links hinten), Tisch mit Laterne (rechts), Regal (Rueckwand), Strassen-Spielteppich
-  const decken = new THREE.MeshLambertMaterial({ color: 0x3f6fb5 });
-  const bett = new THREE.Group(); bett.position.set(-B / 2 + 1.0, 0, -T / 2 + 1.5);
+  const bett = new THREE.Group(); bett.position.set(-B / 2 + 0.66, 0, -T / 2 + 1.17);   // Kopfteil und Laengsseite an der Wand (Live-Wuensche 29.10.2026: vorher 35 bzw. 40 cm davor)
   const rahmen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 2.2), holz); rahmen.position.y = 0.2; bett.add(rahmen);
   const kopf = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.9, 0.1), dunkel); kopf.position.set(0, 0.45, -1.1); bett.add(kopf);
-  const dk = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.1, 1.5), decken); dk.position.set(0, 0.45, 0.3); bett.add(dk);
-  const ki = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.14, 0.4), new THREE.MeshLambertMaterial({ color: 0xf2efe6 })); ki.position.set(0, 0.47, -0.75); bett.add(ki);
+  // Matratze mit hellem Laken; darauf die Decke als weiches Tuch (kinderzimmer.js bettDeckeBauen) und ein rundes, weiches Kissen
+  // (Live-Wunsch 29.10.2026: vorher Kisten – die Decke wirkte wie eine Platte)
+  const dk = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.1, 2.08), new THREE.MeshLambertMaterial({ color: 0xebe7dc })); dk.position.set(0, 0.45, 0.01); dk.name = 'matratze'; bett.add(dk);
+  const ki = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14), new THREE.MeshLambertMaterial({ color: 0xf2efe6 })); ki.scale.set(0.4, 0.075, 0.2); ki.position.set(0, 0.555, -0.76); bett.add(ki);
   g.add(bett);
-  const tisch = new THREE.Group(); tisch.position.set(B / 2 - 1.4, 0, -0.6);
+  if(story.bettDeckeBauen) story.bettDeckeBauen(bett);
+  let tisch = null;
+  if(!zimmer){
+  tisch = new THREE.Group(); tisch.position.set(B / 2 - 1.4, 0, -0.6);
   const platte = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.07, 0.9), holz); platte.position.y = 0.78; tisch.add(platte);
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){ const bn = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.75, 0.07), dunkel); bn.position.set(sx * 0.6, 0.375, sz * 0.36); tisch.add(bn); }
   const lat = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xffd27a })); lat.position.set(0.35, 0.95, 0); tisch.add(lat);
   // Lupe, Kompass, Taschenmesser, Stift, Kamera: Modelle aus dem Katalog (ausruestung.js) – hier nur die Gruppe dafuer
-  innen.tischGruppe = new THREE.Group(); tisch.add(innen.tischGruppe);
-  innen.tisch = tisch; innen.tischPlatte = platte;
+  R.tischGruppe = new THREE.Group(); tisch.add(R.tischGruppe);
+  R.tisch = tisch; R.tischPlatte = platte;
   g.add(tisch);
   // zwei Stuehle an den Tisch, je an eine Laengsseite, leicht schraeg herausgezogen
   const stuehle = [];
   for(const [sx, sz, rot] of [[-0.3, 0.75, Math.PI + 0.12], [0.35, -0.72, -0.1]]){
     const s = baueStuhl(holz, dunkel); s.position.set(tisch.position.x + sx, 0, tisch.position.z + sz); s.rotation.y = rot; g.add(s); stuehle.push(s);
   }
-  innen.stuehle = stuehle;
+  R.stuehle = stuehle;
+  }
   // Regal mit EIGENEN Materialien: beim Leuchten (Interaktionsobjekt) leuchteten sonst Bett, Leisten und alles andere
   // aus demselben Holz mit
   const regalHolz = holz.clone(), regalDunkel = dunkel.clone();
   const regal = new THREE.Group(); regal.position.set(0.3, 0, -T / 2 + 0.25);
-  innen.regalBretter = [];
-  for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.32), regalHolz); br.position.y = 0.5 + i * 0.55; regal.add(br); innen.regalBretter.push(br); }
+  R.regalBretter = [];
+  for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.32), regalHolz); br.position.y = 0.5 + i * 0.55; regal.add(br); R.regalBretter.push(br); }
   for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.32), regalDunkel); s.position.set(sx * 1.0, 0.85, 0); regal.add(s); }
   baueBuecher(regal);
   g.add(regal);
-  innen.regal = regal;                                  // spaeter: Trophaeen
+  R.regal = regal;                                  // spaeter: Trophaeen
   // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
-  const teppich = story.tex.teppichMesh(2.7, 1.8); teppich.position.set(0.3, 0.03, 0.9); teppich.userData.begehbar = true; g.add(teppich);
+  const teppich = zimmer ? story.tex.teppichMesh(4.8, 3.2) : story.tex.teppichMesh(2.7, 1.8); teppich.position.set(zimmer ? 1.65 : 0.3, 0.03, zimmer ? 0.2 : 0.9); teppich.userData.begehbar = true; g.add(teppich);   // im Zimmer bis in die Spielecke
   // gelber Spielzeug-Bagger auf einem kleinen Wandbord (rechte Wand, 1,1 m hoch) – auf dem Teppich stand er im Weg
-  const bord = new THREE.Group(); bord.position.set(B / 2 - 0.2, 1.1, 1.6); g.add(bord);
+  if(zimmer){ const bagger = baueBagger(); bagger.position.set(B / 2 - 1.5, 0.03, -0.9); bagger.rotation.y = -0.6; g.add(bagger); R.bagger = bagger;
+    if(story.zimmerSpielsachen) story.zimmerSpielsachen(g, { x: B / 2 - 1.4, z: -0.6 }); }
+  const bord = new THREE.Group(); bord.position.set(B / 2 - 0.2, 1.1, 1.6); if(!zimmer) g.add(bord);
   const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.7), holz.clone()); bord.add(brett);
   for(const sz of [-0.28, 0.28]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(0.13, -0.09, sz); k.rotation.z = 0.5; bord.add(k); }
-  const bagger = baueBagger(); bagger.position.set(-0.02, 0.018, 0); bagger.rotation.y = Math.PI / 2 + 0.25; bord.add(bagger);   // Arm zum Raum
-  innen.bagger = bagger;
+  if(!zimmer){ const bagger = baueBagger(); bagger.position.set(-0.02, 0.018, 0); bagger.rotation.y = Math.PI / 2 + 0.25; bord.add(bagger);   // Arm zum Raum
+  R.bagger = bagger; }
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
   const ll = new THREE.PointLight(0xffc070, 1.0, 12, 1.6);   // Laterne (die Tischplatte gluehte sonst orange) ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
   const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund);
   // Bucher im Regal liegen auf den Brettern (die Bretter sind die Grenze) – Deko ohne eigene Masse
   regal.children.forEach(c => { if(c.isGroup) c.userData.keinKoerper = true; });
+  R.bett = bett;
+  if(zimmer) return { g, R };
   g.position.set(RAUM.x, BODEN_Y, RAUM.z);
   story.welt(1).add(g);
-  innen.gruppe = g;
+  R.gruppe = g; g.visible = !!R.drin;                       // von aussen unsichtbar (schwebt hoch ueber dem Meer)
   // Moebel, Waende, Tuerrahmen, Bord mit Bagger: jedes Bauteil in seiner Form (objekte.js). Unter der Tischplatte und
   // dem Bord passt der Fuchs durch, Joshi nicht.
-  innen.ding = story.ding(g, { welt: 1, typ: 'huette_innen' });
+  R.ding = story.ding(g, { welt: 1, typ: 'huette_innen' });
   // Interaktionsobjekte im Raum (innen: true): Buecherregal (Notizbuch) und der Tisch (alle Sachen darauf als EIN
   // Objekt, ausruestung.js blendet sie nacheinander ein). Der Bagger ist ein einfaches Objekt (nur Grenze).
-  innen.interRegal = story.interaktion(regal, { name: 'Bücherregal', x: RAUM.x + regal.position.x, z: RAUM.z + regal.position.z, r: 1.0, yHoehe: 2.0, welt: 1, innen: true });
-  innen.interTisch = story.interaktion(innen.tischGruppe, { name: 'Tisch', x: RAUM.x + tisch.position.x, z: RAUM.z + tisch.position.z, r: 0.7, yHoehe: 1.35, welt: 1, innen: true });
+  R.interRegal = story.interaktion(regal, { name: 'Bücherregal', x: RAUM.x + regal.position.x, z: RAUM.z + regal.position.z, r: 1.0, yHoehe: 2.0, welt: 1, innen: true });
+  R.interTisch = story.interaktion(R.tischGruppe, { name: 'Tisch', x: RAUM.x + tisch.position.x, z: RAUM.z + tisch.position.z, r: 0.7, yHoehe: 1.35, welt: 1, innen: true });
   if(story.raumGebaut) story.raumGebaut(innen);         // ausruestung.js: Notizbuch ins Regal, Sachen auf den Tisch
 }
 
@@ -263,9 +276,11 @@ function raumFrei(x, z){
 }
 function hookInnen(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding;
-  evaSolid = function(x, z){ if(locale === 'earth' && imRaum(x, z)) return raumFrei(x, z); return solidOrig.apply(this, arguments); };
-  evaFootY = function(x, z){ if(locale === 'earth' && imRaum(x, z)) return BODEN_Y; return fussOrig.apply(this, arguments); };
-  hitsBuilding = function(x, y, z){ if(locale === 'earth' && imRaum(x, z)) return !raumFrei(x, z); return hitsOrig.apply(this, arguments); };
+  // nur, wenn Joshi drin ist (oder gerade hineingeht): sonst ist dort draussen nichts
+  const hier = (x, z) => locale === 'earth' && (innen.drin || !!innen.wechsel) && imRaum(x, z);
+  evaSolid = function(x, z){ if(hier(x, z)) return raumFrei(x, z); return solidOrig.apply(this, arguments); };
+  evaFootY = function(x, z){ if(hier(x, z)) return BODEN_Y; return fussOrig.apply(this, arguments); };
+  hitsBuilding = function(x, y, z){ if(hier(x, z)) return !raumFrei(x, z); return hitsOrig.apply(this, arguments); };
   // Wasser gibt es im Raum nicht (sonst fing die Engine hier das Schlauchboot/Schwimmen an)
   const insWasserOrig = evaEnterDinghy;
   evaEnterDinghy = function(){ if(innen.drin) return; return insWasserOrig.apply(this, arguments); };
@@ -335,14 +350,15 @@ function setzeUm(ziel){
     const x = RAUM.x, z = RAUM.z + RAUM.T / 2 - 2.4;      // ein Stueck im Raum, damit die Kamera hinter ihr Platz hat
     g.position.set(x, BODEN_Y, z);
     eva.yaw = 0;                                          // Blick in den Raum (-z)
-    innen.drin = true; innen.warDrin = true;
+    innen.drin = true; innen.warDrin = true; if(innen.gruppe) innen.gruppe.visible = true;
   } else {
     // ein Stueck vor der Huette (etwa wie beim Spielstart am Feuer), damit die Kamera hinter Joshi nicht in der Huette
     // haengt; seitlich versetzt, damit er nicht im Lagerfeuer steht (das liegt genau vor der Tuer)
-    const { x, z } = story.freierPlatz(H.x - 1.8, H.z + H.T / 2 + 4.2, 'joshi');
+    // (Live-Wunsch 29.10.2026, gilt fuer jedes Gebaeude: so weit draussen, dass die Kamera hinter Joshi nicht im Gebaeude haengt)
+    const { x, z } = story.freierPlatz(H.x - 1.8, H.z + H.T / 2 + 7.0, 'joshi');
     g.position.set(x, evaFootY(x, z), z);
     eva.yaw = Math.PI;                                    // Blick zum Strand (+z)
-    innen.drin = false;
+    innen.drin = false; if(innen.gruppe) innen.gruppe.visible = false;
   }
   g.rotation.y = eva.yaw;
   evaOrbit = 0; evaPitch = 0;

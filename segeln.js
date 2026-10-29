@@ -60,14 +60,13 @@ function malRadar(x, z, kurs, ziel, weit, art){
   g.fillStyle = 'rgba(10,25,40,0.55)'; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
   // Alles auf die Scheibe zuschneiden (Live-Befund: weit von der Insel ragte ihr Fleck ueber den Rand hinaus)
   g.save(); g.beginPath(); g.arc(cx, cy, R - 1, 0, Math.PI * 2); g.clip();
-  // Insel (Startinsel bei 0, 0) als heller Fleck – zum Wiederfinden
   const punkt = (px, pz, r, farbe, rand) => {
     const dx = px - x, dz = pz - z, rel = kurs - Math.atan2(dx, dz), d = Math.hypot(dx, dz);
     const rr = Math.min(R - 8, d / weit * (R - 8));
     g.fillStyle = farbe; g.beginPath(); g.arc(cx + Math.sin(rel) * rr, cy - Math.cos(rel) * rr, r, 0, Math.PI * 2); g.fill();
     if(rand){ g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1; g.stroke(); }
   };
-  if(story.insel) punkt(0, 0, Math.max(3, story.insel.R * 1.12 / weit * (R - 8)), 'rgba(220,200,140,0.55)');
+  // (kein heller Fleck der Startinsel mehr – Live-Befund 29.10.2026: "graue Punkte im Radar, nicht schoen"; nur noch das Ziel)
   if(typeof radarSymbol === 'function') radarSymbol(g, cx, cy, art || 'boot', 0);   // global-ok: Engine
   if(ziel) punkt(ziel.x, ziel.z, 5, '#ff5a3c', true);
   g.restore();
@@ -229,10 +228,14 @@ function update(dt){
   const s = story.stegZustand;
   const imBoot = !!(eva && s && s.imBoot && !s.wechsel && locale === 'earth');
   const flug = story.e3FlugAnzeige ? story.e3FlugAnzeige() : null;   // in der Mustang
-  zeigen(imBoot || !!flug);
+  const rakete = story.raketeSchub ? story.raketeSchub() : null;      // in der Rakete auf dem Mond (heimflug.js) – nur der Schub
+  zeigen(imBoot || !!flug || rakete !== null);
+  if(rakete !== null){ hud.radar.style.display = 'none'; malSchub(rakete, dt, 'flieger'); return; }
   // Kompass (Live-Wunsch): sobald er im Rucksack ist, immer rechts oben – zu Fuss, schwimmend und im Boot. Nicht im
   // Huetten-Raum (eigene Welt, dort gibt es kein Norden) und nicht waehrend der Ausruestungs-Szene.
-  const k = !!(eva && story.ausruestung && story.ausruestung.kompass && !(story.innen && story.innen.drin) && locale === 'earth');
+  // ... auch nicht in Joshis Kinderzimmer und im Abspann (kinderzimmer.js, heimkehr.js)
+  const k = !!(eva && story.ausruestung && story.ausruestung.kompass && !(story.innen && story.innen.drin) && locale === 'earth'
+    && !(story.nurLaufen && story.nurLaufen()) && !(story.heimkehrZustand && story.heimkehrZustand.ab));
   if(k !== kompassAn){ kompassAn = k; hud.kompass.style.display = k ? 'block' : 'none'; }
   // Blickrichtung ab +z: im Boot der Bug, sonst Joshi (Engine: Nase -Z -> yaw + PI)
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);

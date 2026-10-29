@@ -34,6 +34,8 @@ const SACHEN = {
   // Bananenkorb (Etappe 3): nach der Lupe am Korb im Rucksack (Live-Wunsch 22.10.2026) – kein GLB, aus Grundformen
   // (hoehle_innen.js story.bananenModell, derselbe Korb wie in der Hoehle, ohne das Fell)
   bananen: { bau: () => story.bananenModell(), L: 0.22, zeigen: 0.3, invGross: 0.75 },   // im Inventar etwas kleiner (breit und rund)
+  // Mondsteine (Etappe 5, Live-Wunsch 28.10.2026): ein Haeufchen aus so vielen Steinen, wie Joshi gesammelt hat (mond.js)
+  steine: { bau: () => story.e5SteineModell(), L: 0.2, zeigen: 0.3, invGross: 0.8 },
 };
 const TEXT = {
   notizbuch: ['Ah... ein Notizbuch. Das kann man immer gebrauchen.'],
@@ -46,6 +48,7 @@ const TEXT = {
 // Fundstuecke aus den Faellen: im Inventar, aber nicht Teil der Detektiv-Ausruestung (zaehlen nicht fuer "komplett")
 const TEXT_FUND = {
   bananen:   ['Das sind die Bananen, die der Gorilla vom Tisch genommen hat.'],
+  steine:    ['Mondsteine für das Experiment des Eichhörnchens.'],
 };
 const TEXT_KOMPLETT = ['Klasse. Du hast alles dabei, was man als Detektiv braucht.'];
 // Lage auf dem Tisch (Tisch-Koordinaten, Platte 1,4 x 0,9 m; die Laterne steht bei x 0,35). Liegt dort schon etwas,
@@ -83,6 +86,7 @@ function vorlage(n){
   }));
 }
 story.kompassVorlage = () => vorlage('kompass');   // segeln.js: der Kompass rechts oben
+story.steineNeu = () => { delete vorlagen.steine; };   // mond.js: ein Stein mehr – das Haeufchen neu bauen
 // Kopie mit eigenem Skelett (wie SkeletonUtils.clone): object.clone() laesst SkinnedMeshes an den Knochen der Vorlage
 // haengen – die Kopien (Schwarm, Lupe, Huette) lagen dann alle unsichtbar am Ursprung der Vorlage und bewegten sich nicht
 function klonSkin(v){
@@ -137,16 +141,20 @@ if(story.spielstand && story.spielstand.rucksack){ Object.assign(zustand, story.
 const _v = new THREE.Vector3();
 story.raumGebaut = function(innen){
   // Notizbuch im mittleren Fach (dort ist eine Luecke zwischen den Buechern), Ruecken zum Raum
+  // Was schon im Rucksack ist, liegt nicht mehr da (Live-Befund 29.10.2026, Heimkehr: alles lag wieder auf dem Tisch wie am Anfang)
   const brett = innen.regalBretter[1];
-  brett.localToWorld(_v.set(0.61, 0, 0.02));
+  if(zustand.notizbuch){ innen.interRegal.erledigt = true; innen.interRegal.aus = true; }
+  else { brett.localToWorld(_v.set(0.61, 0, 0.02));
   zustand.buch = story.setze('notizbuch', 1, { x: _v.x, z: _v.z, auf: brett, in: innen.regal, dreh: -Math.PI / 2, fest: true });
-  zustand.buch.bereit.then(() => { innen.interRegal.mats = null; });
+  zustand.buch.bereit.then(() => { innen.interRegal.mats = null; }); }
   // Tisch: alles auf die Platte (auf), in die Tisch-Gruppe (in) – faellt etwas aufeinander, rueckt es auf der Platte weiter
   const reihe = [];
   for(const t of TISCH){
+    if(zustand[t.n]) continue;                                    // schon im Rucksack
     innen.tisch.localToWorld(_v.set(t.x, 0, t.z));
     reihe.push(t);
   }
+  if(!reihe.length){ innen.interTisch.erledigt = true; innen.interTisch.aus = true; }
   // nacheinander setzen (jedes weicht den schon liegenden aus)
   let kette = Promise.resolve();
   for(const t of reihe){
@@ -468,7 +476,7 @@ function updateFunkSymbol(dt){
 // (2/3 des Bildschirms), darauf alle eingesammelten Dinge – hoechstens INV_PRO_ZEILE pro Zeile, mittig, jedes mit einem
 // dezenten warmen Schein dahinter und langsam drehend (wie beim Einstecken). Waehrend des Einsteckens geht es nicht auf.
 const INV_PRO_ZEILE = 3;
-const INV_REIHE = ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen'];
+const INV_REIHE = ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen', 'steine'];
 const inv = { an: false, k: 0, dinge: [], t: 0, flaeche: null, glowTex: null };
 // Die Flaeche ist ein Mesh in der Bildebene selbst (ein DOM-Element laege ueber oder unter allen Dingen, nicht dazwischen).
 // Reihenfolge: Flaeche (renderOrder -1) -> Schein (0, ohne Tiefentest) -> die Dinge (normal, mit Tiefe).
@@ -750,6 +758,17 @@ function ortSymbol(c, ort, x, y, g){
   if(ort === 'waldinsel') tannenIcon(c, x, y, g);
   if(ort === 'hoehle') gorillaIcon(c, x, y, g);
   if(ort === 'observatorium' || ort === 'wueste') observatoriumIcon(c, x, y, g);
+  if(ort === 'mond') mondIcon(c, x, y, g);
+}
+// Etappe 5 (Live-Wunsch 28.10.2026): eine Mondsichel, davor auf dem Boden die Kuppel der Mondbasis mit Tuer
+function mondIcon(c, x, y, g){
+  c.save(); c.translate(x, y); const s = g / 100; c.strokeStyle = 'rgba(70,55,40,.8)'; c.lineWidth = 3.2 * s; c.lineJoin = 'round'; c.lineCap = 'round';
+  const linie = (f) => { c.beginPath(); f(); c.stroke(); };
+  linie(() => { c.arc(-6 * s, -14 * s, 30 * s, 0.9, Math.PI * 2 - 0.9, false); c.arc(10 * s, -24 * s, 26 * s, Math.PI * 2 - 1.3, 1.45, true); });   // Sichel
+  linie(() => { c.moveTo(-44 * s, 40 * s); c.quadraticCurveTo(0, 30 * s, 44 * s, 40 * s); });                                    // Boden
+  linie(() => { c.moveTo(4 * s, 36 * s); c.arc(22 * s, 36 * s, 18 * s, Math.PI, 0); });                                         // Kuppel
+  linie(() => { c.rect(18 * s, 26 * s, 8 * s, 10 * s); });                                                                      // Tuer
+  c.restore();
 }
 // Etappe 4 (Live-Wunsch 23.10.2026): ein stilisiertes Observatorium wie mit dem Bleistift – Haus mit Tonnendach, darauf die Kuppel
 // mit dem Spalt und das schraeg herausschauende Fernrohr, eine Tuer und zwei Fenster

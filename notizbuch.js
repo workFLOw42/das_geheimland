@@ -67,16 +67,17 @@ const STELLEN = [
   { id: 'entchen_schnitzen', art: 'messer', name: 'Das neue Entchen', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 643.6, z: -617.8, r: 0.95 }, nachX: true,
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('entchen_schnitzen')), darf: () => !story.e3Darf || story.e3Darf('entchen_schnitzen'),
     modell: 'entchen', scheitHoehle: true, arbeitsplatz: { x: 641.6, z: -618.6 }, feuer: { x: 640, z: -620.5 }, regal: 'entchen',
+    beimStart: () => story.e3KaputtWeg && story.e3KaputtWeg(),   // Live-Wunsch 29.10.2026: das kaputte schon beim Schnitzen weg
     text: ['Toll! Ein neues Holzentchen.'] },
   // Lupe am Korb (Live-Wunsch 22.10.2026): hat der Gorilla Joshi den Korb hingeschoben, liegt davor ein brauner Ring – unter
   // der Lupe das rote Fell am Korbrand; ins Notizbuch kommt die Fell-Skizze (seite statt der Modellskizze). Kein nachX: der
   // Ring erscheint sofort (hoehle_innen.js fuchsZu), der Fuchs zeigt ihn.
-  { id: 'fell_lupe', art: 'lupe', name: 'Rotes Fell', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 637.3, z: -618.0, r: 0.95 }, nachX: true,   // = KORB_HIN + 1,4 m nach vorn
+  { id: 'fell_lupe', art: 'lupe', name: 'Gestreiftes Fell', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 637.3, z: -618.0, r: 0.95 }, nachX: true,   // = KORB_HIN + 1,4 m nach vorn
     bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('fell_lupe')), modell: 'fell', liegt: true,
-    bau: () => story.e3FellModell(), seite: () => story.e3FellSeite(), text: ['Schau mal, am Korb klebt rotes Fell. Das kommt in dein Notizbuch.'] },
+    bau: () => story.e3FellModell(), seite: () => story.e3FellSeite(), text: ['Schau mal, am Korb klebt Fell – weiß mit rotbraunen Streifen. Das kommt in dein Notizbuch.'] },
   // Foto: der Gorilla mit seinem Entchen, vor dem Ausgang (ganz am Schluss)
   { id: 'gorilla_foto', art: 'foto', name: 'Der Gorilla', etappe: 3, innen: true, ort: 'hoehle', kreis: { x: 640, z: -613.6, r: 0.95 },
-    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('gorilla_foto')), vorher: () => story.e3FotoVorbereiten && story.e3FotoVorbereiten(),
+    bedingung: () => !!(story.e3StelleFrei && story.e3StelleFrei('gorilla_foto')), vorher: () => story.e3FotoVorbereiten && story.e3FotoVorbereiten(), beiAufnahme: (an) => story.e3FotoAufnahme && story.e3FotoAufnahme(an),
     blick: { x: 640, y: 151.6, z: -613.4, yaw: Math.atan2(640 - 637.7, -613.4 + 622.4), pitch: -0.08, fov: 48 }, fuchs: { x: 639.2, z: -620.0 }, fuchsVon: { x: 643, z: -617 }, ohneJoshi: true,
     text: ['Klasse! Der Gorilla lacht wieder.'] },
   // ---- Etappe 4, im Observatorium des Lamas (observatorium_innen.js; innen: nur dort) ----
@@ -96,7 +97,7 @@ const STELLEN = [
   // Kreis = observatorium_innen.js PAPIER_P
   { id: 'packpapier_lupe', art: 'lupe', name: 'Das Packpapier', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -635.53, z: 622.41, r: 0.9 }, nachX: true,
     bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('packpapier_lupe')), modell: 'packpapier', liegt: true,
-    bau: () => story.obsPapierModell(), seite: () => story.obsPapierSeite(), text: ['Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder rotes Fell!'] },
+    bau: () => story.obsPapierModell(), seite: () => story.obsPapierSeite(), text: ['Schau mal! Auf dem Packpapier sind auch Spuren – mit langen Zehen. Und wieder das gestreifte Fell!'] },
   // Foto beim Hinausgehen: das Lama an seinem Paket, links das Teleskop; der Fuchs laeuft von links ins Bild (wie bei Huette
   // und Gorilla – vorher stand sein Ziel am Bildrand, Live-Befund 26.10.2026)
   { id: 'lama_foto', art: 'foto', name: 'Das Lama', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -637.0, z: 626.0, r: 0.9 }, nachX: true,
@@ -117,6 +118,33 @@ const STELLEN = [
     scheitDing: () => story.obsScheit && story.obsScheit(), scheitWeg: () => story.obsScheitWeg && story.obsScheitWeg(),
     arbeitsplatz: { x: -22.5, z: 10.9 }, feuer: { x: -22.5, z: 9.5 }, regal: 'schluessel',   // in Joshis Huette: ein grosser Schluessel im Regal
     text: ['Toll! Ein Schlüssel aus Holz. Ob er in das Raumschiff passt?'] },
+  // Etappe 5 (Live-Wunsch 28.10.2026): Skizze vom Strahler neben dem Eingang der Mondbasis, der HALLO morst – erst nach Y am
+  // Strahler. Ring und Blick setzt mond.js, sobald der Eingang steht (story.stelleSetzen); bei der Aufnahme leuchtet er
+  { id: 'strahler_skizze', art: 'skizze', name: 'Die Mondbasis', etappe: 5, ort: 'mond', kreis: { x: 0, z: 0, r: 1.0 }, nachX: true,
+    bedingung: () => !!(story.e5StelleFrei && story.e5StelleFrei('strahler_skizze')), beiAufnahme: (an) => story.e5StrahlerAufnahme && story.e5StrahlerAufnahme(an),
+    blick: { x: 0, y: 0, z: 0, yaw: 0, pitch: 0.28, fov: 60 }, fuchs: null, ohneJoshi: true,
+    text: ['Wow. Die Mondbasis, dahinter die Erde – und eine Sternschnuppe!'] },
+  // Im Labor der Mondbasis (Live-Wunsch 28.10.2026, mondbasis_innen.js): nach dem Ablegen der Steine und X – die Spur des
+  // Eichhoernchens im Staub und ein Haarbueschel neben den Reagenzglaesern; danach im Notizbuch vergleichen. Ringe setzt mondbasis_innen.js
+  { id: 'labor_spur', art: 'lupe', name: 'Die Spur im Labor', etappe: 5, innen: true, ort: 'mond', kreis: { x: 0, z: 0, r: 0.9 }, nachX: true,
+    bedingung: () => !!(story.e5LaborStelleFrei && story.e5LaborStelleFrei('labor_spur')), modell: 'labor_spur', liegt: true,
+    bau: () => story.e5SpurModell(), seite: () => story.e5SpurSeite(), text: ['Schau mal, Spuren im Staub!'] },
+  { id: 'labor_haare', art: 'lupe', name: 'Das Haarbüschel', etappe: 5, innen: true, ort: 'mond', kreis: { x: 0, z: 0, r: 0.9 }, nachX: true,
+    bedingung: () => !!(story.e5LaborStelleFrei && story.e5LaborStelleFrei('labor_haare')), modell: 'labor_haare', liegt: true,
+    bau: () => story.e5HaarModell(), seite: () => story.e5HaarSeite(), text: ['Ein Haarbüschel!'] },
+  // Das Gruppenfoto an der Tafel im Saal (mondfest.js): alle setzen sich (vorher), Fuchsi sitzt schon neben Joshi (fuchs: null)
+  { id: 'fest_foto', art: 'foto', name: 'Das Weihnachtsfest', etappe: 5, innen: true, ort: 'mond', kreis: { x: 0, z: 0, r: 1.0 }, nachX: true,
+    bedingung: () => !!(story.mondfestFotoFrei && story.mondfestFotoFrei()), vorher: () => story.mondfestFotoVorbereiten && story.mondfestFotoVorbereiten(),
+    blick: { x: 0, y: 0, z: 0, yaw: 0, pitch: -0.06, fov: 62 }, fuchs: null, mitJoshi: true,   // Joshi sitzt mit an der Tafel (Selbstausloeser)
+    beiAufnahme: (an) => story.mondfestAufnahme && story.mondfestAufnahme(an),   // der Gorilla: im Sucher trommelnd, auf dem Bild still
+    text: ['Klasse! Alle zusammen an einer Tafel – das schönste Weihnachtsfest!'] },
+  // Nach dem Fest, draussen am Holzscheit neben dem Weg (heimflug.js): Joshi schnitzt einen kleinen Planeten mit sich und
+  // Fuchsi obendrauf (Vorbild: der Planet des kleinen Prinzen); im Regal der Huette steht er danach. Ring setzt heimflug.js
+  { id: 'mond_schnitzen', art: 'messer', name: 'Der kleine Planet', etappe: 5, ort: 'mond', kreis: { x: 0, z: 0, r: 0.95 }, nachX: true,
+    bedingung: () => !!(story.e5StelleFrei5 && story.e5StelleFrei5('mond_schnitzen')), modell: 'planet', bau: () => story.e5PlanetModell(),
+    scheitDing: () => story.e5Scheit && story.e5Scheit(), scheitWeg: () => story.e5ScheitWeg && story.e5ScheitWeg(),
+    arbeitsplatz: { x: 0, z: 0 }, feuer: { x: 0, z: 0 }, regal: 'planet',
+    text: ['Toll! Ein kleiner Planet – mit dir und Fuchsi obendrauf.'] },
 ];
 // Stellen je Etappe: etappe fehlt = 1 (Joshis Insel). Frei ist eine Stelle der Heimatinsel mit der Detektiv-Phase
 // (zustand.frei), eine spaetere, sobald ihre bedingung gilt; nachX: dazu noch mit dem Suchblick entdecken (kreiseFreischalten)
@@ -151,6 +179,7 @@ const KREIS_FARBE = { foto: 'rgba(70,150,255,A)', skizze: 'rgba(235,60,60,A)', m
 const zustand = story.notiz = { frei: false, gemacht: {}, seiten: [], aktiv: null };
 story.notizSeiten = () => zustand.seiten;
 story.notizSeiteDazu = (s) => { s.dreh = s.dreh || (zustand.seiten.length % 2 ? 0.03 : -0.025); zustand.seiten.push(s); };
+story.mitSignatur = (c) => mitSignatur(c);                     // mond.js: die gemalte Skizze der Mondsteine bekommt das J
 // Nach dem Neuladen (story.js spielstand): die Seiten aus der letzten Etappe wieder einkleben (PNG -> Bild). Das Notizbuch
 // malt mit drawImage und liest width/height – ein Image tut das wie das Canvas, sobald es geladen ist.
 if(story.spielstand && story.spielstand.seiten) for(const s of story.spielstand.seiten){
@@ -173,7 +202,7 @@ function markenBauen(){
   if(marken.length) return;
   for(const s of STELLEN){
     const farbe = KREIS_FARBE[s.art] || KREIS_FARBE.foto;
-    const m = new THREE.Mesh(new THREE.CircleGeometry(s.kreis.r, 40), new THREE.MeshBasicMaterial({ map: kreisTextur(farbe), transparent: true, depthWrite: false,
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.001, s.kreis.r, 40, 6), new THREE.MeshBasicMaterial({ map: kreisTextur(farbe), transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     m.rotation.x = -Math.PI / 2; m.renderOrder = 2; m.userData.deko = true; m.visible = false;
     story.welt(etappeVon(s)).add(m);
@@ -196,6 +225,13 @@ function aufKreis(s){
   if(!eva || story.etappe !== etappeVon(s) || !passtOrt(s, drinnen()) || (story.imBoot && story.imBoot()) || (story.schwimm && story.schwimm.aktiv)) return false;
   const p = eva.group.position; return Math.hypot(p.x - s.kreis.x, p.z - s.kreis.z) < s.kreis.r;
 }
+// jeder Punkt der Scheibe in seiner Bodenhoehe (lokal z = Welt-y nach der Drehung um x)
+function aufDenBoden(k, yb){
+  const p = k.m.geometry.attributes.position, s = k.m.scale.x;
+  for(let i = 0; i < p.count; i++){ const wx = k.s.kreis.x + p.getX(i) * s, wz = k.s.kreis.z - p.getY(i) * s, h = evaFootY(wx, wz) - yb;   // global-ok: Engine
+    p.setZ(i, isFinite(h) && Math.abs(h) < 3 ? h : 0); }
+  p.needsUpdate = true; k.m.geometry.computeBoundingSphere();
+}
 function updateMarken(dt){
   markenBauen();
   for(const k of marken){
@@ -204,12 +240,13 @@ function updateMarken(dt){
     if(!offen){ k.y.visible = false; continue; }
     k.t += dt;
     const yb = evaFootY(k.s.kreis.x, k.s.kreis.z);
-    k.m.position.set(k.s.kreis.x, yb + 0.03, k.s.kreis.z);
+    k.m.position.set(k.s.kreis.x, yb + 0.08, k.s.kreis.z);   // 8 cm: ueber Wegen und Platten, die knapp ueber dem Boden liegen (flackerte)
+    if((k.legT = (k.legT || 0) - dt) <= 0){ k.legT = 0.5; aufDenBoden(k, yb); }   // halbe Sekunde: der Boden kann noch nachladen
     k.m.material.opacity = 0.75 + Math.sin(k.t * 2.6) * 0.2;        // leicht pulsieren, damit man ihn sieht
     // vom Fuchs angezeigt: kurz kraeftig aufblinken und etwas groesser
     if(k.blink > 0){ k.blink -= dt; const b = Math.abs(Math.sin(k.blink * 9)); k.m.material.opacity = 0.6 + 0.4 * b; k.m.scale.setScalar(1 + 0.25 * b); }
     else k.m.scale.setScalar(1);
-    k.y.visible = aufKreis(k.s) && !zustand.aktiv;
+    k.y.visible = aufKreis(k.s) && !zustand.aktiv && story.yErlaubt();   // Y-Standard (story.js)
     if(k.y.visible) k.y.position.set(k.s.kreis.x, yb + 2.0 + Math.sin(k.t * 3) * 0.07, k.s.kreis.z);
   }
 }
@@ -225,10 +262,12 @@ story.kreiseFreischalten = function(x, z, r, drin){
   if(muetze.x){ muetze.xan = 0; muetze.x.visible = false; }      // X gedrueckt: das blaue X sofort weg (Live-Wunsch 26.10.2026)
   if(story.e3Gesucht) story.e3Gesucht();                       // hoehle_innen.js: der Suchblick in der Hoehle zaehlt
   if(story.e4Gesucht) story.e4Gesucht();                       // observatorium_innen.js: ebenso im Observatorium
-  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r) kreisZiel(s).frei = true;
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && Math.hypot(s.kreis.x - x, s.kreis.z - z) < r && imRaum(s)) kreisZiel(s).frei = true;
 };
+// nur im Raum, in dem Joshi steht (story.js gleicherRaum, Live-Wunsch 29.10.2026)
+const imRaum = (s) => !story.gleicherRaum || story.gleicherRaum(s.kreis.x, s.kreis.z), objImRaum = (o) => !story.gleicherRaum || story.gleicherRaum(o.x, o.z);
 story.sucheKreise = function(drin){
-  return STELLEN.filter(s => passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei).map(kreisZiel);
+  return STELLEN.filter(s => passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && kreisZiel(s).frei && imRaum(s)).map(kreisZiel);
 };
 // Y (story.js buttonY fragt hier zuerst): steht Joshi auf einem offenen Kreis -> los
 // Steht Joshi in einem offenen Ring? Dann zeigt nur der Ring sein Y (story.js interNaechstes) – Y gehoert ohnehin zuerst dem Ring
@@ -317,6 +356,7 @@ function walTropfen(wal){
   const versteckt = [];
   for(const k of marken) for(const o of [k.m, k.y]) if(o.visible){ o.visible = false; versteckt.push(o); }
   if(story.interListe) for(const o of story.interListe) if(o.zeichen && o.zeichen.visible){ o.zeichen.visible = false; versteckt.push(o.zeichen); }
+  for(const o of story.nichtImBild || []) if(o.visible){ o.visible = false; versteckt.push(o); }   // z. B. das Morselicht am Mond (mond.js)
   mondZu(kam);                                                     // Mond und Milchstrasse zur Fotokamera
   if(s.beiAufnahme) s.beiAufnahme(true);                           // nur fuer die Aufnahme (observatorium_innen.js: Nacht und Mond)
   const bild = rendern(kam);
@@ -324,8 +364,10 @@ function walTropfen(wal){
   // – je ein Bleistiftbild mit dem bisher Gezeichneten (kumulativ); das Kritzeln deckt sie nacheinander auf
   let schichten = null;
   if(s.art === 'skizze'){
-    const St = story.stegZustand || {}, meer = typeof ground !== 'undefined' ? ground : null;
-    const teile = [St.boot, St.schatten, St.gischt, meer, wal, wal && wal.userData.tropfen].filter(Boolean);
+    // das Meer nur, wenn es gerade da ist (Live-Befund 29.10.2026: die Mondskizze schaltete das Meer der Engine ein – und am Ende blieb
+    // es an, auf dem Mond); danach bekommt jedes Teil seinen Zustand von vorher zurueck
+    const St = story.stegZustand || {}, meer = typeof ground !== 'undefined' && ground && ground.visible ? ground : null;   // global-ok: Engine
+    const teile = [St.boot, St.schatten, St.gischt, meer, wal, wal && wal.userData.tropfen].filter(Boolean), vorher = teile.map(o => o.visible);
     const sichtbar = (an) => { for(const o of teile) o.visible = an.includes(o); };
     schichten = [];
     // Das Meer ist in JEDER Schicht da (Live-Befund 21.10.2026: ohne Meer sah man in den ersten Schichten unter Wasser –
@@ -340,7 +382,7 @@ function walTropfen(wal){
     sichtbar([St.boot, meer]);        schichten.push(wellenZeichnen(bleistift(rendern(kam), false, 'nur'), wellen, true));   // + Boot
     sichtbar([St.boot, meer]);        schichten.push(wellenZeichnen(bleistift(rendern(kam), false), wellen, true));          // + Sterne
     sichtbar(teile);                  schichten.push(wellenZeichnen(bleistift(rendern(kam), false), wellen, true));          // + Wal (alles)
-    for(const o of teile) o.visible = true;
+    teile.forEach((o, i) => { o.visible = vorher[i]; });
   }
   if(s.beiAufnahme) s.beiAufnahme(false);                          // im selben Augenblick zurueck – auf dem Bildschirm sieht man nichts
   for(const o of versteckt) o.visible = true;
@@ -401,7 +443,7 @@ function fotoSuchen(dt, t){
 }
 function sucherLive(s, kam){
   const joshi = eva ? eva.group.visible : false, sch = typeof ovalShadow !== 'undefined' ? ovalShadow.visible : false;
-  if(eva){ eva.group.visible = false; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = false; }
+  if(eva && !s.mitJoshi){ eva.group.visible = false; if(typeof ovalShadow !== 'undefined') ovalShadow.visible = false; }   // mitJoshi: er ist im Bild (Festfoto)
   const versteckt = []; for(const k of marken) for(const o of [k.m, k.y]) if(o.visible){ o.visible = false; versteckt.push(o); }
   if(story.interListe) for(const o of story.interListe) if(o.zeichen && o.zeichen.visible){ o.zeichen.visible = false; versteckt.push(o.zeichen); }
   const f = story.fuchs, fuchsWar = f.obj ? f.obj.visible : false; if(s.ohneFuchs && f.obj) f.obj.visible = false;
@@ -738,6 +780,7 @@ function blendeZumArbeitsplatz(s, weiter){
     const sd = s.scheitDing ? s.scheitDing() : s.scheitHoehle ? story.hoehleInnen && story.hoehleInnen.scheit : scheit.d;
     if(sd && sd.obj && story.entferne){ story.entferne(sd); if(s.scheitWeg) s.scheitWeg(); else if(s.scheitHoehle) story.hoehleInnen.scheit = null; else scheit.d = { weg: true }; }   // der Scheit ist jetzt in Joshis Haenden
     if(story.arbeiten) story.arbeiten(true, F);                    // hockt schon am Feuer, wenn es hell wird
+    if(s.beimStart) s.beimStart();                                 // noch im Schwarz (das kaputte Entchen weg, hoehle_innen.js)
     el.style.opacity = '0';
     // erst wenn die Blende ganz durch ist, beginnt das Schnitzen (Live-Wunsch 16.10.)
     setTimeout(() => { el.remove(); weiter(); }, 450);
@@ -746,6 +789,7 @@ function blendeZumArbeitsplatz(s, weiter){
 function szeneStarten(s){
   if((s.scheit || s.scheitHoehle || s.scheitDing) && !s.geblendet){ s.geblendet = true; blendeZumArbeitsplatz(s, () => szeneStarten(s)); return; }
   const E = story.ebene();
+  if(s.beimStart) s.beimStart();          // z. B. das kaputte Entchen weg (hoehle_innen.js; mit Blende schon dort im Schwarz)
   (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => {
     sz.s = s; sz.modell = g; sz.L = L; sz.t = 0;
     sz.gruppe = new THREE.Group(); sz.gruppe.add(g); E.szene.add(sz.gruppe);
@@ -813,11 +857,27 @@ function klotzMaske(k){
 }
 // Bleistift-Skizze eines Modells aus der Welt (observatorium_innen.js: das Lama unter seiner Spur): eine Kopie in der
 // jetzigen Haltung vor hellem Grund, um yaw gedreht, so gross, dass sie ins Bild passt
+story.bleistift = (c, mitRand) => bleistift(c, mitRand);   // mondfest.js: eigene Aufnahme als Bleistift-Skizze
+const _sb = new THREE.Vector3();
+function sichtBox(wurzel){
+  const bb = new THREE.Box3();
+  wurzel.traverse(o => { if(!o.isMesh) return; for(let p = o; p; p = p.parent){ if(!p.visible) return; if(p === wurzel) break; }
+    if(o.material && !Array.isArray(o.material) && o.material.visible === false) return;
+    if(o.isSkinnedMesh){ const n = o.geometry.attributes.position.count; for(let i = 0; i < n; i += 3){ o.boneTransform(i, _sb); _sb.applyMatrix4(o.matrixWorld); bb.expandByPoint(_sb); } }
+    else { if(!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  return bb.isEmpty() ? new THREE.Box3().setFromObject(wurzel) : bb;
+}
 story.modellBleistift = function(obj, yaw){
   const W = BILD_W, H = BILD_H, szn = new THREE.Scene(); szn.background = new THREE.Color(0xf4ecd8);
   szn.add(new THREE.HemisphereLight(0xffffff, 0x777777, 1.1)); const l = new THREE.DirectionalLight(0xffffff, 0.8); l.position.set(1, 2, 2); szn.add(l);
   const kopie = story.klonSkin(obj), h = new THREE.Group(); kopie.position.set(0, 0, 0); kopie.rotation.set(0, 0, 0); h.add(kopie); h.rotation.y = yaw || 0; szn.add(h); h.updateMatrixWorld(true);
-  const bb = new THREE.Box3().setFromObject(h), sz = bb.getSize(new THREE.Vector3()), c0 = bb.getCenter(new THREE.Vector3()), k = 1 / Math.max(sz.x, sz.y, sz.z);
+  // ohne Textur und hell (Eichhoernchen: weiss, leuchtet leicht selbst) war es unter diesem Licht ueberall reinweiss – der Bleistift fand
+  // nur Kanten, keine Schatten (Live-Befund 29.10.2026, anders als Lama und Aliens). Fuer die Skizze: gedaempft, ohne Selbstleuchten
+  kopie.traverse(o => { if(!o.isMesh || !o.material || Array.isArray(o.material) || o.material.map) return;
+    const m = o.material.clone(); if(m.color) m.color.multiplyScalar(0.62); if(m.emissive) m.emissive.setRGB(0, 0, 0); o.material = m; });
+  // Groesse aus dem, was man sieht: animierte Figuren in ihrer Pose (boneTransform), unsichtbare Teile nicht (Live-Befund 29.10.2026:
+  // das Eichhoernchen sass klein am Rand – setFromObject nahm die Grundpose und unsichtbare Hilfskoerper mit)
+  const bb = sichtBox(h), sz = bb.getSize(new THREE.Vector3()), c0 = bb.getCenter(new THREE.Vector3()), k = 1 / Math.max(sz.x, sz.y, sz.z);
   h.scale.setScalar(k); h.position.copy(c0).multiplyScalar(-k); h.updateMatrixWorld(true);
   const kam = new THREE.PerspectiveCamera(30, W / H, 0.01, 10); kam.position.set(0, 0.1, 2.3); kam.lookAt(0, 0, 0);
   const rt = new THREE.WebGLRenderTarget(W, H), alt = renderer.getRenderTarget();
@@ -953,39 +1013,69 @@ story.szeneAktiv = () => !!sz.phase;
 // (Raum-Koordinaten wie huette_innen.js: Bett an der linken Wand x -4,5, Kopfteil zur Rueckwand). Der Raum wird erst beim
 // Betreten gebaut – darum werden die Dinge gemerkt und gesetzt, sobald er steht.
 const huette = { fuchs: false, schmetterling: false, gesetzt: {}, falter: null, mixer: null };
+story.huetteMondstein = () => { huette.mondstein = true; huetteSetzen(); };   // mond.js: alle fuenf Mondsteine gesammelt
+// Welche Trophaeen gibt es? Aus den Notizbuch-Seiten (heimkehr.js: nach dem Neuladen sind die Merker leer, die Seiten nicht)
+const TROPHAEE = { 'Der Holzfuchs': 'fuchs', 'Das neue Entchen': 'entchen', 'Der Schlüssel': 'schluessel', 'Der kleine Planet': 'planet', 'Die Mondsteine': 'mondstein', 'Der Schmetterling': 'schmetterling' };
+story.trophaeenAusSeiten = () => [...new Set(zustand.seiten.map(s => TROPHAEE[s.name]).filter(Boolean))];
+story.huetteVonSeiten = () => { for(const t of story.trophaeenAusSeiten()) huette[t] = true; huetteSetzen(); };
+// Ein anderes Regal mit denselben Trophaeen (kinderzimmer.js); der Schmetterling fliegt dort herum wie in der Huette (story.zimmerFalter,
+// Live-Wunsch 29.10.2026 – vorher sass er als Modell im Regal)
+story.regalBefuellen = function(bretter, liste){
+  const auf = (b, g, x, z, dreh) => { g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(x, 0.025 - bb.min.y, z); if(dreh) g.rotation.y = dreh; bretter[b].add(g); };
+  const klon = (n, L, b, x, z, dreh) => story.modellKlon(n).then(({ g, L: l }) => { g.scale.setScalar(L / l); auf(b, g, x, z, dreh); });
+  if(liste.includes('entchen')) klon('entchen', 0.22, 1, -0.6, 0.02, -0.4);
+  if(liste.includes('fuchs')) klon('holzfuchs', 0.22, 2, 0.55, 0.03, 0.5);
+  if(liste.includes('schluessel') && story.obsSchluesselModell) story.obsSchluesselModell().then(({ g, L }) => { g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6; auf(2, g, -0.72, 0.09); });
+  if(liste.includes('planet') && story.e5PlanetModell) story.e5PlanetModell().then(({ g, L }) => { g.scale.setScalar(0.3 / L); auf(1, g, 0.05, 0.02); });
+  if(liste.includes('mondstein')){ const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial({ color: 0x9aa0b4, emissive: 0x1e2a44 })); st.scale.y = 0.75; st.rotation.set(0.4, 1.1, 0.2); st.position.set(-0.7, 0.08, 0.03); bretter[0].add(st); }
+};
 // Seil im weissen Oval (wie beim Schnitzen): so lang wie das Oval, die Enden laufen darin aus (observatorium_innen.js seilBauen)
 function seilLage(g, grp, H){ const B = H * innerWidth / innerHeight, oval = Math.min(B, H * 1.5) * 0.9; grp.position.set(0, -H * 0.04, 0.4); g.scale.setScalar(oval * 0.95 / sz.L); g.rotation.set(0.35, 0, -0.06); g.visible = true; }
-function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.regal === 'schluessel') huette.schluessel = true; else if(s.art === 'messer' && !s.seil) huette.fuchs = true;
+function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.regal === 'schluessel') huette.schluessel = true; else if(s.regal === 'planet') huette.planet = true; else if(s.art === 'messer' && !s.seil) huette.fuchs = true;
   if(s.art === 'lupe' && etappeVon(s) === 1) huette.schmetterling = true; huetteSetzen(); }
 function huetteSetzen(){
   const I = story.innen; if(!I || !I.gruppe) return;               // Raum noch nicht gebaut: beim Betreten (updateHuette)
   const R = I.gruppe;
-  if(huette.fuchs && !huette.gesetzt.fuchs){
-    huette.gesetzt.fuchs = true;
-    // Wandbord ueber dem Bett (linke Wand), darauf der Holzfuchs, schraeg zum Raum
+  // Trophaeen-Regal ueber dem Bett (linke Wand, Live-Wunsch 28.10.2026): ein langes Wandbord fuer alle Trophaeen – im Buecherregal
+  // standen sie zwischen den Buechern und waren kaum zu sehen. Plaetze entlang des Bords (z): Holzfuchs, Entchen, Schluessel, Planet, Mondstein
+  const TB = { fuchs: -2.2, entchen: -2.9, schluessel: -1.6, planet: -1.05, mondstein: -0.55 };
+  if(!huette.bord && (huette.fuchs || huette.entchen || huette.schluessel || huette.planet || huette.mondstein)){
     const holz = new THREE.MeshLambertMaterial({ color: 0x8a5a33 }), dunkel = new THREE.MeshLambertMaterial({ color: 0x5b3a1f });
-    const bord = new THREE.Group(); bord.position.set(-4.5 + 0.18, 1.45, -2.2); R.add(bord);
-    bord.add(new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.8), holz));
-    for(const zz of [-0.3, 0.3]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(-0.13, -0.09, zz); k.rotation.z = -0.5; bord.add(k); }
+    const bord = huette.bord = new THREE.Group(); bord.position.set(-4.5 + 0.18, 1.45, 0); R.add(bord);
+    const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 2.8), holz); brett.position.z = -1.75; bord.add(brett);
+    for(const zz of [-3.0, -1.75, -0.5]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(-0.13, -0.09, zz); k.rotation.z = -0.5; bord.add(k); }
+    if(story.ding) story.ding(bord, { welt: 1, typ: 'bord_trophaeen' });
+  }
+  const aufsBord = (g, z, dreh) => { g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, z); g.rotation.y = dreh; huette.bord.add(g); };
+  if(huette.fuchs && !huette.gesetzt.fuchs){
+    huette.gesetzt.fuchs = true; const bord = huette.bord;
     story.modellKlon('holzfuchs').then(({ g, L }) => {
       g.scale.setScalar(0.24 / L); g.updateMatrixWorld(true);
-      const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, 0); g.rotation.y = Math.PI / 2 + 0.5;
+      const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, TB.fuchs); g.rotation.y = Math.PI / 2 + 0.5;
       bord.add(g);
     });
-    if(story.ding) story.ding(bord, { welt: 1, typ: 'bord_holzfuchs' });
   }
   // das geschnitzte Entchen (Etappe 3): als Kopie ins Regal, mittleres Fach rechts (Live-Wunsch: Trophaeen-Platz)
   if(huette.entchen && !huette.gesetzt.entchen && I.regalBretter){
     huette.gesetzt.entchen = true;
-    story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.22 / L); const b = I.regalBretter[1];
-      g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(-0.6, 0.025 - bb.min.y, 0.02); g.rotation.y = -0.4; b.add(g); });
+    story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.22 / L); aufsBord(g, TB.entchen, Math.PI / 2 + 0.4); });
   }
   // Der geschnitzte Schluessel (Etappe 4, Live-Wunsch 23.10.2026): groesser als das Original, im Regal auf dem obersten Brett,
   // der Bart nach unten, um 30 Grad zur Seite geneigt (an die Buecher gelehnt)
   if(huette.schluessel && !huette.gesetzt.schluessel && I.regalBretter && story.obsSchluesselModell){
     huette.gesetzt.schluessel = true;
-    story.obsSchluesselModell().then(({ g, L }) => { const b = I.regalBretter[2]; g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6;
-      g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(-0.72, 0.025 - bb.min.y, 0.09); b.add(g); });
+    story.obsSchluesselModell().then(({ g, L }) => { g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6; aufsBord(g, TB.schluessel, Math.PI / 2); });
+  }
+  // Der geschnitzte kleine Planet (Etappe 5, Live-Wunsch 28.10.2026): mittleres Brett, links
+  if(huette.planet && !huette.gesetzt.planet && I.regalBretter && story.e5PlanetModell){
+    huette.gesetzt.planet = true;
+    story.e5PlanetModell().then(({ g, L }) => { g.scale.setScalar(0.3 / L); aufsBord(g, TB.planet, Math.PI / 2 - 0.3); });
+  }
+  // Ein kleiner Mondstein (Etappe 5, Live-Wunsch 28.10.2026): unterstes Brett, links
+  if(huette.mondstein && !huette.gesetzt.mondstein && I.regalBretter){
+    huette.gesetzt.mondstein = true;
+    const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial({ color: 0x9aa0b4, emissive: 0x1e2a44 }));
+    st.scale.y = 0.75; st.rotation.set(0.4, 1.1, 0.2); st.position.set(0.02, 0.0175 + 0.055, TB.mondstein); huette.bord.add(st);
   }
   if(huette.schmetterling && !huette.gesetzt.schmetterling){
     huette.gesetzt.schmetterling = true;
@@ -999,16 +1089,30 @@ function huetteSetzen(){
 // Schmetterling in der Huette: fliegt zu einem zufaelligen Punkt im Raum, setzt sich ab und zu (Regal, Tisch, Bett, Fenster),
 // sitzt ein paar Sekunden mit langsam schlagenden Fluegeln, fliegt wieder los
 const SITZPLAETZE = [[0.3, 1.86, -3.2], [3.1, 0.82, -0.6], [-3.5, 0.52, -1.6], [-2.2, 2.3, -3.45], [4.3, 1.15, 1.6], [-4.3, 1.5, -2.2]];
+// im Kinderzimmer (Live-Wunsch 29.10.2026): dieselbe Flugweise, eigene Sitzplaetze (Bett, Trophaeen-Regal, Fenster – kein Tisch)
+const ZIMMER_SITZ = [[0.3, 1.86, -3.2], [-3.5, 0.6, -2.0], [-2.2, 2.3, -3.45], [4.3, 1.15, 1.6], [4.3, 1.5, -1.0]];
+const zimmerFalter = { f: null, mixer: null, laedt: false };
+story.zimmerFalter = function(gruppe){
+  if(zimmerFalter.f || zimmerFalter.laedt || !gruppe) return; zimmerFalter.laedt = true;
+  story.modellKlon('schmetterling').then(({ g, L }) => {
+    g.scale.setScalar(FALTER_L / L); g.userData.deko = true; g.position.set(0, 1.6, 0); gruppe.add(g);
+    zimmerFalter.f = { g, t: 0, ziel: null, sitzt: 0, v: new THREE.Vector3() };
+    if(g.userData.clips && g.userData.clips.length){ zimmerFalter.mixer = new THREE.AnimationMixer(g.userData.inner || g); zimmerFalter.mixer.clipAction(g.userData.clips[0]).play(); }
+  });
+};
 function updateHuette(dt){
   huetteSetzen();
-  const f = huette.falter; if(!f) return;
+  if(zimmerFalter.f) falterFliegen(zimmerFalter.f, zimmerFalter.mixer, ZIMMER_SITZ, dt);
+  if(huette.falter) falterFliegen(huette.falter, huette.mixer, SITZPLAETZE, dt);
+}
+function falterFliegen(f, mixer, plaetze, dt){
   f.t += dt;
-  if(huette.mixer) huette.mixer.update(dt * (f.sitzt > 0 ? 0.25 : 1.6));   // sitzt: Fluegel langsam, fliegt: schnell
+  if(mixer) mixer.update(dt * (f.sitzt > 0 ? 0.25 : 1.6));                // sitzt: Fluegel langsam, fliegt: schnell
   const p = f.g.position;
   if(f.sitzt > 0){ f.sitzt -= dt; if(f.sitzt <= 0) f.ziel = null; return; }
   if(!f.ziel){
     const sitzen = Math.random() < 0.4;
-    f.ziel = sitzen ? new THREE.Vector3(...SITZPLAETZE[Math.floor(Math.random() * SITZPLAETZE.length)])
+    f.ziel = sitzen ? new THREE.Vector3(...plaetze[Math.floor(Math.random() * plaetze.length)])
                     : new THREE.Vector3((Math.random() - 0.5) * 7, 0.8 + Math.random() * 1.9, (Math.random() - 0.5) * 5.4);
     f.zielSitzen = sitzen;
   }
@@ -1100,6 +1204,10 @@ function stelleErledigen(s){
 }
 // Test (waldinsel.js): Stelle id freischalten (wie nach dem Suchblick) bzw. erledigen
 story.kreisZielVon = (id) => { const s = STELLEN.find(q => q.id === id); return s ? kreisZiel(s) : null; };
+story.stelleBlick = (id) => { const s = STELLEN.find(q => q.id === id); return s ? s.blick : null; };   // Tests: der Blick einer Stelle
+// Ring und Blick erst zur Laufzeit (mond.js: die Mondbasis steht, wo die Engine sie hinstellt)
+story.stelleSetzen = (id, x, z, blick, mehr) => { const s = STELLEN.find(q => q.id === id); if(!s) return;
+  s.kreis.x = x; s.kreis.z = z; if(blick) s.blick = blick; if(mehr) Object.assign(s, mehr); const k = kreisZiele[id]; if(k){ k.x = x; k.z = z; } };
 story.testStelleFrei = (id) => { const s = STELLEN.find(q => q.id === id); if(s){ const k = kreisZiel(s); k.frei = true; k.entdeckt = true; } };
 story.testStelle = (id) => { const s = STELLEN.find(q => q.id === id); return s ? stelleErledigen(s) : Promise.resolve(); };
 // ---- Detektivmuetze unten rechts: es gibt in der Naehe etwas zu entdecken (Live-Wunsch 16.10.) -----------------------
@@ -1108,6 +1216,8 @@ story.testStelle = (id) => { const s = STELLEN.find(q => q.id === id); return s 
 // Rucksack/Funkgeraet (Live-Wunsch 16.10.) – ist einer davon zu sehen, weicht die Muetze (story.eckeBelegt); in Pause und
 // Inventar aus (data-etappe-hud). Groesse mit der Bildhoehe, etwas groesser als vorher (118 px).
 const MUETZE_R = 12, MUETZE_RUHE = 1.2;
+// draussen auf dem Mondboden 50 m (mond.js story.suchRadiusAussen, Live-Wunsch 28.10.2026), drinnen der Standard
+const muetzeR = (drin) => (!drin && story.suchRadiusAussen && story.suchRadiusAussen()) || MUETZE_R;
 const muetze = { el: null, an: 0, t: 0 };
 function muetzeBild(){
   const c = document.createElement('canvas'); c.width = 220; c.height = 160; const g = c.getContext('2d');
@@ -1141,8 +1251,10 @@ function updateMuetze(dt){
   muetze.t += dt;
   // erst nach MUETZE_RUHE s Ruhe (Live-Befund 26.10.2026: nach einer Animation oder der Ankunft blitzte das X kurz auf, bis die naechste
   // Ansage begann – sie kommt oft mit kurzer Verzoegerung)
-  muetze.ruhe = (zustand.aktiv || (story.redetGerade && story.redetGerade()) || (story.aktionLaeuft && story.aktionLaeuft())) ? 0 : (muetze.ruhe || 0) + dt;
-  const soll = story.gestartet && eva && muetze.ruhe > MUETZE_RUHE && !(story.eckeBelegt && story.eckeBelegt()) && etwasInDerNaehe() ? 1 : 0;
+  // ... und solange ein angemeldeter Einleitungstext noch kommt oder laeuft (story.einleitung, Live-Wunsch 29.10.2026: in Hoehle und
+  // Observatorium blitzte das X kurz auf, bevor die Einleitung begann – sie kommt erst gut 1 s nach dem Betreten)
+  muetze.ruhe = (zustand.aktiv || (story.redetGerade && story.redetGerade()) || (story.aktionLaeuft && story.aktionLaeuft()) || (story.einleitungLaeuft && story.einleitungLaeuft())) ? 0 : (muetze.ruhe || 0) + dt;
+  const soll = story.gestartet && eva && !(story.nurLaufen && story.nurLaufen()) && muetze.ruhe > MUETZE_RUHE && !(story.eckeBelegt && story.eckeBelegt()) && etwasInDerNaehe() ? 1 : 0;
   muetze.an += klemme(soll - muetze.an, -dt * 3, dt * 3);
   muetze.el.style.opacity = muetze.an.toFixed(2);
   muetze.el.style.transform = 'translateY(' + (Math.sin(muetze.t * 2.4) * 4).toFixed(1) + 'px) rotate(' + (Math.sin(muetze.t * 1.7) * 3).toFixed(1) + 'deg)';
@@ -1166,32 +1278,33 @@ function xRichtig(){
   if(story.interListe) for(const o of story.interListe){
     // frei = beim Umschauen schon dabei gewesen (story.js fuchsRundgang) – auch wenn der Fuchs es noch nicht angezeigt hat oder sein
     // Rundgang abbrach: dann ist X nicht mehr das Richtige (Live-Wunsch 26.10.2026: das X blieb nach dem Umschauen stehen)
-    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt || o.entdeckt || o.frei) continue;
-    if(Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
+    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt || o.entdeckt || o.frei || o.aus || !objImRaum(o)) continue;
+    if(Math.hypot(o.x - p.x, o.z - p.z) < muetzeR(drin)) return true;
   }
-  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei
-    && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei && imRaum(s)
+    && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < muetzeR(drin)) return true;
   return false;
 }
 function etwasInDerNaehe(){
   if(story.imBoot && story.imBoot()) return false;
   const p = eva.group.position, drin = !!(story.innen && story.innen.drin);
   if(story.interListe) for(const o of story.interListe){
-    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt) continue;
+    if(o.welt !== story.etappe || o.innen !== drin || o.erledigt || o.aus || !objImRaum(o)) continue;
     // noch mit X zu entdecken – oder entdeckt, aber noch ohne Y (einheitliche Logik, story.js objektOffen)
-    if((!o.entdeckt || (story.objektOffen && story.objektOffen(o))) && Math.hypot(o.x - p.x, o.z - p.z) < MUETZE_R) return true;
+    if((!o.entdeckt || (story.objektOffen && story.objektOffen(o))) && Math.hypot(o.x - p.x, o.z - p.z) < muetzeR(drin)) return true;
   }
-  for(const s of STELLEN) if(passtOrt(s, drin) && stelleSichtbar(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleSichtbar(s) && imRaum(s) && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < muetzeR(drin)) return true;
   // ... und Ringe, die erst mit X kommen (Live-Befund 26.10.2026: nach dem Aufschneiden des Pakets kam weder Hut noch X, obwohl es
   // nur mit Umschauen weitergeht – die Spur im Staub). Dieselbe Regel wie beim blauen X (xRichtig).
-  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei
-    && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < MUETZE_R) return true;
+  for(const s of STELLEN) if(passtOrt(s, drin) && stelleFrei(s) && !zustand.gemacht[s.id] && s.nachX && !kreisZiel(s).frei && imRaum(s)
+    && Math.hypot(s.kreis.x - p.x, s.kreis.z - p.z) < muetzeR(drin)) return true;
   return false;
 }
 // Alle vier Markierungen erledigt -> Funkspruch (nach einer kurzen Pause, damit er nicht in die letzte Ansage faellt)
 function pruefeFall1(){
   if(story.etappe === 2 && story.e2StelleFertig) story.e2StelleFertig();   // waldinsel.js: Foto + Lupe fertig -> Gorilla
   if(story.etappe === 3 && story.e3StelleFertig){ for(const s of STELLEN) if(etappeVon(s) === 3 && zustand.gemacht[s.id] && !s.gemeldet){ s.gemeldet = true; story.e3StelleFertig(s.id); } }
+  if(story.etappe === 5 && story.e5StelleFertig){ for(const s of STELLEN) if(etappeVon(s) === 5 && zustand.gemacht[s.id] && !s.gemeldet && !zustand.aktiv){ s.gemeldet = true; story.e5StelleFertig(s.id); } }
   if(story.etappe === 4 && story.e4StelleFertig){ for(const s of STELLEN) if(etappeVon(s) === 4 && zustand.gemacht[s.id] && !s.gemeldet && !zustand.aktiv){ s.gemeldet = true; story.e4StelleFertig(s.id); } }
   if(story.etappe !== 1 || !detektiv.erklaert || !E1.every(s => zustand.gemacht[s.id]) || !story.fall1Funk) return;
   story.spaeter(2.0, () => story.fall1Funk());

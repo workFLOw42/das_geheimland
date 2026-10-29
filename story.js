@@ -31,6 +31,15 @@ story.spielstand = (function(){
     const q = new URLSearchParams(location.search).get('etappe');
     if(q === '1') sessionStorage.removeItem(SPIELSTAND);
     else if(q) stand = { etappe: +q, reise: [0, 1], rucksack: { notizbuch: true, lupe: true, kompass: true, messer: true, stift: true, kamera: true }, seiten: [], test: true };
+    // Testzugang ?etappe=5&labor (Live-Wunsch 29.10.2026): auf dem Mond im Labor, bevor die Spuren gesammelt sind; alles davor ist
+    // gespielt – die Notizbuch-Seiten (echt aufgenommen) kommen aus _intern/teststand_mond.js, damit die Huette am Ende voll ist;
+    // den Rest setzt mondbasis_innen.js (laborTest)
+    if(q === '5' && /[?&]labor\b/.test(location.search)){ Object.assign(stand, { reise: [0, 1, 2, 3, 4], laborTest: true, e3Besucht: true }); stand.rucksack.bananen = true;
+      document.write('<script src="_intern/teststand_mond.js"></script>'); }
+    // Testzugang ?etappe=5&abflug: draussen auf dem Mond nach dem Fest (Seiten bis zum Gruppenfoto: _intern/teststand_mond_ende.js),
+    // den Rest setzt heimflug.js (abflugTest)
+    if(q === '5' && /[?&]abflug\b/.test(location.search)){ Object.assign(stand, { reise: [0, 1, 2, 3, 4], mondEnde: true, e3Besucht: true });
+      document.write('<script src="_intern/teststand_mond_ende.js"></script>'); }
     if(!stand) stand = JSON.parse(sessionStorage.getItem(SPIELSTAND) || 'null');
     // ?etappe=... nur einmal auswerten: aus der Adresse nehmen, sonst loeschte das Neuladen nach dem Globus (location.reload)
     // den eben gemerkten Spielstand gleich wieder (?etappe=1) bzw. sprang immer zum Test-Stand
@@ -69,15 +78,17 @@ story.etappeWechsel = function(n){
 // Welche Etappen liegen auf derselben Insel (eine Karte, beide Welten bleiben geladen)?
 story.inselVon = (n) => ({ 2: 'waldinsel', 3: 'waldinsel' })[n] || ('etappe' + n);
 // Welche Etappen es schon gibt (globus.js: zu einer, die fehlt, wird nicht neu geladen)
-story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene) || (n === 4 && !!story.e4StartSzene);
+story.etappeGebaut = (n) => n === 1 || (n === 2 && !!story.e2StartSzene) || (n === 3 && !!story.e3StartSzene) || (n === 4 && !!story.e4StartSzene) || (n === 5 && !!story.e5StartSzene);
 story.spielstandMerken = function(naechste){
   const A = story.ausruestung || {}, rucksack = {};
   for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera', 'bananen']) rucksack[n] = !!A[n];
   const seiten = (story.notizSeiten ? story.notizSeiten() : []).map(s => {
-    let bild = null; try { bild = s.bild && s.bild.toDataURL ? s.bild.toDataURL('image/png') : null; } catch(e){}
+    // JPEG statt PNG (Heimkehr, 28.10.2026: mit allen Fotos und Skizzen der Reise passte PNG nicht mehr in den Speicher); Bilder nach dem Neuladen sind Images
+    let bild = null; try { bild = s.bild && s.bild.toDataURL ? s.bild.toDataURL('image/jpeg', 0.82) : (s.bild && s.bild.src) || null; } catch(e){}
     return { art: s.art, name: s.name, ort: s.ort, dreh: s.dreh, bild };
   });
   const stand = { etappe: naechste, reise: story.reise ? story.reise.slice() : [0], rucksack, seiten, e3Besucht: !!story.e3Besucht };
+  if(story.heimkehrUnterwegs && naechste === 1) stand.heimkehr = true;   // heimflug.js: auf dem Heimweg (globus.js merkt am Ende noch einmal)
   try { sessionStorage.setItem(SPIELSTAND, JSON.stringify(stand)); }
   catch(e){ stand.seiten = []; try { sessionStorage.setItem(SPIELSTAND, JSON.stringify(stand)); } catch(e2){} console.warn('Spielstand ohne Notizbuch-Seiten (zu gross)', e); }
 };
@@ -126,6 +137,16 @@ function timerTick(dt){
   for(const f of faellig) f();
 }
 story.spaeter = spaeter;
+// Einleitungstext beim Ankommen (Live-Wunsch 29.10.2026: "koennte man X nicht an den Einleitungstext koppeln?"): sofort angemeldet,
+// gesprochen nach sek s; bis er zu Ende ist, bleiben Detektivhut und blaues X weg (notizbuch.js updateMuetze). nurWenn (optional):
+// erst beim Sprechen pruefen, ob er noch faellig ist. Zur Sicherheit endet die Sperre spaetestens nach sek + 40 s.
+let einleitungOffen = 0;
+story.einleitung = function(sek, saetze, rolle, nurWenn){
+  einleitungOffen++; let zu = false; const ende = () => { if(zu) return; zu = true; einleitungOffen = Math.max(0, einleitungOffen - 1); };
+  setTimeout(ende, (sek + 40) * 1000);
+  spaeter(sek, () => { if(nurWenn && !nurWenn()){ ende(); return; } story.sprich(saetze, ende, rolle); });
+};
+story.einleitungLaeuft = () => einleitungOffen > 0;
 
 // ---- Welten ----------------------------------------------------------------------------------
 // Jeder Einsatzort baut seine Kulisse in EINE eigene Gruppe (story.welt(n)), nie direkt in die Szene
@@ -142,7 +163,7 @@ function welt(n){
 // Sichtbar: die Welt der Etappe – und beim Fliegen auch die Nachbarwelt auf derselben Insel (von oben sieht man alles:
 // Lichtung, Steg und Boot ebenso wie Berg und Piste). Zu Fuss nur die eigene (spart Zeichnen; der Wald trennt sie).
 function weltenSichtbar(){
-  for(const [n, g] of welten) g.visible = locale === 'earth' && (n === story.etappe || (!eva && story.inselVon && story.inselVon(n) === story.inselVon(story.etappe)));
+  for(const [n, g] of welten) g.visible = locale === (n === 5 ? 'moon' : 'earth') && (n === story.etappe || (!eva && story.inselVon && story.inselVon(n) === story.inselVon(story.etappe)));
 }
 function weltEntsorgen(n){
   const g = welten.get(n);
@@ -322,13 +343,13 @@ function hookFigur(){
       // und sah ruckelig aus). Gegen Ende: Stick gehalten -> nahtlos weiterlaufen, sonst ausbremsen.
       figur.rollStick = a;
       const t = figur.aktT, ende = figur.acts.roll.getClip().duration / ROLL_TEMPO;
-      const k = klemme((t - ROLL_BREMS_AB * ende) / ((1 - ROLL_BREMS_AB) * ende), 0, 1);
+      const k = figur.mond === 'flug' ? 0 : klemme((t - ROLL_BREMS_AB * ende) / ((1 - ROLL_BREMS_AB) * ende), 0, 1);   // Mond: in der Luft kein Bremsen
       const v = figur.rollV * (a > 0.3 ? 1 : 1 - 0.8 * k * k * (3 - 2 * k));
       return updateEvaOrig(dt, { pitch: -klemme(v / EVA_SPEED, 0, 1), yaw: (inp.yaw || 0) * 0.3 });
     }
     // Laufen geht auch waehrend einer Erklaer- oder Erkundungsaktion (Gespraech, Einsammeln – Live-Wunsch 23.10.2026); nur vor
     // dem Start und bei Vollbild-Aktionen (Lupe, Schnitzen, Foto, Skizze: story.vollbildLaeuft) steht er still
-    if(!story.gestartet || (story.vollbildLaeuft && story.vollbildLaeuft()) || figur.kniet || figur.aktion === 'jump' || figur.aktion === 'look' || figur.schuetteln){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
+    if(!story.gestartet || (story.vollbildLaeuft && story.vollbildLaeuft()) || figur.kniet || (figur.aktion === 'jump' && !figur.mond) || figur.aktion === 'look' || figur.schuetteln){ figur.ausschlag = 0; figur.tempo = 0; return updateEvaOrig(dt, {}); }
     figur.ausschlag = a;
     const f = a <= 0.5 ? a / 0.5 * GEH_MAX : GEH_MAX + (a - 0.5) / 0.5 * (1 - GEH_MAX);
     figur.tempo = f * EVA_SPEED;
@@ -342,14 +363,9 @@ function hookFigur(){
       for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[1] && gp.buttons[1].pressed) b = true;
       if(!b) story.bSperre = false; }
     requestAnimationFrame(bFrei); })();
+  story.engineSprung = evaJump;    // nur fuer den Mond (springen: wirklich in die Luft)
   evaJump = function(){};          // der Engine-Huepfer passt nicht zur Figur
-  // Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund
-  const solidFigOrig = evaSolid;
-  // Nur fuer IHRE Schritte (figurSchritt, gesetzt um den Engine-Lauf) – sonst sperrte es auch die Schritte des Fuchses selbst
-  evaSolid = function(x, z){ if(figurSchritt && eva && fuchs.obj && fuchs.aktiv && fuchs.obj.parent){ const f = fuchs.obj.position;
-      const neu = Math.hypot(x - f.x, z - f.z), jetzt = Math.hypot(eva.group.position.x - f.x, eva.group.position.z - f.z);
-      if(neu < ABSTAND_MIN && neu < jetzt) return false; }
-    return solidFigOrig.apply(this, arguments); };
+  // (dass die Figur nicht durch den Fuchs laeuft: fuchsAlsHindernis, erst in STORY_START)
   // Leertaste setzt in readInput Vollschub, X Schub 0 – zu Fuss soll beides den (unsichtbaren) X-Wing nicht
   // umstellen: den Schub nach readInput auf den Wert davor zuruecksetzen
   const readOrig = readInput;
@@ -430,13 +446,29 @@ const SPRUNG_FREI = 1.5;      // s: danach darf der Stick den Sprung abbrechen
 function springen(){
   if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet) return;
   if(figur.tempo > 0.3 && figur.acts.roll){
-    figur.aktion = 'roll'; figur.aktT = 0;
+    figur.aktion = 'roll'; figur.aktT = 0; figur.mond = mondAnlauf();
     figur.rollV = klemme(figur.tempo, 2.2, 3.6); figur.rollStick = 1;
     figurAnim('roll', 0.15, ROLL_TEMPO);
   } else if(figur.acts.jump){
-    figur.aktion = 'jump'; figur.aktT = 0;
+    figur.aktion = 'jump'; figur.aktT = 0; figur.mond = mondAnlauf();
     figurAnim('jump', 0.12, 1);
   }
+}
+// ---- Springen auf dem Mond (Etappe 5, Live-Wunsch 26.10.2026: "dass man dort hoeher springen kann", "nur die Flugphase in
+// Zeitlupe – hoeher und weiter, das Abrollen dann wieder auf dem Boden") --------------------------------------------------
+// Absprung und Landung laufen im normalen Tempo des Clips. Am Absprung (MOND_LUFT: Clipzeit, ab der er in der Luft ist) springt
+// die Engine wirklich (Mondschwerkraft, gut 6 m hoch, wie in Trip to Japan: dort springt sie immer, der Stick bleibt), und die
+// Luftphase des Clips wird auf die ganze Flugzeit gestreckt. Setzt er auf, laeuft der Rest wieder normal (Rolle: abrollen).
+const MOND_LUFT = { jump: [0.5, 1.05, 1], roll: [0.345, 1.035, ROLL_TEMPO] };   // Clipzeit hoch, Clipzeit unten, normales Tempo
+const mondAnlauf = () => (locale === 'moon' && eva && eva.onGround && story.engineSprung) ? 'anlauf' : null;   // global-ok: Engine
+function mondSprungSchritt(){
+  const n = figur.aktion, L = MOND_LUFT[n], A = n && figur.acts[n]; if(!figur.mond || !L || !A) return;
+  if(figur.mond === 'anlauf' && A.time >= L[0]){
+    if(!eva.onGround){ figur.mond = null; return; }
+    story.engineSprung();
+    const g = (typeof GRAV_AT !== 'undefined' && GRAV_AT.moon) || 1.62, flug = 2 * Math.max(0.5, eva.vy) / g;   // global-ok: Engine
+    A.timeScale = (L[1] - L[0]) / flug; figur.mond = 'flug';
+  } else if(figur.mond === 'flug' && (eva.onGround || A.time >= L[1])){ A.timeScale = L[2]; figur.mond = 'ab'; }
 }
 // A (Controller-Knopf 0) / Leertaste: springen · X (Knopf 2) / X: umherschauen. Die Engine nutzt beide zu Fuss
 // nicht (A = Schubbremse, X = Boost, Leertaste = Vollschub – alles nur im Flieger, siehe hookFigur: readInput).
@@ -518,7 +550,7 @@ function schuettelSchritt(dt){
   else schuettelEnde();
 }
 function hinknien(){
-  if(!figur.acts.kneel) return;
+  if(!figur.acts.kneel || (story.nurLaufen && story.nurLaufen())) return;
   figur.kniet = true;
   figurAnim('kneel', 0.35, 1);
   fuchsRufen();
@@ -560,7 +592,8 @@ function gitarreMusik(an){
 }
 function updateFigur(dt){
   if(!figur.obj) return;
-  if(figur.cur !== 'guitar' || figur.ausschlag > 0.05 || figur.aktion || figur.kniet || sw.aktiv){ gitarreMusik(false); fuchsTanzEnde(); }
+  // (beim Musizieren im Saal – mondfest.js, figur.musik – endet der Tanz dort, mit der Musik)
+  if(!figur.musik && (figur.cur !== 'guitar' || figur.ausschlag > 0.05 || figur.aktion || figur.kniet || sw.aktiv)){ gitarreMusik(false); fuchsTanzEnde(); }
   if(!figur.mixer){
     // altes GLB ohne Rig: beim Laufen leicht wippen
     const a = figur.ausschlag || 0;
@@ -575,14 +608,21 @@ function updateFigur(dt){
   if(figur.aktion){
     figur.aktT += dt;
     const clip = figur.acts[figur.aktion].getClip();
+    mondSprungSchritt();
+    // Mondsprung: bis er wieder unten ist (danach wie sonst: der Rest des Clips im normalen Tempo)
+    if(figur.mond && figur.mond !== 'ab'){ figur.steht = 0; return; }
+    if(figur.mond === 'ab' && figur.acts[figur.aktion].time < clip.duration - 0.3 * figur.acts[figur.aktion].timeScale){ figur.steht = 0; return; }
+    const mondFertig = !!figur.mond; figur.mond = null;             // Mondsprung zu Ende: gleich hinaus (kein Stick-Warten)
     const frei = figur.aktion === 'jump' ? SPRUNG_FREI : figur.aktion === 'look' ? clip.duration - 0.35 : clip.duration / ROLL_TEMPO - 0.3;
     const dauer = clip.duration / figur.acts[figur.aktion].timeScale;
     const stick = figur.aktion === 'roll' ? figur.rollStick : figur.ausschlag;
     if(figur.aktion === 'look' && figur.aktT < frei){ figur.steht = 0; return; }   // Umschauen: bis kurz vor Schluss, dann weich zurueck
-    if(figur.aktion !== 'look' && (figur.aktT < frei || (figur.aktT < dauer - 0.1 && stick < 0.1))) return;
+    if(!mondFertig && figur.aktion !== 'look' && (figur.aktT < frei || (figur.aktT < dauer - 0.1 && stick < 0.1))) return;
     figur.aktion = null;                          // naechster Clip blendet aus dem Endbild
   }
   if(figur.kniet) return;
+  // Musik (mondfest.js, Weihnachtsfeier): Joshi spielt Gitarre oder Schlagzeug, bis der Stick bewegt wird
+  if(figur.musik && figur.ausschlag <= 0.05){ figurAnim(figur.musik, 0.4, 1); figur.steht = 0; return; }
   // Arbeiten (z. B. Schnitzen, notizbuch.js – story.arbeiten): Joshi hockt sich hin, dieselbe Pose wie Knien, aber OHNE
   // figur.kniet – der Fuchs kommt dann nicht zum Spielen (Live-Wunsch 16.10.). Fuer jede kuenftige Arbeit wiederverwendbar.
   if(figur.arbeitet && figur.ausschlag <= 0.05){ figurAnim('kneel', 0.35, 1); figur.steht = 0; return; }
@@ -605,7 +645,9 @@ function updateFigur(dt){
       figurAnim('idle', 0.3, 1); return;
     }
     if(steuerbar()) figur.steht += dt;          // erst nach dem Startbildschirm zaehlen
-    if(figur.steht > GITARRE_NACH && figur.acts.guitar){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); fuchsTanzStart(); return; }
+    // nicht waehrend Foto oder Skizze (Live-Befund 29.10.2026: beim Festfoto spielte Joshi Luftgitarre, Fuchsi lief zum Tanzen aus dem Bild)
+    // (nicht, wenn die Figur versteckt ist – heimflug.js: Joshi sitzt in der Rakete; Live-Befund 29.10.2026: dort begann die Gitarre)
+    if(figur.steht > GITARRE_NACH && figur.acts.guitar && !(story.nurLaufen && story.nurLaufen()) && !(story.bildEbeneAktiv && story.bildEbeneAktiv()) && !(story.mondfest && story.mondfest.sitzen) && !(story.figurVersteckt && story.figurVersteckt())){ figurAnim('guitar', 0.6, 1); gitarreMusik(true); fuchsTanzStart(); return; }
     else figurAnim('idle', 0.3, 1);
   }
 }
@@ -640,6 +682,8 @@ let dbgEl = null, dbgT = 0;
 function figurWache(dt){
   if(!figur.obj || !eva || !eva.group || eva.rover || eva.boat) return;
   if(figur.obj.parent !== eva.group){ eva.group.clear(); eva.group.add(figur.obj); story.figurRepariert = (story.figurRepariert || 0) + 1; }
+  // bewusst versteckt (heimflug.js: Joshi sitzt in der Rakete – Live-Befund 29.10.2026: die Wache machte ihn wieder sichtbar)
+  if(story.figurVersteckt && story.figurVersteckt()){ eva.group.visible = false; return; }
   eva.group.visible = true;
   figur.obj.traverse(o => { o.visible = true; if(o.isMesh) o.frustumCulled = false; });
   if(!DEBUG) return;
@@ -730,6 +774,12 @@ function schwimmUpdate(dt, inp){
 // Watzone: WAT_W m Flachwasser am Strand (Live-Wunsch 22.10.2026: 6 m, vorher 12), dort steht Joshi beim Schwimmen
 const WAT_W = 6, WAT_TIEF = 0.6;
 function watAbstand(x, z){
+  // schnell vorab (Live-Befund 29.10.2026: auf dem Weg zur Gorilla-Hoehle ruckelte es – hier fielen bis zu 96 Land-/Strand-Fragen je
+  // Punkt an, viele Male je Bild): weiter als WAT_W + 1 m von jeder Sandkante gibt es keine Watzone, ohne abzutasten
+  let rand = Infinity; const pcx = Math.round(x / CELL), pcz = Math.round(z / CELL);                         // global-ok: Engine
+  for(let dz = -1; dz <= 1; dz++) for(let dx = -1; dx <= 1; dx++){ const i = islandInfo(pcx + dx, pcz + dz); if(i) rand = Math.min(rand, Math.hypot(x - i.wx, z - i.wz) - i.radius * BEACH_FACTOR); }   // global-ok
+  for(const s of zusatzLand()) rand = Math.min(rand, Math.hypot(x - s.x, z - s.z) - s.r);                   // global-ok: Engine
+  if(rand > WAT_W + 1) return Infinity;
   if(isOnLand(x, z) || isOnBeach(x, z)) return 0;
   for(let r = 2; r <= WAT_W; r += 2){
     for(let k = 0; k < 8; k++){ const a = k * Math.PI / 4; if(isOnBeach(x + Math.cos(a) * r, z + Math.sin(a) * r) || isOnLand(x + Math.cos(a) * r, z + Math.sin(a) * r)) return r; }
@@ -739,6 +789,38 @@ function watAbstand(x, z){
 // story.watAus(x, z): dort gilt die Watzone der Meeresufer nicht (der See der Oase hat sein eigenes Flachwasser, wueste.js)
 function watGrund(x, z){ if(story.watAus && story.watAus(x, z)) return null; const d = watAbstand(x, z); if(d === 0 || d === Infinity) return null; return seaYAt(x, z) - WAT_TIEF * (d / WAT_W) * 0.98; }
 story.watGrund = watGrund;
+// ---- Pflanzen und Steine unter Wasser auf den GEZEICHNETEN Grund (Live-Befund 29.10.2026: sie schwebten am Hang) ----------
+// Die Engine setzt sie auf seabedY, gezeichnet ist der Grund aber als grobes Raster (SEABED_STEP 125 m, dazwischen Dreiecke) –
+// am Kuestenhang liegen beide mehrere Meter auseinander (wie bei den Stegpfaehlen, steg.js pfahlGrund). grundGezeichnet rechnet
+// die Hoehe genau wie das Raster (dieselben Gitterpunkte, dieselbe Dreiecksteilung wie PlaneGeometry). Jedes Objekt steht dann
+// darauf, ein Stueck eingesunken (ein, m) und nach der Neigung gekippt (kipp: Steine ganz, Gewaechse halb – sie wachsen nach oben).
+// Ein Gewaechs, das dadurch zu flach steht, faellt weg (sonst ragte es aus dem Wasser, siehe UW_PLANT_MIN_DEPTH der Engine).
+const UW_BODEN = { makeWeed: { ein: 0.3, kipp: 0.5, flach: true }, makeCoralBush: { ein: 0.25, kipp: 0.5, flach: true },
+  makeSponge: { ein: 0.25, kipp: 0.6 }, makeRock: { ein: 0.35, kipp: 1 } };
+function grundGezeichnet(x, z){
+  const S = SEABED_STEP, fx = x / S, fz = z / S, ix = Math.floor(fx), iz = Math.floor(fz), u = fx - ix, v = fz - iz;   // global-ok: Engine
+  const h = (i, k) => seabedY(i * S, k * S, _sbIslands.length ? _sbIslands : undefined);                            // global-ok: wie updateSeabed
+  const ha = h(ix, iz), hb = h(ix, iz + 1), hc = h(ix + 1, iz + 1), hd = h(ix + 1, iz);
+  if(u + v <= 1) return { y: ha + (hd - ha) * u + (hb - ha) * v, gx: (hd - ha) / S, gz: (hb - ha) / S };
+  return { y: hc + (hb - hc) * (1 - u) + (hd - hc) * (1 - v), gx: (hc - hb) / S, gz: (hc - hd) / S };
+}
+story.grundGezeichnet = grundGezeichnet;
+function hookMeeresgrund(){
+  for(const name of Object.keys(UW_BODEN)){
+    const orig = window[name]; if(typeof orig !== 'function') continue;
+    window[name] = function(){ const o = orig.apply(this, arguments), g = new THREE.Group(); g.add(o); g.userData.uwBoden = UW_BODEN[name]; return g; };
+  }
+  const OBEN = new THREE.Vector3(0, 1, 0), n = new THREE.Vector3(), q = new THREE.Quaternion(), zelleOrig = buildUwCell;   // global-ok: Engine
+  buildUwCell = function(){                                                                                       // global-ok: Engine
+    const g = zelleOrig.apply(this, arguments); if(!g) return g;
+    for(const o of g.children){ const B = o.userData.uwBoden; if(!B) continue;
+      const G = grundGezeichnet(o.position.x, o.position.z), yaw = o.rotation.y;
+      if(B.flach && G.y > -UW_PLANT_MIN_DEPTH){ o.visible = false; continue; }                                      // global-ok: Engine
+      o.position.y = G.y - B.ein;
+      o.quaternion.setFromUnitVectors(OBEN, n.set(-G.gx * B.kipp, 1, -G.gz * B.kipp).normalize()).multiply(q.setFromAxisAngle(OBEN, yaw));
+    }
+    return g; };
+}
 function hookSchwimmen(){
   // Ins Wasser = schwimmen (statt Schlauchboot der Engine)
   evaEnterDinghy = function(x, z){ if(eva && !eva.boat && !sw.aktiv) schwimmStart(x, z); };
@@ -922,6 +1004,8 @@ function fuchsTanzStart(){
   if(fuchs.modus === 'warten' && fuchs.sitzt) fuchsAnim(FA.aufstehen, 0.2);
   fuchs.modus = 'tanzen'; fuchs.tanz = { phase: 'hin', t: 0, seite: 1, dreh: 0, naechste: 1.2 }; fuchs.sitzt = false; fuchs.ziel = null;
 }
+story.fuchsTanzStart = () => fuchsTanzStart();                    // mondfest.js: Fuchsi tanzt zur Musik
+story.fuchsTanzEnde = () => fuchsTanzEnde();
 function fuchsTanzEnde(){
   if(fuchs.modus !== 'tanzen') return;
   fuchs.modus = 'streifen'; fuchs.ziel = null; fuchs.warte = fuchs.sitzt ? 0.6 : 0.3;
@@ -932,9 +1016,11 @@ function fuchsTanz(dt, fp){
   const T = fuchs.tanz, g = eva.group.position;
   // Abstand: 5 m (im Huetten-Raum 2,5 m) – liegt der Platz in einem Hindernis (Huette, Feuer ...), so nah heran,
   // bis er frei ist (sonst lief der Fuchs an der Wand hin und her und kam nie an)
+  // eigener Tanzplatz (mondfest.js: in der Saalmitte bei den Gaesten), quer dazu q
+  const PM = story.fuchsTanzMitte && story.fuchsTanzMitte(), neben = (s) => PM ? { x: PM.x + PM.qx * s / TANZ_BREIT, z: PM.z + PM.qz * s / TANZ_BREIT } : nebenFigur(ab, s);
   let ab = story.innen && story.innen.drin ? 2.5 : TANZ_ABST;
-  while(ab > 1.6){ const q = nebenFigur(ab, 0); if(fuchsFrei(q.x, q.z) && fuchsFrei(nebenFigur(ab, TANZ_BREIT).x, nebenFigur(ab, TANZ_BREIT).z) && fuchsFrei(nebenFigur(ab, -TANZ_BREIT).x, nebenFigur(ab, -TANZ_BREIT).z)) break; ab -= 0.3; }
-  const mitte = nebenFigur(ab, 0);
+  while(!PM && ab > 1.6){ const q = nebenFigur(ab, 0); if(fuchsFrei(q.x, q.z) && fuchsFrei(nebenFigur(ab, TANZ_BREIT).x, nebenFigur(ab, TANZ_BREIT).z) && fuchsFrei(nebenFigur(ab, -TANZ_BREIT).x, nebenFigur(ab, -TANZ_BREIT).z)) break; ab -= 0.3; }
+  const mitte = neben(0);
   if(T.phase === 'hin'){
     const d = fuchsLaufe(dt, mitte.x, mitte.z, Math.hypot(mitte.x - fp.x, mitte.z - fp.z) > 3 ? 7 : 3);
     T.hinT = (T.hinT || 0) + dt;
@@ -956,7 +1042,7 @@ function fuchsTanz(dt, fp){
     // zu eng zum Hin-und-her (fuchsWaechter): nur auf der Stelle drehen und hopsen, dazwischen zu Joshi schauen
     if(T.eng){ fuchsSchaue(dt, g.x, g.z, 3); if(fuchs.cur !== FA.stehen) fuchsAnim(FA.stehen, 0.3); return; }
     // quer vor der Figur hin und her: Ziel abwechselnd links / rechts der Mitte
-    const z = nebenFigur(ab, T.seite * TANZ_BREIT);
+    const z = neben(T.seite * TANZ_BREIT);
     const d = fuchsLaufe(dt, z.x, z.z, 2.6);
     if(d < 0.3 || fuchs.blockiert) T.seite = -T.seite;
     return;
@@ -1102,11 +1188,12 @@ function fuchsSchaue(dt, x, z, rate){
   fuchs.yaw += klemme(winkelDiff(fuchs.yaw, Math.atan2(x - fp.x, z - fp.z)), -rate * dt, rate * dt);
 }
 function updateFuchs(dt){
+  if(fuchs.obj && story.titelbild){ fuchs.obj.visible = false; return; }   // im Titelbild noch nicht (startbildschirm)
   if(!fuchs.obj || !fuchs.aktiv) return;
   // Sitzt Joshi im Flugzeug (eva = null an Land, nicht im Boot), fliegt der Fuchs mit: nicht zu sehen (Live-Wunsch 22.10.2026).
   // Steigt Joshi aus, steht er wieder neben ihm (das Nachholen unten setzt ihn hin).
   // (am Fallschirm ist Joshi ebenso nicht zu Fuss – fallschirm.js; nach der Landung ist er es wieder, dann ist Fuchsi da)
-  const imFlieger = !eva && locale === 'earth' && !(story.imBoot && story.imBoot());
+  const imFlieger = !eva && (locale === 'earth' || locale === 'moon') && !(story.imBoot && story.imBoot());   // Mond: Etappe 5 (mond.js)
   if(fuchs.obj.visible === imFlieger){ fuchs.obj.visible = !imFlieger;
     if(!imFlieger && eva){ const n = nebenFigur(-1.5, 1.2); if(fuchsFrei(n.x, n.z)){ fuchs.obj.position.x = n.x; fuchs.obj.position.z = n.z; fuchs.ziel = null; } } }
   if(imFlieger) return;
@@ -1331,13 +1418,19 @@ function yZeichen(){
   s.scale.setScalar(0.6); s.renderOrder = 999; return s;
 }
 // Das naechste entdeckte Objekt in Y-Reichweite (nur zu Fuss, draussen)
+// Abstand zur Y-Zone: Kreis um (x, z) – oder, mit o.strecke { ax, az, bx, bz }, um eine Strecke (eine lange Tafel, mondfest.js)
+function interAbstand(o, g){
+  const S = o.strecke; if(!S) return Math.hypot(o.x - g.x, o.z - g.z);
+  const vx = S.bx - S.ax, vz = S.bz - S.az, L2 = vx * vx + vz * vz || 1, k = Math.max(0, Math.min(1, ((g.x - S.ax) * vx + (g.z - S.az) * vz) / L2));
+  return Math.hypot(g.x - (S.ax + vx * k), g.z - (S.az + vz * k));
+}
 function interNaechstes(){
   if(!eva || eva.boat || eva.rover || sw.aktiv) return null;
   if(story.imKreis && story.imKreis()) return null;              // im Ring gehoert das Y dem Ring (notizbuch.js)
   const drin = !!(story.innen && story.innen.drin);
   const g = eva.group.position; let best = null, bd = 1e9;
-  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.erledigt || o.innen !== drin) continue;
-    const d = Math.hypot(o.x - g.x, o.z - g.z) - o.r; if(d < INTER_Y_R && d < bd){ bd = d; best = o; } }
+  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.erledigt || o.aus || o.nurX || o.innen !== drin) continue;   // nurX: nur zum Entdecken, ohne Y (die Luke der Mondbasis)
+    const d = interAbstand(o, g) - o.r; if(d < INTER_Y_R && d < bd){ bd = d; best = o; } }
   return best;
 }
 let interT = 0;
@@ -1347,7 +1440,7 @@ function updateInteraktion(dt){
   for(const o of interListe){
     if(o.glow > 0){ o.glow = Math.max(0, o.glow - dt); setGlow(o, Math.max(0, Math.sin((1 - o.glow / o.glowDauer) * Math.PI))); }
     // Waehrend eine Erklaerung laeuft (Live-Wunsch 16.10.), braucht es kein Y – es kommt danach wieder
-    const zeigen = o === nah && !o.spricht && !story.aktionLaeuft();
+    const zeigen = o === nah && !o.spricht && story.yErlaubt();
     if(zeigen && !o.zeichen){ o.zeichen = yZeichen(); welt(o.welt).add(o.zeichen); }
     // yx/yz: das Y steht ueber einer anderen Stelle als der Standplatz (Tiere am Festtisch: Joshi steht davor, das Y ueber dem Tier)
     if(o.zeichen){ o.zeichen.visible = zeigen; if(zeigen) o.zeichen.position.set(o.yx !== undefined ? o.yx : o.x, (o.innen ? INNEN_BODEN : ISLAND_Y) + o.yHoehe + Math.sin(interT * 3) * 0.07, o.yz !== undefined ? o.yz : o.z); }
@@ -1376,6 +1469,7 @@ function hookInteraktion(){
 }
 // Suchblick: Fuchs besucht die unentdeckten Objekte in der Naehe, jeweils das naechste zuerst
 function fuchsSuche(){
+  if(story.nurLaufen && story.nurLaufen()) return;                         // im Kinderzimmer (kinderzimmer.js): nur laufen
   if(story.innen && story.innen.drin) hinweisStand.innenGeschaut = true; else hinweisStand.aussenGeschaut = true;
   if(!fuchs.aktiv || !eva) return;
   const g = eva.group.position;
@@ -1383,18 +1477,23 @@ function fuchsSuche(){
   // Global (Live-Wunsch 16.10.): X untersucht im Umkreis INTER_SUCH_R (20 m) und schaltet alles darin frei – Objekte UND
   // farbige Markierungen (notizbuch.js). Der Fuchs laeuft dann ALLES Freigeschaltete ab, das er noch nicht markiert hat,
   // auch wenn es weiter weg liegt (z. B. die Markierungen, die nach der Erklaerung freigeschaltet wurden), und markiert es.
-  story.fuchsRundgang(g.x, g.z, drin, INTER_SUCH_R);
+  // auf dem Mondboden 50 m (mond.js story.suchRadiusAussen, Live-Wunsch 28.10.2026), sonst und drinnen der Standard
+  story.fuchsRundgang(g.x, g.z, drin, (!drin && story.suchRadiusAussen && story.suchRadiusAussen()) || INTER_SUCH_R);
 }
+// Umsehen nur im eigenen Raum (Live-Wunsch 29.10.2026: in der Mondbasis fand X im Buero auch etwas hinten im Saal): eine Welt
+// mit mehreren Raeumen meldet story.raumVon(x, z) (mondbasis_innen.js) – was in einem anderen Raum liegt als Joshi, zaehlt fuer X,
+// den Detektivhut und den Rundgang des Fuchses nicht. Ohne raumVon (oder null) gilt alles im Umkreis wie bisher.
+story.gleicherRaum = (x, z) => { if(!story.raumVon || !eva) return true; const a = story.raumVon(eva.group.position.x, eva.group.position.z); return a === null || a === story.raumVon(x, z); };
 // Rundgang des Fuchses: zuerst im Umkreis r um (x, z) alles freischalten, dann alles Freigeschaltete, aber noch nicht
 // Markierte ablaufen (das naechste zuerst). r = 0: nichts Neues freischalten, nur ablaufen (nach der Erklaerung).
 // nurOffen: nur die offenen Dinge (entdeckt, aber noch ohne Y) zeigen, ohne Ansage (die Hinweis-Taste spricht selbst)
 // nur (optional): Filter – der Fuchs zeigt nur diese Ziele (waldinsel.js: genau den einen Ring)
 story.fuchsRundgang = function(x, z, drin, r, nurOffen, nur){
   if(!fuchs.aktiv || !eva) return;
-  if(r) for(const o of interListe) if(o.welt === story.etappe && o.innen === drin && Math.hypot(o.x - x, o.z - z) < r) o.frei = true;
+  if(r) for(const o of interListe) if(o.welt === story.etappe && o.innen === drin && !o.aus && Math.hypot(o.x - x, o.z - z) < r && story.gleicherRaum(o.x, o.z)) o.frei = true;
   if(r && story.kreiseFreischalten) story.kreiseFreischalten(x, z, r, drin);
   const kreise = story.sucheKreise ? story.sucheKreise(drin) : [];
-  const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && o.frei).concat(kreise);
+  const hier = interListe.filter(o => o.welt === story.etappe && o.innen === drin && o.frei && !o.aus && story.gleicherRaum(o.x, o.z)).concat(kreise);
   let rest = nurOffen ? [] : hier.filter(o => !o.entdeckt);
   // nur: ein ausdruecklich gewaehltes Ding zeigt er auch, wenn es schon benutzt wurde (das Lama nach dem Spurvergleich)
   if(nurOffen){ rest = hier.filter(o => o.kreis ? true : (offen(o) || (nur && nur(o)))); if(nur) rest = rest.filter(nur); if(!rest.length) return; }
@@ -1476,6 +1575,9 @@ function hinweisGeben(){
   if(hinweisStand.spricht || !story.gestartet) return;
   const H = hinweisStand;
   let satz;
+  // im Kinderzimmer: nur "geh ins Bett" (kinderzimmer.js)
+  if(story.heimkehr && story.heimkehrHinweis){ const z = story.heimkehrHinweis(); if(z){ H.spricht = true; sprich(z, () => { H.spricht = false; }); return; } }   // heimkehr.js
+  if(story.nurLaufen && story.nurLaufen()){ const z = story.zimmerHinweis && story.zimmerHinweis(); if(!z) return; H.spricht = true; sprich(z, () => { H.spricht = false; }); return; }
   // Alles eingesammelt und der Funk ruft (Live-Wunsch 16.10.): zum Funkgeraet schicken – geht allem anderen vor
   if(story.imBoot && story.imBoot()){ if(!story.ziel) return; satz = HINWEIS.boot; }   // im Segelboot: zum roten Punkt (ohne Ziel kein Satz)
   else if(story.detektivPhase && story.detektivPhase()) satz = HINWEIS.detektiv;      // Markierungen offen (notizbuch.js)
@@ -1483,6 +1585,7 @@ function hinweisGeben(){
   else if(story.etappe === 3 && story.e3Hinweis) satz = story.e3Hinweis();   // vor der Hoehle (hoehle.js)
   else if(story.etappe === 4 && story.e4HinweisInnen && story.e4HinweisInnen()) satz = story.e4HinweisInnen();   // im Observatorium (observatorium_innen.js)
   else if(story.etappe === 4 && story.e4Hinweis && story.e4Hinweis()) satz = story.e4Hinweis();   // Oase (wueste.js)
+  else if(story.etappe === 5 && story.e5Hinweis && story.e5Hinweis()) satz = story.e5Hinweis();   // Mond (mond.js)
   else if(story.etappe === 2){                                      // Waldinsel: eine Welt, keine Huette
     const hier = interListe.filter(o => o.welt === 2), e2 = story.e2Hinweis && story.e2Hinweis();
     if(e2){ satz = e2; if(story.e2HinweisFuchs) story.e2HinweisFuchs(); }   // Spur am Tisch (waldinsel.js); der Fuchs zeigt den Ring
@@ -1542,10 +1645,40 @@ function untertitel(text){
 }
 const STIMME_W = /Katja|Amala|Seraphina|Louisa|Hedda|Elke|Klarissa|Tanja|Google Deutsch|female|weiblich/i;
 const STIMME_M = /Conrad|Killian|Florian|Stefan|Ralf|Kasper|Bernd|Christoph|male|männlich/i;
+// ---- Stimmen (Live-Wunsch 28.10.2026; Standard seit 29.10.2026: JEDE Sprechrolle hat ihre eigene Zeile, auch wenn sie noch gleich
+// klingt – so laesst sich jede spaeter einzeln aendern): m: maennliche Stimme, p: Tonhoehe, r: Tempo, zweite: die zweite
+// passende Stimme des Browsers (damit zwei Rollen nicht gleich klingen). Neue Figur = neue Zeile;
+// ohne Eintrag gilt die Erzaehlerin ('inventar' und 'funkRahmen' sind Sprechweisen der Erzaehlerin, keine eigenen Sprecher). 'funk:<rolle>' spricht mit derselben Stimme ueber Funk (Rauschen davor), z. B. 'funk:lama'.
+const STIMMEN = story.stimmen = {
+  erzaehlerin: { m: false, p: 1.05, r: 1.0 },
+  joshi:   { m: false, p: 1.45, r: 1.0 },    // kindlich: die helle Stimme wie bis zum 26.10. (Live-Befund 29.10.2026: eine hochgezogene
+                                             // Maennerstimme klang nicht mehr nach Kind); das Eichhoernchen hat die Maennerstimme
+  eich:    { m: true,  p: 1.45, r: 1.08 },   // das Eichhoernchen: kindlich, aber maennlich
+  elch:    { m: true,  p: 0.55, r: 0.88 },   // tief, maennlich
+  eule:    { m: true,  p: 0.8,  r: 0.92 },   // der Uhu
+  gorilla: { m: true,  p: 0.95, r: 0.95 },   // normal maennlich
+  gorillaTraurig: { m: true, p: 0.82, r: 0.8 },   // zu Beginn in der Hoehle: traurig (langsamer, tiefer)
+  lama:    { m: false, p: 1.2,  r: 1.1, zweite: true },   // weiblich, eigene Stimme (Live-Befund 29.10.2026: klang wie Joshi) –
+                                             // zweite: die zweite passende Stimme des Browsers, wenn es eine gibt
+  alienG:  { m: true,  p: 0.5,  r: 0.9 },    // das grosse Alien
+  alienK:  { m: false, p: 1.65, r: 1.08 },   // das kleine Alien (Live-Befund 29.10.2026: bei 2,0 / 1,2 kaum zu verstehen)
+  // die Tiere am Festtisch der Waldinsel (bisher die gemeinsamen Stimmen tierW / tierK)
+  hase:        { m: false, p: 1.2, r: 0.95 },
+  reh:         { m: false, p: 1.2, r: 0.95 },
+  hasenbaby:   { m: false, p: 1.7, r: 1.05 },
+  vogel_blau:  { m: false, p: 1.7, r: 1.05 },
+  vogel_meise: { m: false, p: 1.7, r: 1.05 },
+  tiereAmTisch: { m: false, p: 1.2, r: 0.95 },   // der gemeinsame kurze Text der Tiere am Tisch
+  radio:   { m: true,  p: 0.55, r: 0.88 },   // Etappe 1: der Elch ruft ueber Funk an
+};
+const stimmBasis = (rolle) => rolle && rolle.indexOf('funk:') === 0 ? rolle.slice(5) : rolle;
+story.istFunk = (rolle) => rolle === 'radio' || rolle === 'funkRahmen' || !!(rolle && rolle.indexOf('funk:') === 0);
 function stimmeFuer(rolle){
+  rolle = stimmBasis(rolle);
   const de = window.speechSynthesis.getVoices().filter(v => /^de/i.test(v.lang));
-  const re = rolle === 'radio' || rolle === 'tierM' ? STIMME_M : STIMME_W;
-  return de.filter(v => re.test(v.name)).sort((a, b) => (a.localService ? 1 : 0) - (b.localService ? 1 : 0))[0] || de[0] || null;
+  const S = STIMMEN[rolle] || STIMMEN.erzaehlerin, re = S.m ? STIMME_M : STIMME_W;
+  const passend = de.filter(v => re.test(v.name)).sort((a, b) => (a.localService ? 1 : 0) - (b.localService ? 1 : 0));
+  return (S.zweite && passend[1]) || passend[0] || de[0] || null;
 }
 function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
 let sprichtGerade = null, gehalten = null;
@@ -1577,6 +1710,8 @@ function fortsetzen(){
 // mit Funkrauschen. Funk: vor dem ersten Satz und nach dem letzten je FUNK_RAHMEN s Funkrauschen (Live-Wunsch 16.10.).
 const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
+  // (der Uhu bekam hier zum Ausprobieren "Uhu!" vorn und hinten – wieder weg, Live-Wunsch 29.10.2026: sein Text hat schon sein
+  // eigenes "Huhu", es kam doppelt)
   if(rolle === 'inventar'){ story.stimmeStopp(); halten(); }
   else if(sprichtGerade || gehalten){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
   // saetze darf eine Funktion sein: sie entscheidet erst, wenn die Ansage drankommt (leer = nichts mehr zu sagen; hoehle_innen.js)
@@ -1585,7 +1720,7 @@ function sprich(saetze, fertig, rolle){
   let i = -1, timer = null, done = false;
   const me = sprichtGerade = { rolle, saetze };
   // Rauschen davor/danach: beim Funk (Maennerstimme) und bei der Erklaerung des Funkgeraets ('funkRahmen', Erzaehlerin)
-  const funk = rolle === 'radio' || rolle === 'funkRahmen';
+  const funk = story.istFunk(rolle);
   // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
   let tFn = null, tBis = 0, tRest = 0;
   const stelle = (fn, ms) => { clearTimeout(timer); tFn = fn; tBis = performance.now() + ms; timer = setTimeout(fn, ms); };
@@ -1628,12 +1763,9 @@ function sprich(saetze, fertig, rolle){
         const u = new SpeechSynthesisUtterance(s.replace(/Joshi/g, 'Joschi')), st = stimmeFuer(rolle);
         u.lang = 'de-DE'; if(st) u.voice = st;
         u.rate = 0.95;                              // fuer Kinderohren etwas langsamer
-        u.pitch = rolle === 'radio' && !(st && STIMME_M.test(st.name)) ? 0.8 : 1.05;
-        // Tiere am Festtisch (waldinsel.js): tief (Elch, Eule), normal (Hase, Reh), hoch und etwas schneller (Kleine, Voegel)
-        if(rolle === 'tierM') u.pitch = st && STIMME_M.test(st.name) ? 0.85 : 0.7;
-        if(rolle === 'tierW') u.pitch = 1.2;
-        if(rolle === 'tierK'){ u.pitch = 1.7; u.rate = 1.05; }
-        if(rolle === 'joshi') u.pitch = 1.45;                          // Joshi selbst (fragt etwas): helle Kinderstimme
+        u.pitch = 1.05;                                                  // die Erzaehlerin
+        const S = STIMMEN[stimmBasis(rolle)] || STIMMEN.erzaehlerin;    // jede Rolle ihre Stimme (story.stimmen)
+        u.pitch = S.p * (S.m && !(st && STIMME_M.test(st.name)) ? 0.85 : 1); u.rate = 0.95 * S.r;   // ohne Maennerstimme etwas tiefer
         u.onend = u.onerror = () => { if(aktU === u && sprichtGerade === me){ me.satzLaeuft = false; weiter(); } };
         u.onstart = () => { if(aktU === u) u.lief = true; };
         return u;
@@ -1706,8 +1838,9 @@ function startbildschirm(weiter){
   }
   el.style.background = 'radial-gradient(ellipse at center,rgba(20,30,70,.55),rgba(0,0,10,.85))';
   const platz = document.getElementById('ladeknopf') || el;
-  // Joshi erst beim Start zeigen
+  // Joshi und Fuchsi erst beim Start zeigen (Fuchsi: Live-Wunsch 29.10.2026, nicht im Titelbild – updateFuchs blendet ihn aus)
   if(eva) eva.group.visible = false;
+  story.titelbild = true;
   let los = false, bereit = false, bilder = 0;
   // Der Knopf kommt erst, wenn das Spiel wirklich bereit ist (Live-Wunsch 16.10.: vorher reagierte ein frueher Druck oft
   // nicht): keine Modelle mehr im Dekodieren, Figur und Fuchs da, Ausruestung vorgeladen, ein paar Bilder gezeichnet
@@ -1716,6 +1849,9 @@ function startbildschirm(weiter){
   if(story.ausruestungVorladen) story.ausruestungVorladen();
   function knopfZeigen(){
     bereit = true;
+    // Heimkehr (Live-Wunsch 29.10.2026): nur eine weitere Reise, kein Startbildschirm – gleich weiter. Ton und Stimme kommen mit dem
+    // ersten Tasten- oder Controllerdruck (Engine armAudio, heimkehr.js stimmeFrei)
+    if(story.heimkehr){ start(); return; }
     platz.style.height = '';
     platz.innerHTML = '<button style="margin-top:38px;min-width:220px;height:64px;border-radius:16px;border:3px solid #ffd23f;'
       + 'background:#ffd23f;color:#1a1a1a;font:800 26px system-ui;cursor:pointer;transform:scale(1.05)">▶ Los geht\'s</button>';
@@ -1734,6 +1870,7 @@ function startbildschirm(weiter){
     if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
     el.remove();
     if(eva) eva.group.visible = true;
+    story.titelbild = false; if(fuchs.obj) fuchs.obj.visible = true;   // Intro und Heimkehr blenden ihn danach selbst wieder aus
     removeEventListener('keydown', taste, true);
     if(test){ testStarten(test); return; }                 // Testzugang: eigener Einstieg (Ton und Stimme schaltet er selbst frei)
     // Das A, das gestartet hat, ist noch gedrueckt: nicht gleich als Sprung zaehlen (erst nach dem Loslassen)
@@ -1825,6 +1962,10 @@ const TEST_ZUGANG = [
   { t: 'E2 Waldweg', info: 'Foto und Lupe fertig, Weg frei', etappe: 2, stufe: 'weg' },
   { t: 'E3', info: 'vor der Höhle des Gorillas', etappe: 3, stufe: 'start' },
   { t: 'E3 Abflug', info: 'Gorilla froh, alle Bilder, Mustang frei', etappe: 3, stufe: 'abflug' },
+  // Der Mond braucht einen eigenen Ladevorgang (Spielstand mit allen Seiten, _intern/teststand_mond.js): die Seite laedt mit
+  // ?etappe=5&labor neu, danach wie immer "Los geht's" (Ton und Stimme brauchen den Tastendruck)
+  { t: 'E5 Labor', info: 'Mond, im Labor vor den Spuren – alles davor gespielt', etappe: 5, stufe: 'labor', adresse: '?etappe=5&labor' },
+  { t: 'E5 Abflug', info: 'Mond, draußen nach dem Fest – Skizze, Schnitzen, Rakete', etappe: 5, stufe: 'abflug', adresse: '?etappe=5&abflug' },
 ];
 story.testZugang = TEST_ZUGANG;
 // E1: alles vor der Detektiv-Phase (Rucksack, alle Objekte draussen und in der Huette entdeckt und benutzt)
@@ -1842,6 +1983,7 @@ function testFunkAngenommen(){
   story.abenteuerLos = true; if(story.fall1Angenommen) story.fall1Angenommen();
 }
 function testStarten(z){
+  if(z.adresse){ location.href = location.pathname + z.adresse; return; }   // eigener Ladevorgang (E5 Labor)
   // wie start(): Ton und Stimme freischalten, Joshi zeigen
   const el = document.getElementById('ladebild'); if(el) el.remove();
   if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
@@ -1886,6 +2028,9 @@ function aktionRoh(){
     || interListe.some(o => o.spricht) || aktionQuellen.some(f => { try { return !!f(); } catch(e){ return false; } });
 }
 story.aktionLaeuft = function(){ const t = performance.now() / 1000; if(aktionRoh()) aktionZuletzt = t; return t - aktionZuletzt < AKTION_NACHLAUF; };
+// STANDARD (Live-Wunsch 29.10.2026): ein Y ist nur zu sehen, wenn Y auch geht – nicht, solange jemand spricht oder eine Aktion
+// laeuft (buttonY ist dann ohnehin gesperrt), nicht in der Pause. Jedes eigene Y-Zeichen fragt hier (story.yErlaubt).
+story.yErlaubt = () => !story.aktionLaeuft() && !(story.pause && story.pause());
 
 // ---- Etappe 1: Start am Lagerfeuer, Kurbel-Funkgeraet daneben --------------------------------
 // Die Insel selbst (Huette, Palmen, Feuer, Moewen) baut insel.js. Hier: Funkgeraet, Startplatz, Durchsage.
@@ -1962,7 +2107,7 @@ function funkRauschen(dauer){
 }story.funkRauschen = funkRauschen;
 // ausruestung.js: Ruft/spricht der Funk gerade? (dann erscheint das Funkgeraet unten rechts, wie der Rucksack)
 // Ruft oder spricht ein Funkspruch (rolle 'radio' – nicht die Erklaerung des Geraets und nicht das kurze Rauschen bei Y)
-story.funkAktiv = () => radio.fall1 === 'ruft' || !!(sprichtGerade && sprichtGerade.rolle === 'radio');
+story.funkAktiv = () => radio.fall1 === 'ruft' || !!(sprichtGerade && story.istFunk(sprichtGerade.rolle) && sprichtGerade.rolle !== 'funkRahmen');
 story.funkWackel = () => radio.t;
 story.baueFunkgeraet = () => baueRadio();
 // Innenraeume (Hoehle, Observatorium) draussen unsichtbar: nur die sichtbaren Teile aus, die Lichter bleiben (sonst aendert sich
@@ -2024,6 +2169,7 @@ function startSzene(){
   if(story.etappe === 2 && story.e2StartSzene){ story.e2StartSzene(); return; }   // Waldinsel: im Boot am Steg (waldinsel.js)
   if(story.etappe === 3 && story.e3StartSzene){ story.e3StartSzene(); return; }   // vor der Hoehle (hoehle.js)
   if(story.etappe === 4 && story.e4StartSzene){ story.e4StartSzene(); return; }   // Oase in der Wueste (wueste.js)
+  if(story.etappe === 5 && story.e5StartSzene){ story.e5StartSzene(); return; }   // im Anflug auf den Mond (mond.js)
   const I = story.insel, H = I.huette, F = I.feuer;
   story.baueInsel();
   // Funkgeraet auf einer Kiste rechts neben dem Feuer, Lautsprecher zum Startplatz
@@ -2167,6 +2313,44 @@ function ohneTodesstern(){
   // Start im Hangar. Das Hangar-Modell laesst build_engine.ps1 ebenfalls weg.
   if(typeof enterHangar === 'function') enterHangar = function(){ return false; };   // global-ok: Engine
 }
+// ---- Vorbereiten nach und nach (Live-Wunsch 29.10.2026: "kann das laden nicht etwas entzerrt werden? die Wege ... sind ja ein
+// Stueck, da koennte man das laden in den Zeitraum ausdehnen"; "es gibt ja noch die Schwarzblenden – dort ist ja auch Zeit") -----
+// Aufteilung (gemessen 29.10.2026): beim Laufen nur das Aufbauen (Rechnen, kurz); das Uebersetzen der Shader und das Hochladen der
+// Texturen haengt spuerbar und kommt darum in die Schwarzblende beim Betreten (story.innenRendern, dort wird das Bild nur kurz
+// laenger schwarz).
+// story.vorbereiten(fn): eine Aufgabe in die Warteschlange; sie laeuft, waehrend Joshi zu Fuss unterwegs ist (kein Flug, keine
+// Szene, keine Pause), je Bild hoechstens VORBEREITEN_MS ms lang (dann im naechsten Bild weiter). story.teileVorwaermen(gruppe):
+// die Shader ihrer Teile einzeln uebersetzen – three.js uebersetzt mit compile sonst ALLE Materialien der Szene auf einmal (das
+// waren die Haenger von 1 bis 2 s). Uebersetzt wird mit genau den Lichtern, die gerade sichtbar sind (sonst passt der Shader
+// spaeter nicht); deshalb behalten die Innenwelten ihre Lichter (innenZeigen).
+const VORBEREITEN_MS = 6;
+const vorbereitenListe = [];
+story.vorbereiten = (fn, name) => { vorbereitenListe.push({ fn, name: name || '' }); };
+story.vorbereitenOffen = () => vorbereitenListe.length;
+story.teilVorwaermen = function(obj){
+  if(!obj || typeof renderer === 'undefined' || !renderer) return;                                         // global-ok: Engine
+  const lichter = []; scene.traverseVisible(o => { if(o.isLight) lichter.push(o); });                     // global-ok: Engine
+  const kinder = scene.children, sicht = obj.visible; obj.visible = false;   // unsichtbar: seine Lichter zaehlen nicht doppelt (Materialien uebersetzt compile trotzdem)
+  scene.children = lichter.concat([obj]);
+  try { renderer.compile(scene, camera); } finally { scene.children = kinder; obj.visible = sicht; }        // global-ok: Engine
+};
+// Eine Innenwelt einmal unsichtbar von innen rendern (in ein kleines Bild, vier Blickrichtungen): das laedt ihre Texturen hoch und
+// schliesst die Shader ab – danach ruckelt das erste Betreten nicht mehr (gemessen an der Gorilla-Hoehle: 2 s -> 0,1 s).
+// zeigen(an): die Innenwelt ein-/ausblenden (ohne ihre Lichter, siehe innenZeigen)
+story.innenRendern = function(x, y, z, zeigen){
+  if(typeof renderer === 'undefined' || !renderer) return;                                                  // global-ok: Engine
+  const rt = new THREE.WebGLRenderTarget(128, 128), k = new THREE.PerspectiveCamera(70, 1, 0.1, 500), alt = renderer.getRenderTarget();   // global-ok: Engine
+  try { if(zeigen) zeigen(true);
+    for(const a of [0, 1.57, 3.14, 4.71]){ k.position.set(x, y, z); k.rotation.set(0.1, a, 0, 'YXZ'); k.updateMatrixWorld(true); renderer.setRenderTarget(rt); renderer.render(scene, k); }   // global-ok: Engine
+  } finally { renderer.setRenderTarget(alt); rt.dispose(); if(zeigen) zeigen(false); }                       // global-ok: Engine
+};
+story.teileVorwaermen = (gruppe) => { if(!gruppe) return; for(const c of gruppe.children.slice()) story.vorbereiten(() => story.teilVorwaermen(c), 'shader'); };
+function vorbereitenTakt(){
+  if(!vorbereitenListe.length || !story.gestartet || !eva || eva.boat || hilfeOffen() || (story.szeneLaeuft && story.szeneLaeuft())) return;
+  const t0 = performance.now();
+  while(vorbereitenListe.length && performance.now() - t0 < VORBEREITEN_MS){ const a = vorbereitenListe.shift();
+    try { a.fn(); } catch(e){ console.warn('Vorbereiten', a.name, e); } }
+}
 // ---- Hauptschleife ---------------------------------------------------------------------------
 function hookLoop(){
   const loopOrig = loop;
@@ -2184,19 +2368,21 @@ function hookLoop(){
     if(p !== pauseWar){ pauseWar = p; pauseWechsel(p); }
     if(p) return loopOrig.apply(this, arguments);   // Pause
     timerTick(dt);
+    vorbereitenTakt();
     if(story.updateObjekte) story.updateObjekte(dt);   // objekte.js: Grenzen nachfuehren, Schiffe schieben beiseite
     figurTasten();
     updateFigur(dt);
     figurWache(dt);
     spurenTakt();                                  // Staub/Wasserspuren macht die Engine (untergrundAt, spurQuelle)
     // X-Wing nur sichtbar, wenn man drin sitzt; vor der Hoehle (Etappe 3) steht die Mustang des Gorillas immer da
-    planeGroup.visible = !eva || (story.etappe === 3 && !(story.innen && story.innen.drin));
+    planeGroup.visible = !eva || (story.etappe === 3 && !(story.innen && story.innen.drin)) || story.etappe === 5;   // Mond: der gelandete X-Wing (mond.js)
     updateFuchs(dt);
     updateRadio(dt);
     if(story.updateE1) story.updateE1(dt);
     if(story.updateE2) story.updateE2(dt);         // waldinsel.js: Tiere, Lichterketten
     if(story.updateE3) story.updateE3(dt);         // hoehle.js: vor der Hoehle des Gorillas
     if(story.updateE4) story.updateE4(dt);         // wueste.js: Anflug, Sprung, Oase
+    if(story.updateE5) story.updateE5(dt);         // mond.js: Landeanflug, Mondbasis
     if(story.updateHoehleInnen) story.updateHoehleInnen(dt);   // hoehle_innen.js: in der Hoehle
     if(story.updateObsInnen) story.updateObsInnen(dt);         // observatorium_innen.js: im Observatorium
     if(story.updateInnen) story.updateInnen(dt);   // huette_innen.js: Tuer -> Blende -> Innenraum
@@ -2233,7 +2419,7 @@ function hookTon(){
   // D-Pad runter / N (vorher Ton an/aus) = Inventar: pausiert und zeigt den Rucksack mit allen Dingen; nochmal = weiter
   toggleSound = function(){
     story.tonAn();
-    if(!story.gestartet || !story.inventar || (story.globusAktiv && story.globusAktiv())) return;
+    if(!story.gestartet || !story.inventar || (story.globusAktiv && story.globusAktiv()) || (story.nurLaufen && story.nurLaufen())) return;
     if(pause.art === 'inventar') story.inventarZu();
     else if(!pause.art && story.inventar(true)) pauseSetzen('inventar');
   };
@@ -2313,7 +2499,47 @@ function hookPropeller(){
     return r;
   };
 }
+// Inselfragen ohne Muell (Live-Befund 29.10.2026, Speicherprofil an der Gorilla-Hoehle: 280 MB in 7 s aus isOnLand/isOnBeach):
+// islandInfo der Engine baut je Frage einen Text-Schluessel 'cx,cz' – davor ein Speicher mit Zahlen-Schluessel. Leert die Engine
+// oder eine Etappe ihren Speicher (_islandCache.clear), leert sich dieser mit.
+function hookInselSpeicher(){
+  const infoOrig = islandInfo, schnell = new Map();                                                          // global-ok: Engine
+  islandInfo = function(cx, cz){                                                                           // global-ok: Engine
+    if(_islandCache.size === 0 && schnell.size) schnell.clear();                                           // global-ok: Engine
+    const k = cx * 65536 + cz; let v = schnell.get(k); if(v === undefined){ v = infoOrig(cx, cz); schnell.set(k, v); } return v; };
+}
+// Das Meer ruht, wo man es nicht sieht (Live-Befund 29.10.2026: auf dem Weg zur Gorilla-Hoehle rechnete die Engine Meer, Schiffe,
+// Orcas und Fische – die Welt liegt auf Land, das Meer ist hinter dem Wald nicht zu sehen): zu Fuss in Etappe 3 und in jeder
+// Innenwelt (vorher nur im Observatorium). Mit der Mustang ueber dem Meer laeuft alles wie immer.
+// Live-Wunsch 29.10.2026: auch in der Oase – in beiden Welten ist das Meer weit weg; laeuft Joshi wirklich bis nah an den Rand
+// (MEER_RAND m), wird es wieder gerechnet
+const MEER_RAND = 100;   // m vor der Kueste (Live-Entscheidung 29.10.2026)
+story.meerRuht = () => { if(story.innen && story.innen.drin) return true;
+  if(!(story.etappe === 3 || story.etappe === 4) || !eva || eva.boat) return false;
+  const R = story.etappeR && story.etappeR[story.etappe], M = (story.etappeMitte && story.etappeMitte[story.etappe]) || { x: 0, z: 0 }, p = eva.group.position;
+  return !R || Math.hypot(p.x - M.x, p.z - M.z) < R - MEER_RAND; };
+function hookMeerRuht(){
+  for(const name of ['updateSea', 'updateShipsSea', 'updateOrcas', 'updateFish']){
+    const orig = window[name]; if(typeof orig !== 'function') continue;
+    window[name] = function(){ if(locale === 'earth' && story.meerRuht()) return; return orig.apply(this, arguments); };   // global-ok: Engine
+  }
+  // ... und ist dann ganz weg (Live-Wunsch 29.10.2026: "Meer grenzt immer an Land, ist aber nicht drunter"): Meeresflaeche und
+  // Meeresboden der Engine aus, solange es ruht – sonst laege das Gitter abgesenkt unter dem Land. Nah an der Kueste wieder an.
+  let versteckt = false;
+  const seeOrig = updateSea, bodenOrig = seaFloorNeeded;                                                    // global-ok: Engine
+  updateSea = function(){ const ruht = locale === 'earth' && story.meerRuht();                              // global-ok: Engine
+    if(ruht){ ground.visible = false; if(typeof seabedMesh !== 'undefined') seabedMesh.visible = false; versteckt = true; return; }   // global-ok: Engine (jedes Bild: die Engine schaltet es beim Ortswechsel wieder ein)
+    if(versteckt){ versteckt = false; ground.visible = true; if(typeof seabedMesh !== 'undefined') seabedMesh.visible = true; }   // global-ok: Engine
+    return seeOrig.apply(this, arguments); };
+  seaFloorNeeded = function(){ if(locale === 'earth' && story.meerRuht()) return false; return bodenOrig.apply(this, arguments); };   // global-ok: Engine
+}
+// Keine Ortssymbole der Engine (Live-Wunsch 29.10.2026: "das kleine Mondsymbol oben mittig braucht es nicht – diese Art von
+// Symbolen braucht es gar nicht mehr"): showSpaceHint blendete beim Landen 🌙 und Co. ein
+function ohneOrtssymbole(){ if(typeof showSpaceHint === 'function') showSpaceHint = function(){}; }   // global-ok: Engine
 window.STORY_HOOK = function(){
+  ohneOrtssymbole();
+  hookInselSpeicher();
+  hookMeerRuht();
   if(typeof strandleben !== 'undefined'){ strandleben.an = true; strandleben.festPlatz = story.seeloewenPlatz || null; }   // Forellen im Flachwasser, Seeloewen am Strand (Engine)
   hookTon();
   hookPropeller();
@@ -2328,10 +2554,23 @@ window.STORY_HOOK = function(){
   hookNacht();
   hookFigur();
   hookSchwimmen();
+  hookMeeresgrund();
   preloadFuchs();
   hookLoop();
 };
+// Die Figur laeuft nicht durch den Fuchs: sein Kreis ist fuer ihren Schritt kein fester Grund. Erst in STORY_START (Live-Wunsch
+// 29.10.2026: man lief durch ihn durch) – so liegt die Pruefung ueber allen Raum-Huellen aus STORY_HOOK (Huette, Hoehle,
+// Observatorium, Mondbasis …), die im Raum selbst antworten, ohne weiterzufragen. Nur fuer IHRE Schritte (figurSchritt, gesetzt
+// um den Engine-Lauf) – sonst sperrte es auch die Schritte des Fuchses selbst. Weg vom Fuchs geht immer.
+function fuchsAlsHindernis(){
+  const solidFigOrig = evaSolid;
+  evaSolid = function(x, z){ if(figurSchritt && eva && fuchs.obj && fuchs.aktiv && fuchs.obj.parent && fuchs.obj.visible){ const f = fuchs.obj.position;
+      const neu = Math.hypot(x - f.x, z - f.z), jetzt = Math.hypot(eva.group.position.x - f.x, eva.group.position.z - f.z);
+      if(neu < ABSTAND_MIN && neu < jetzt) return false; }
+    return solidFigOrig.apply(this, arguments); };
+}
 window.STORY_START = function(){
+  fuchsAlsHindernis();
   placeAtStart('XWing');           // -> findStart-Wrapper: am Oststrand
   fadeHold = 0; flashFade(1.0);    // den Hangar-Vorhang der Engine nicht abwarten
   evaExit();                       // die Figur steht neben dem X-Wing ...
@@ -2339,8 +2578,11 @@ window.STORY_START = function(){
   // Durchsage vorerst aus (Live-Wunsch 14.10.: Text erstmal weglassen) – Funkgeraet bleibt stehen
   // startbildschirm(() => spaeter(2.0, durchsage));
   // Waldinsel: nach dem Start steigen Joshi und der Fuchs aus dem Boot, dann die Erzaehlerin (waldinsel.js)
-  startbildschirm(() => { if(story.etappe === 2){ if(story.stegAussteigen) spaeter(0.6, story.stegAussteigen); if(story.e2Los) story.e2Los(); }
+  startbildschirm(() => { if(story.etappe === 1 && !story.spielstand && story.introStart){ story.introStart(() => {}); return; }   // kinderzimmer.js: das Intro
+    if(story.heimkehrLos && story.heimkehr){ story.heimkehrLos(); return; }   // heimkehr.js: Etappe 1 nach der Reise
+    if(story.etappe === 2){ if(story.stegAussteigen) spaeter(0.6, story.stegAussteigen); if(story.e2Los) story.e2Los(); }
     if(story.etappe === 3 && story.e3Los) story.e3Los();
-    if(story.etappe === 4 && story.e4Los) story.e4Los(); });
+    if(story.etappe === 4 && story.e4Los) story.e4Los();
+    if(story.etappe === 5 && story.e5Los) story.e5Los(); });
 };
 })();

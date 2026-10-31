@@ -2291,8 +2291,12 @@ function pauseWechsel(an){
   // Inventar einfach weiter – synth.pause() ueberhoert Chrome bei manchen Stimmen). Beim Schliessen kommt er von vorn (fortsetzen).
   // Nicht im Teleskop: dort spricht die Ansicht selbst.
   if(an && (pause.art === 'inventar' || pause.art === 'hilfe') && sprichtGerade && sprichtGerade.rolle !== 'inventar') halten();
+  // Teleskop und Mikroskop sprechen selbst (Live-Befund 31.10.2026: die Lerntexte hingen nach dem ersten Satz bzw. wiederholten ihn und
+  // das Spiel stuerzte ab) – ihr erster Satz startet, bevor die Spielschleife die Pause bemerkt; pause() hielt ihn dann mitten im Satz an
+  // (nachgestellt in echtem Chrome, C:/tmp/mkx/tts_mikro.js). Ihre Stimme wird hier darum nie angehalten.
+  const eigeneStimme = an && pause.art === 'teleskop';
   const synth = window.speechSynthesis;
-  if(synth){ if(an){ if(synth.speaking){ synth.pause(); story.stimmePausiert = true; } } else { synth.resume(); story.stimmePausiert = false; } }
+  if(synth && !eigeneStimme){ if(an){ if(synth.speaking){ synth.pause(); story.stimmePausiert = true; } } else { synth.resume(); story.stimmePausiert = false; } }
   // Ton: in der Pause ganz aus, im Inventar bleibt das Hintergrundgeraeusch (Meer, Moewen) – Live-Wunsch 16.10.; danach
   // wieder an (ausser der Globus laeuft – der hat den Ton selbst ausgeblendet)
   if(story.master && audioCtx && ((pause.art !== 'inventar' && pause.art !== 'teleskop') || !an)){ const g = story.master.gain, t = audioCtx.currentTime;
@@ -2300,7 +2304,7 @@ function pauseWechsel(an){
     else { const ziel = story.globusAktiv && story.globusAktiv() ? 0 : (story.master.vorPause === undefined ? 1 : Math.max(story.master.vorPause, 1));
       g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(ziel, t + 0.3); } }
   if(!an && fortsetzen()) return;                                 // gehaltener Satz geht weiter (s. halten)
-  if(sprichtGerade && sprichtGerade.pause) sprichtGerade.pause(an);
+  if(sprichtGerade && sprichtGerade.pause && !eigeneStimme) sprichtGerade.pause(an);
 }
 story.pauseWechsel = pauseWechsel;
 

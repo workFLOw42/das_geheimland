@@ -404,8 +404,8 @@ function schritt(dt){
   // das A am unteren Rand des Rings (Bild-unten = gegen die Kamera-Oben-Richtung), so gross wie ein Knopf im Okular
   tk.a.visible = !tk.nahO; _aUp.set(0, 1, 0).applyQuaternion(k.quaternion);
   tk.a.position.copy(tk.ring.position).addScaledVector(_aUp, -rad * 0.98); tk.a.scale.setScalar(d * Math.tan(tk.fov * 0.026 * Math.PI / 180) * 2);
-  // Planeten drehen sich langsam; das Blinken auf dem Mond
-  for(const q of tk.objekte) if(q.obj){ q.obj.userData.k.rotation.y += dt * 0.05; if(q.obj.userData.blink) q.obj.userData.blink.material.opacity = blinkStaerke(tk.t, q.obj.userData.blink); }
+  // Planeten drehen sich langsam; das Blinken auf dem Mond. Die Bilder (Waldinsel, Hoehle, Observatorium) stehen still (Live-Wunsch 31.10.2026)
+  for(const q of tk.objekte) if(q.obj){ if(q.art !== 'bild') q.obj.userData.k.rotation.y += dt * 0.05; if(q.obj.userData.blink) q.obj.userData.blink.material.opacity = blinkStaerke(tk.t, q.obj.userData.blink); }
   if(tk.nah){
     tk.nahT += dt; const e = Math.min(1, tk.nahT / 0.6), w = e * e * (3 - 2 * e);
     // vor der Kamera, Mitte des Okulars, so gross, dass es 60 % des Rundes fuellt

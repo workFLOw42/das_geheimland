@@ -1085,6 +1085,15 @@ function huetteSetzen(){
       g.position.set(0, 1.6, 0);
     });
   }
+  // Fotos und gemalte Skizzen an den Waenden (Live-Wunsch 31.10.2026): gleich, sobald sie im Notizbuch sind – wie der Holzfuchs, nicht erst
+  // bei der Heimkehr. Kommt ein Bild dazu, wird die Wand neu gehaengt (kinderzimmer.js erinnerungsWand: Fotos zuerst, feste Plaetze)
+  const W = story.wandBilder ? story.wandBilder(zustand.seiten) : [];
+  if(story.erinnerungsWand && W.length !== huette.wandN){
+    huette.wandN = W.length;
+    if(huette.wand){ R.remove(huette.wand); huette.wand.traverse(m => { if(m.geometry) m.geometry.dispose(); if(m.material){ if(m.material.map) m.material.map.dispose(); m.material.dispose(); } }); }
+    huette.wand = new THREE.Group(); R.add(huette.wand);
+    if(W.length) story.erinnerungsWand(huette.wand, { B: 9, T: 7 }, zustand.seiten);
+  }
 }
 // Schmetterling in der Huette: fliegt zu einem zufaelligen Punkt im Raum, setzt sich ab und zu (Regal, Tisch, Bett, Fenster),
 // sitzt ein paar Sekunden mit langsam schlagenden Fluegeln, fliegt wieder los

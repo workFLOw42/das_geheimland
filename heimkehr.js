@@ -119,7 +119,7 @@ function huetteTakt(dt){
   const I = story.innen;
   if(I && I.drin && I.gruppe && !hk.warDrin){
     hk.warDrin = true; hk.glowT = 0;
-    if(story.erinnerungsWand && story.notizSeiten) story.erinnerungsWand(I.gruppe, { B: 9, T: 7 }, story.notizSeiten());
+    // die Bilder haengen schon (notizbuch.js huetteSetzen, seit 31.10.2026) – huetteVonSeiten setzt nur noch die Trophaeen nach
     if(story.huetteVonSeiten) story.huetteVonSeiten();
     const B = I.bett, base = I.gruppe.position;
     hk.bettInter = story.interaktion(B, { name: 'Bett', welt: 1, innen: true, x: base.x + B.position.x + 1.0, z: base.z + B.position.z + 0.4, r: 0.6, yx: base.x + B.position.x, yz: base.z + B.position.z, yHoehe: 1.2,

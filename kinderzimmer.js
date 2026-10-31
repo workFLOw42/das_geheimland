@@ -361,6 +361,12 @@ function hook(){
     else kz.kamBlick = null;
     camera.up.set(0, 1, 0); if(B0) camera.lookAt(kz.kamBlick); else camera.lookAt(p.x, BODEN_Y + 0.9, p.z);   // global-ok: Engine
   };
+  // Im Zimmer kein Meer und keine Moewen (Live-Wunsch 31.10.2026: Joshi ist noch nicht bzw. nicht mehr auf der Insel) – im Intro
+  // bis zum Aufwachen draussen, im Outro ab dem Aufwachen im Zimmer; draussen blendet die Engine sie danach weich ein (AMB_RATE)
+  const ambOrig = updateAmbient;                                                                    // global-ok: Engine
+  updateAmbient = function(){ const r = ambOrig.apply(this, arguments);
+    if(kz.drin && typeof ambGullGain !== 'undefined' && ambGullGain){ ambGullGain.gain.value = 0; if(ambOceanGain) ambOceanGain.gain.value = 0; }   // global-ok: Engine
+    return r; };
 }
 const hookVorher = window.STORY_HOOK;
 window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hook(); };

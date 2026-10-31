@@ -24,6 +24,7 @@ const T = {
   // Ende des Fests (Live-Wunsch 29.10.2026): Foto, mit einem Alien geredet, ein Instrument gespielt – dann einmal dieser Satz
   hAlien: ['Sag doch mal den Aliens Hallo.'],
   hMusik: ['Spiel doch mal Gitarre oder Schlagzeug.'],
+  tschuess: ['Tschüss – es war ein wirklich tolles Fest!'],          // Joshi, wenn er danach durch die Saaltuer hinausgeht (Live-Wunsch 31.10.2026)
   ende: ['Was für ein schönes Fest! Wenn du magst, verabschiede dich und flieg mit der Rakete nach Hause.'],
   bananen: ['Danke, dass du an die Bananen gedacht hast.'],
   foto: ['Klasse! Alle zusammen an einer Tafel – das schönste Weihnachtsfest!'],
@@ -444,5 +445,9 @@ story.updateMondfest = function(dt){
   // alles gemacht: einmal der Satz zum Abschied (danach wiederholt ihn die Hinweis-Taste)
   if(!mf.endeGesagt && story.mondfestAllesGemacht() && !mf.musik && !mf.luft && !(story.redetGerade && story.redetGerade()) && !(story.aktionLaeuft && story.aktionLaeuft())){ mf.endeGesagt = true;
     story.spaeter(1.5, () => { if(mf.musik || mf.luft){ mf.endeGesagt = false; return; } story.sprich(T.ende); }); }   // spielt er inzwischen wieder: spaeter
+  // Fest vorbei und Joshi geht durch die Saaltuer hinaus: er verabschiedet sich einmal (Live-Wunsch 31.10.2026)
+  const raum = eva && story.raumVon ? story.raumVon(eva.group.position.x, eva.group.position.z) : null;
+  if(mf.endeGesagt && !mf.tschuess && mf.raumVor === 'saal' && raum && raum !== 'saal'){ mf.tschuess = true; story.sprich(T.tschuess, null, 'joshi'); }
+  mf.raumVor = raum;
 };
 })();

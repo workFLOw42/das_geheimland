@@ -685,7 +685,7 @@ const TEXT_SPUR_HASE = ['Meine sind das nicht. Meine Pfoten sehen ganz anders au
 const TEXT_SPUR_EULE = ['Und ich habe Krallen, keine Pfoten. Hu-huu.'];
 const TEXT_SPUR_ELCH = ['Solche Spuren habe ich hier im Wald noch nie gesehen.'];
 const TEXT_SPUR_MERKEN = ['Merk dir die Spuren gut. Vielleicht findest du später heraus, wem sie gehören.'];
-const TEXT_FUCHS_FUND = ['Schau mal, dein Fuchs hat noch etwas gefunden.'];
+const TEXT_FUCHS_FUND = ['Sieh nur, dein Fuchs hat noch etwas gefunden.'];   // nicht "Schau mal": der Satz am Ring beginnt so (Live-Wunsch 31.10.2026)
 const tierNach = (id) => wi.tiere.find(q => q.T.id === id);
 // Der Fuchs laeuft zu genau einem Ring und zeigt ihn (Pfote + Blinken)
 function fuchsZumRing(id){

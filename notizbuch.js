@@ -92,7 +92,7 @@ const STELLEN = [
   // observatorium_innen.js SPUR_P
   { id: 'lama_spur', art: 'lupe', name: 'Die Spur des Lamas', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -638.4, z: 626.2, r: 0.9 }, nachX: true,
     bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('lama_spur')), modell: 'lama_spur', liegt: true,
-    bau: () => story.obsSpurModell(), seite: () => story.obsSpurSeite(), text: ['Schau mal, Spuren im Staub. Die kommen in dein Notizbuch.'] },
+    bau: () => story.obsSpurModell(), seite: () => story.obsSpurSeite(), text: ['Beobachte genau: Spuren im Staub. Die kommen in dein Notizbuch.'] },   // nicht schon wieder "Schau mal" (Live-Wunsch 31.10.2026)
   // Lupe am Packpapier (nach dem zweiten Gespraech; der Fuchs zeigt den Ring): Spuren mit langen Zehen und rotes Fell.
   // Kreis = observatorium_innen.js PAPIER_P
   { id: 'packpapier_lupe', art: 'lupe', name: 'Das Packpapier', etappe: 4, innen: true, ort: 'observatorium', kreis: { x: -635.53, z: 622.41, r: 0.9 }, nachX: true,
@@ -128,7 +128,7 @@ const STELLEN = [
   // Eichhoernchens im Staub und ein Haarbueschel neben den Reagenzglaesern; danach im Notizbuch vergleichen. Ringe setzt mondbasis_innen.js
   { id: 'labor_spur', art: 'lupe', name: 'Die Spur im Labor', etappe: 5, innen: true, ort: 'mond', kreis: { x: 0, z: 0, r: 0.9 }, nachX: true,
     bedingung: () => !!(story.e5LaborStelleFrei && story.e5LaborStelleFrei('labor_spur')), modell: 'labor_spur', liegt: true,
-    bau: () => story.e5SpurModell(), seite: () => story.e5SpurSeite(), text: ['Schau mal, Spuren im Staub!'] },
+    bau: () => story.e5SpurModell(), seite: () => story.e5SpurSeite(), text: ['Sieh mal, Spuren im Staub!'] },   // nicht "Schau mal": beim Vergleich kommt "Schau mal genau hin" (Live-Wunsch 31.10.2026)
   { id: 'labor_haare', art: 'lupe', name: 'Das Haarbüschel', etappe: 5, innen: true, ort: 'mond', kreis: { x: 0, z: 0, r: 0.9 }, nachX: true,
     bedingung: () => !!(story.e5LaborStelleFrei && story.e5LaborStelleFrei('labor_haare')), modell: 'labor_haare', liegt: true,
     bau: () => story.e5HaarModell(), seite: () => story.e5HaarSeite(), text: ['Ein Haarbüschel!'] },

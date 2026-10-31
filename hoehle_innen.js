@@ -49,6 +49,7 @@ const T = {
   nochNicht: ['Vielleicht siehst du dir vorher noch etwas anderes ganz genau an.'],
   entchenGesehen: ['Oh, ein Holzentchen. Es ist zerbrochen.'],
   joshiFragt: ['Ist dein Entchen zerbrochen?'],
+  joshiHilft: ['Ich helfe dir!'],                                   // nach seiner Geschichte, bevor der Schnitzring kommt (Live-Wunsch 31.10.2026)
   gorillaErzaehlt: ['Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig.',
     'Nichts kann mich trösten. Nicht mal die vielen Bananen.'],                   // Texte: SPRECHTEXTE.md (Nutzer, 22.10.2026)
   geschnitzt: ['Toll! Ein neues Holzentchen.'],
@@ -60,7 +61,7 @@ const T = {
     'Bitte nimm sie wieder mit.'],
   joshiFell: ['Weißt du, von wem das gestreifte Fell ist?'],
   gorillaFell: ['Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden.',
-    'Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm.'],
+    'Und weil du mir so sehr geholfen hast, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm.'],
   foto: ['Klasse! Der Gorilla lacht wieder.'],
   hinweisLupe: ['Neben dem Gorilla ist ein brauner Kreis. Schau dort ganz genau hin.'],
   hinweisZumGorilla: ['Geh doch mal zum Gorilla.'],
@@ -262,7 +263,8 @@ function gorillaY(o){
     hi.stufe = 'erzaehlt';
     sprichDann(T.joshiFragt, 'joshi'); gorillaAnim('schauen');
     // danach erscheint der gruene Schnitzring – ohne Ansage (Live-Wunsch 22.10.2026), der Fuchs zeigt ihn
-    sprichDann(T.gorillaErzaehlt, 'gorillaTraurig', () => { gorillaAnim('sitzen'); fertig(); fuchsZu('entchen_schnitzen'); });
+    sprichDann(T.gorillaErzaehlt, 'gorillaTraurig', () => gorillaAnim('sitzen'));
+    sprichDann(T.joshiHilft, 'joshi', () => { fertig(); fuchsZu('entchen_schnitzen'); });
     return;
   }
   // nach seiner Geschichte, bis das neue Entchen da ist (Live-Wunsch 22.10.2026: kein Hilfetext beim Gorilla)
@@ -328,6 +330,10 @@ story.e3FellModell = function(){
   const h = new THREE.Group(); h.add(g); h.rotation.x = -Math.PI / 2; const aussen = new THREE.Group(); aussen.add(h);
   return Promise.resolve({ g: aussen, L: 0.32 });
 };
+function gorillaZeigen(){
+  if(!eva || !story.fuchsRundgang || !hi.inter) return;
+  story.spaeter(0.6, () => story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === hi.inter));
+}
 function fuchsZu(id){
   const k = story.kreisZielVon && story.kreisZielVon(id); if(!k) return;
   k.frei = true;                                                   // der Ring erscheint jetzt (ohne neuen Suchblick)
@@ -340,8 +346,10 @@ story.e3StelleFertig = function(id){
   // "Sprich noch einmal mit dem Gorilla": nur, wenn Joshi bis dahin nicht schon bei ihm war (sonst klappte der Satz nach dem
   // naechsten Gespraech hinterher – die Ansage wartet, bis die vorige fertig ist)
   // (Live-Wunsch 22.10.2026: "Sprich doch noch einmal mit dem Gorilla" nur noch ueber die Hilfe-Taste)
-  if(id === 'entchen_lupe' && hi.stufe === 'ruhe') hi.stufe = 'lupe';
-  if(id === 'entchen_schnitzen'){ kaputtWeg(); if(hi.stufe === 'erzaehlt') hi.stufe = 'geschnitzt'; }
+  // nach der Lupe zeigt der Fuchs noch einmal den Gorilla (Live-Wunsch 31.10.2026: wie danach beim Schnitzen – jeder naechste Schritt wird gezeigt)
+  if(id === 'entchen_lupe' && hi.stufe === 'ruhe'){ hi.stufe = 'lupe'; gorillaZeigen(); }
+  // nach dem Schnitzen ebenso: der Fuchs zeigt den Gorilla, dem man das Entchen bringt (Live-Wunsch 31.10.2026)
+  if(id === 'entchen_schnitzen'){ kaputtWeg(); if(hi.stufe === 'erzaehlt'){ hi.stufe = 'geschnitzt'; gorillaZeigen(); } }
   // Fell unter der Lupe und im Notizbuch: jetzt erst fragt Joshi danach; der Gorilla leiht ihm das Flugzeug
   // ... und der Korb ist ab jetzt in Joshis Rucksack (Live-Wunsch 22.10.2026): in der Hoehle verschwindet er
   if(id === 'fell_lupe'){ bananenEinpacken(); }

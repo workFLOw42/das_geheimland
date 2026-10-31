@@ -40,14 +40,15 @@ const T = {
   hinweisLama: ['Geh doch mal zum Lama am Tisch.'],
   joshiHallo: ['Hallo Lama!'],
   lamaGenervt: ['Was ist denn? Siehst du nicht, dass ich zu tun habe?', 'Ich krieg die blöde Schnur von meinem Paket einfach nicht auf. Mit meinen Hufen geht das nicht!'],
+  joshiHilft: ['Ich helfe dir!'],                                   // nach der Schnur, bevor der Messer-Ring kommt (Live-Wunsch 31.10.2026)
   lamaNochmal: ['Mit Hufen kann man keine Knoten aufmachen. Die Schnur geht einfach nicht ab.'],
   hinweisSchnur: ['Am grünen Kreis steht das Paket. Schneid die Schnur mit deinem Taschenmesser auf.'],
   danke: ['Oh! Danke, das ist lieb von dir. Endlich ist mein Paket offen.'],
   lamaBeschaeftigt: ['Danke nochmal! Jetzt muss ich aber auspacken.'],
   hinweisUmschauen: ['Schau dich noch einmal ganz genau um. Drück dafür X.'],
-  spur: ['Schau mal, Spuren im Staub. Die kommen in dein Notizbuch.'],
+  spur: ['Beobachte genau: Spuren im Staub. Die kommen in dein Notizbuch.'],
   hinweisSpur: ['Die Spur kommt dir bekannt vor, oder? Schau doch mal in dein Notizbuch.'],
-  fuchsFund: ['Schau mal, dein Fuchs hat noch etwas gefunden.'],     // wie in Etappe 2 (waldinsel.js TEXT_FUCHS_FUND)
+  fuchsFund: ['Sieh nur, dein Fuchs hat noch etwas gefunden.'],     // wie in Etappe 2 (waldinsel.js TEXT_FUCHS_FUND)
 };
 story.obsText = T;
 
@@ -122,6 +123,8 @@ function baueRaum(){
   // mittleren Regalen (die Fenster sind dafuer nach aussen gerueckt): Pfosten, Regal, Fenster, Pfosten ... symmetrisch zur Rueckwand
   for(let i = 0; i < 16; i++){ let a = (i + 0.5) / 16 * Math.PI * 2; if(Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.35) continue;
     if(Math.abs(a - Math.PI * 0.8125) < 0.01) a = Math.PI * 0.87; else if(Math.abs(a - Math.PI * 1.1875) < 0.01) a = Math.PI * 1.13;
+    // die beiden innersten standen hinter den mittleren Regalen (Live-Befund 31.10.2026): jetzt innen direkt daneben
+    else if(Math.abs(a - Math.PI * 0.9375) < 0.01) a = Math.PI * 0.975; else if(Math.abs(a - Math.PI * 1.0625) < 0.01) a = Math.PI * 1.025;
     const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, H, 0.3), M.holz); p.position.set(Math.sin(a) * (R - 0.15), H / 2, Math.cos(a) * (R - 0.15)); p.rotation.y = a; p.userData.keinKoerper = true; g.add(p); }
   const gesims = new THREE.Mesh(new THREE.TorusGeometry(R - 0.2, 0.22, 8, 80), M.dunkel); gesims.rotation.x = Math.PI / 2; gesims.position.y = H; gesims.userData.keinKoerper = true; g.add(gesims);
   // Kuppel: Bretter innen, mit offenem Spalt zur Rueckseite (-z) ueber den Scheitel; dort sieht man den Nachthimmel der Engine
@@ -267,7 +270,8 @@ function baueRegal(breit, hoch, faecher){
 function baueRegale(){
   const R = RAUM.R;
   // links und rechts je zwei hohe Regale an der runden Wand (zur Mitte gedreht), zwischen den Fenstern
-  for(const a of [Math.PI * 0.3, Math.PI * 0.66, Math.PI * 0.92, Math.PI * 1.08, Math.PI * 1.34, Math.PI * 1.7]){
+  // die aeusseren genau zwischen zwei Pfosten (Live-Befund 31.10.2026: bei 0,3 / 0,66 lief ein Pfosten durchs Regal)
+  for(const a of [Math.PI * 0.25, Math.PI * 0.625, Math.PI * 0.92, Math.PI * 1.08, Math.PI * 1.375, Math.PI * 1.75]){
     const reg = baueRegal(2.6, 4.8, 8), rr = R - 0.55;
     const x = RAUM.x + Math.sin(a) * rr, z = RAUM.z + Math.cos(a) * rr;
     reg.position.set(x, BODEN_Y, z); reg.rotation.y = a + Math.PI;
@@ -474,7 +478,8 @@ function lamaY(o){
   const zurueck = () => { oi.zuJoshi = false; fertig(); };
   if(oi.stufe === 'gesucht'){ oi.stufe = 'schnur';
     story.sprich(T.joshiHallo, null, 'joshi');
-    story.sprich(T.lamaGenervt, () => { zurueck(); fuchsZu('schnur_messer'); }, 'lama'); return; }
+    story.sprich(T.lamaGenervt, null, 'lama');
+    story.sprich(T.joshiHilft, () => { zurueck(); fuchsZu('schnur_messer'); }, 'joshi'); return; }
   if(oi.stufe === 'schnur'){ story.sprich(T.lamaNochmal, zurueck, 'lama'); return; }
   if(lamaY2(o, zurueck)) return;                                   // Teil 2: nach dem Vergleich, nach dem Packpapier
   story.sprich(T.lamaBeschaeftigt, zurueck, 'lama');
@@ -536,7 +541,7 @@ function schnipp(){
   const gn = audioCtx.createGain(); gn.gain.value = 0.35; q.connect(f); f.connect(gn); gn.connect(audioCtx.destination); q.start();
 }
 // Hinausgehen (Live-Wunsch 26.10.2026, wie in Etappe 2): ist draussen etwas Neues frei (Skizzenring, Holzscheit am Parkplatz), sagt die
-// Erzaehlerin "Schau mal, dein Fuchs hat noch etwas gefunden", und der Fuchs laeuft alle noch offenen Ringe draussen ab
+// Erzaehlerin "Sieh nur, dein Fuchs hat noch etwas gefunden", und der Fuchs laeuft alle noch offenen Ringe draussen ab
 const DRAUSSEN = ['obs_skizze', 'schluessel_schnitzen'];
 function draussenZeigen(){
   const fertig = (id) => story.stelleZustand && story.stelleZustand(id) === 'fertig';
@@ -611,7 +616,7 @@ function teleskopMelden(){
 // vom Mond-Bewohner und vom X-Wing ohne Schluessel; Teleskop, Foto- und Skizzenring, draussen der Schnitzring am Holzscheit)
 // -> 'schluessel' (Schluessel geschnitzt) -> Joshi fliegt den X-Wing selbst zum roten Punkt -> Globus zum Mond.
 const T2 = {
-  nochEineSpur: ['Vergleich sie doch mal mit der Spur vom Tatort.'],   // direkt nach "Schau mal, Spuren im Staub" (keine Wiederholung)
+  nochEineSpur: ['Vergleich sie doch mal mit der Spur vom Tatort.'],   // direkt nach "Beobachte genau: Spuren im Staub" (keine Wiederholung)
   hinweisVergleich: ['Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A.'],
   vergleichStart: ['Schau mal genau hin ...'],
   vergleichFalsch: ['Diese Spuren stimmen nicht mit denen aus dem Observatorium überein.'],   // Live-Wunsch 26.10.2026
@@ -880,7 +885,9 @@ function xwParken(){
   const Z = story.e4Zustand, x = Z && Z.xwing, idx = typeof MODEL_NAMES !== 'undefined' ? MODEL_NAMES.indexOf('XWing') : -1;   // global-ok: Engine
   if(!x || idx < 0) return false;
   currentModel = idx; buildModel('XWing'); spec = PLANE_SPECS.XWing || DEFAULT_SPEC;                                          // global-ok: Engine
-  state.pos.set(x.position.x, ISLAND_Y, x.position.z); state.quat.setFromEuler(new THREE.Euler(0, x.rotation.y, 0, 'YXZ'));   // global-ok: Engine
+  // + PI: das Flugmodell schaut bei gleichem Winkel genau andersherum als die Park-Vorlage (Live-Befund 31.10.2026: geparkt mit der
+  // Nase zur Oase, nach dem Einsteigen zeigte sie weg) – so bleibt er beim Einsteigen, wie er steht
+  state.pos.set(x.position.x, ISLAND_Y, x.position.z); state.quat.setFromEuler(new THREE.Euler(0, x.rotation.y + Math.PI, 0, 'YXZ'));   // global-ok: Engine
   state.vel.set(0, 0, 0); state.throttle = 0; state.onGround = true; state.crashed = false; state.falling = false;
   planeGroup.position.copy(state.pos); planeGroup.quaternion.copy(state.quat);                                               // global-ok: Engine
   return true;

@@ -33,6 +33,7 @@ const TEXT_AUSGESTIEGEN = ['Du bist auf dem Mond gelandet! Hier bist du ganz lei
 const TEXT_HINWEIS_X = ['Schau dich mal um. Drück X.'];
 const TEXT_HINWEIS = ['Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Drück dort Y.'];
 const TEXT_HINWEIS_JET = ['Steig mit Y aus.'];
+const TEXT_BASIS = ['Das ist die Mondbasis. Geh doch mal rein und schaue, wer da wohnt.'];   // Y vor der Luke (Live-Wunsch 31.10.2026, wie am Observatorium)
 const TEXT_STRAHLER = ['Ein Strahler – und er morst das Wort HALLO.'];   // der Skizzenring kommt erst nach dem Fest (e5StelleFrei)
 const TEXT_FOLGT = 'Joshi und Fuchsi sind an der Mondbasis. Wie es drinnen weitergeht, erfährst du bald.';
 
@@ -106,9 +107,9 @@ function tuerBauen(){
   story.welt(5).add(g); m5.tuer = g;
   // Y am Eingang. Seit dem 28.10.2026 erst nach dem Umschauen: X (Fuchsi) markiert die Basis, hier an ihrem Eingang. Das Y
   // steht ueber der Luke; seine Hoehe rechnet story.js ab ISLAND_Y, der Mondboden liegt woanders
-  m5.inter = story.interaktion(g, { name: 'Mondbasis', welt: 5, x, z: z + 1.4, r: 1.0, yx: x, yz: z + 0.4, yHoehe: gy - ISLAND_Y + TUER.h + 0.7, aktion: rein });   // global-ok: Engine
-  // Fuchsi markiert die Basis mit X, ein Y gibt es hier nicht – hinein geht es einfach durch die Luke (Live-Wunsch 29.10.2026, lukePruefen)
-  if(m5.inter) m5.inter.nurX = true;
+  m5.inter = story.interaktion(g, { name: 'Mondbasis', welt: 5, x, z: z + 1.4, r: 1.0, yx: x, yz: z + 0.4, yHoehe: gy - ISLAND_Y + TUER.h + 0.7, einmal: true, text: TEXT_BASIS });   // global-ok: Engine
+  // Wie am Observatorium (Live-Wunsch 31.10.2026): Y vor der Luke ist ein Satz der Erzaehlerin – hinein geht es weiter einfach durch
+  // die Luke (lukePruefen; vorher nurX: nur markiert, ohne Y)
   m5.platteY = gy; bodenCache.clear();                        // die Hoehe der Plattform der Basis (bodenGenau); vorher Gemerktes neu
   draussenBauen();
 }

@@ -1747,7 +1747,8 @@ function sprich(saetze, fertig, rolle){
       else ende();
       return;
     }
-    if(funk && i === 0 && !me.vorRauschen){                         // erst rauschen, dann der erste Satz
+    // ohneVor (Eigenschaft der Satzliste): direkt nach einem anderen Funkspruch – dessen Rauschen danach reicht (Live-Wunsch 31.10.2026)
+    if(funk && i === 0 && !me.vorRauschen && !saetze.ohneVor){        // erst rauschen, dann der erste Satz
       me.vorRauschen = true; i = -1; funkRauschen(FUNK_RAHMEN + 0.3);
       stelle(weiter, FUNK_RAHMEN * 1000); return;
     }
@@ -2201,6 +2202,9 @@ function durchsage(){
 const FALL1_RUF = ['Hallo ' + NAME + ', bist du da?'];
 const FALL1_NOCHMAL = [NAME + ', bitte kommen.'];
 const FALL1_FUNK = ['Hallo ' + NAME + "... Bitte hilf' uns. Wir haben ein großes Problem.", 'Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar.'];   // Live-Wunsch 16.10.
+// Joshi antwortet ueber Funk (Live-Wunsch 31.10.2026) – seine Stimme mit Rauschen davor und danach ('funk:joshi')
+const FALL1_ANTWORT = ['Alles klar, Fuchsi und ich machen uns gleich auf den Weg. Wir helfen euch!'];
+FALL1_ANTWORT.ohneVor = true;                                    // nur EIN Rauschen zwischen Hilferuf und Antwort (Live-Wunsch 31.10.2026)
 const FALL1_WIEDER = 15;
 // Wann darf der Funkspruch kommen? (Live-Wunsch 16.10.) Erst wenn draussen UND in der Huette abgesucht (X) und an jedem
 // Objekt der Etappe einmal Y gedrueckt wurde – Lagerfeuer, Huette, Funkgeraet, Regal, Tisch. Geprueft nach dem Einpacken
@@ -2234,9 +2238,10 @@ story.fall1Funk = function(){
   if(o){ o.entdeckt = true; o.erledigt = false; o.danach = null; o.aktion = (oo) => {
     if(radio.fall1 !== 'ruft') return funkRauschen(3);
     radio.fall1 = 'angenommen'; radio.an = true; oo.spricht = true;
-    sprich(FALL1_FUNK, () => { radio.an = false; oo.spricht = false; oo.aktion = null; oo.danach = () => funkRauschen(3);
+    sprich(FALL1_FUNK, null, 'radio');
+    sprich(FALL1_ANTWORT, () => { radio.an = false; oo.spricht = false; oo.aktion = null; oo.danach = () => funkRauschen(3);
       story.abenteuerLos = true;                                   // jetzt darf er ins Boot (steg.js)
-      if(story.fall1Angenommen) story.fall1Angenommen(); }, 'radio');
+      if(story.fall1Angenommen) story.fall1Angenommen(); }, 'funk:joshi');
   }; }
 };
 

@@ -85,6 +85,7 @@ Kommt direkt nach „Klasse. Du hast alles dabei …“. **Stimme:** `radio` (m�
 | erster Ruf | Hallo {Name}, bist du da? | im Code |
 | danach alle 15 s, bis Joshi am Funkgerät Y drückt | {Name}, bitte kommen. | im Code |
 | Y am Funkgerät | Hallo {Name}... Bitte hilf' uns. Wir haben ein großes Problem. Bitte steig schnell in dein Segelboot und komme zu uns. Ich markiere unseren Standort auf deinem Radar. | im Code (vom Nutzer, 16.10.) |
+| danach antwortet Joshi über Funk | Alles klar, Fuchsi und ich machen uns gleich auf den Weg. Wir helfen euch! | im Code (vom Nutzer, 31.10.) |
 
 Danach ist das **Segelboot** frei.
 
@@ -222,7 +223,7 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | … die Eule | `tierM` | Und ich habe Krallen, keine Pfoten. Hu-huu. |
 | … der Elch | `tierM` | Solche Spuren habe ich hier im Wald noch nie gesehen. |
 | … die Erzählerin | Erzählerin | Merk dir die Spuren gut. Vielleicht findest du später heraus, wem sie gehören. |
-| … falls die Lupe noch offen ist (der Fuchs läuft von selbst zum braunen Ring und zeigt ihn) | Erzählerin | Schau mal, dein Fuchs hat noch etwas gefunden. |
+| … falls die Lupe noch offen ist (der Fuchs läuft von selbst zum braunen Ring und zeigt ihn) | Erzählerin | Sieh nur, dein Fuchs hat noch etwas gefunden. |
 | Hinweis-Taste, nur noch die Lupe offen (der Fuchs zeigt den braunen Ring) | Erzählerin | Am Weg in den Wald ist ein brauner Kreis. Stell dich hinein und drück Y. Dann schaust du ganz genau hin. |
 | Lupe am Waldweg (brauner Ring) | Erzählerin | Schau mal! Ein Stück Bananenschale. Und viele kleine Ameisen krabbeln darüber. |
 | nach der Lupe – Joshi fragt | `joshi` (helle Kinderstimme) | Von wem die Bananenschale wohl ist? |
@@ -264,6 +265,7 @@ Aus der Höhle kommt ab und zu ein trauriges Brummen (Ton, keine Stimme) – nur
 | Lupe | Erzählerin | Oh, ein Holzentchen. Es ist zerbrochen. |
 | Y beim Gorilla – Joshi | `joshi` | Ist dein Entchen zerbrochen? |
 | … Gorilla | `tierM` | Ja... Das war mein liebstes Spielzeug. Seitdem bin ich ganz dolle traurig. · Nichts kann mich trösten. Nicht mal die vielen Bananen. |
+| … Joshi, bevor der grüne Ring erscheint | `joshi` | Ich helfe dir! |
 | (danach erscheint der grüne Schnitzring, der Fuchs zeigt ihn – ohne Ansage) | | |
 | Hinweis-Taste dann | Erzählerin | Am grünen Kreis liegt ein Stück Holz. Schnitz ihm ein neues Entchen. |
 | Schnitzen | Erzählerin | Toll! Ein neues Holzentchen. *(das kaputte Entchen ist danach weg)* |
@@ -286,7 +288,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | … Elch | `tierM` | Wie schön, dass die Bananen wieder da sind! |
 | … Hase | `tierW` | Wir gehen ihn gleich mal besuchen. |
 | … Joshi | `joshi` | Weißt du, von wem das gestreifte Fell ist? |
-| … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden. · Und weil du so lieb zu mir warst, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
+| … Gorilla | `tierM` | Nein, das weiß ich nicht. Aber frag doch mal das Lama. Das weiß immer alles und kennt jeden. · Und weil du mir so sehr geholfen hast, leihe ich dir mein Flugzeug. Damit kommst du schnell zu ihm. |
 | (danach erscheint der blaue Fotoring, der Fuchs zeigt ihn – ohne Ansage) | | |
 | Foto | Erzählerin | Klasse! Der Gorilla lacht wieder. *(„Geh hinaus zum Flugzeug …“ nur über die Hilfe-Taste)* |
 | Y beim Gorilla danach | `tierM` | Danke, Joshi! Viel Glück beim Lama. |
@@ -323,12 +325,13 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | Hinweis nach dem Umschauen | Erzählerin | Geh doch mal zum Lama am Tisch. |
 | Y beim Lama – Joshi | `joshi` | Hallo Lama! |
 | … Lama | `tierW` | Was ist denn? Siehst du nicht, dass ich zu tun habe? · Ich krieg die blöde Schnur von meinem Paket einfach nicht auf. Mit meinen Hufen geht das nicht! |
+| … Joshi, bevor der grüne Ring erscheint | `joshi` | Ich helfe dir! |
 | Y beim Lama noch einmal | `tierW` | Mit Hufen kann man keine Knoten aufmachen. Die Schnur geht einfach nicht ab. |
 | Hinweis Messer | Erzählerin | Am grünen Kreis steht das Paket. Schneid die Schnur mit deinem Taschenmesser auf. |
 | Messer-Ring: Seil durchgeschnitten (Skizze ins Notizbuch) | Erzählerin | Schnipp! Die Schnur ist durch. |
 | Schnur ab – Lama | `tierW` | Oh! Danke, das ist lieb von dir. Endlich ist mein Paket offen. |
 | Y danach | `tierW` | Danke nochmal! Jetzt muss ich aber auspacken. |
-| Lupe: Spur im Staub | Erzählerin | Schau mal, Spuren im Staub. Die kommen in dein Notizbuch. · Vergleich sie doch mal mit der Spur vom Tatort. |
+| Lupe: Spur im Staub | Erzählerin | Beobachte genau: Spuren im Staub. Die kommen in dein Notizbuch. · Vergleich sie doch mal mit der Spur vom Tatort. |
 | Hinweis-Taste nach der Lupe | Erzählerin | Schau in deinem Rucksack ins Notizbuch. Bei der neuen Spur drückst du A. |
 | A auf der Spurseite im Notizbuch | Erzählerin | Schau mal genau hin ... |
 | … Spur liegt auf der Eichhörnchenspur (roter Rahmen) | Erzählerin | Diese Spuren stimmen nicht mit denen aus dem Observatorium überein. |
@@ -393,6 +396,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | Y am Strahler | Erzählerin | Ein Strahler – und er morst das Wort HALLO. *(gebaut; danach zeigt Fuchsi den Skizzenring ohne Ansage)* |
 | Skizze fertig (Basis, Erde, Sternschnuppe) | Erzählerin | Wow. Die Mondbasis, dahinter die Erde – und eine Sternschnuppe! *(gebaut)* |
 | Hinweis-Taste nach dem Umschauen | Erzählerin | Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Drück dort Y. |
+| Y vor der Luke (hinein geht es durch die Luke) | Erzählerin | Das ist die Mondbasis. Geh doch mal rein und schaue, wer da wohnt. *(gebaut 31.10.)* |
 
 ### Im Büro – das erste Gespräch
 
@@ -424,10 +428,12 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 |---|---|---|
 | Hinweis-Taste im Labor | Erzählerin | Schau dich im Labor um. Drück X. |
 | X im Labor | – | Fuchsi zeigt das Mikroskop und zwei braune Lupenringe |
-| Lupe am Boden | Erzählerin | Eine Spur im Staub! Vielleicht kannst du sie mit den Spuren in deinem Notizbuch vergleichen. |
-| Lupe am langen Tisch | Erzählerin | Ein Haarbüschel! Weiß mit rotbraunen Streifen. Vergleich es doch mal mit dem Fell vom Tatort. |
-| Notizbuch, Spur verglichen (A) | Erzählerin | Die Spur passt genau! Es ist die Spur vom Packpapier. |
-| Notizbuch, Haare verglichen (A) | Erzählerin | Die Haare passen zum Fell vom Tatort. · Jetzt weißt du es: Das Eichhörnchen war am Tisch der Tiere. |
+| Lupe am Boden | Erzählerin | Sieh mal, Spuren im Staub! *(gebaut)* |
+| Lupe am langen Tisch | Erzählerin | Ein Haarbüschel! *(gebaut)* |
+| beides unter der Lupe (noch nichts verglichen) | Erzählerin | Vergleich doch die Haare und die Fußspuren mit denen vom Tatort. *(gebaut 31.10.)* |
+| Notizbuch: auf beiden neuen Seiten gleich ein A, Reihenfolge egal | Erzählerin | Schau mal genau hin … · Spur: Die Spur passt genau – sie ist auch auf dem Packpapier! · Und auf dem Festtisch ist sie auch! · Haare: Die Haare passen genau zum Fell am Bananenkorb! · Und es ist auch dasselbe Fell wie auf dem Packpapier! *(gebaut)* |
+| erst eines verglichen | Erzählerin | Jetzt vergleich noch die Haare. / … die Fußspuren. – das Buch blättert gleich zu dieser Seite; fehlt sie noch: Schau dir jetzt noch die Haare / die Fußspuren mit der Lupe an. *(gebaut 31.10.)* |
+| beides verglichen | Erzählerin | Jetzt weißt du es: Das Eichhörnchen war am Tisch der Tiere. *(gebaut)* |
 
 ### Das Geständnis
 
@@ -448,12 +454,14 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 |---|---|---|
 | Y am Computer | – | Joshi tippt; die Worte erscheinen auf dem Bildschirm |
 | Blick nach draußen, der Strahler morst „KOMMT ALLE“ (rot / blau) zur Erde | Erzählerin | Hallo Lama. Sag den anderen Tieren Bescheid. Das Weihnachtsessen ist gerettet. Kommt alle zum Mond! |
-| nach dem Strahler, über Funk | Lama | Hallo Joshi, hier ist das Lama! Deine Nachricht ist angekommen. · Ich hab allen Bescheid gesagt – wir sind schon alle auf dem Weg zum Mond! *(gebaut)* |
+| nach dem Strahler, über Funk | Lama | Hallo Joshi, hier ist das Lama! Deine Nachricht ist angekommen. · Ich hab allen Bescheid gesagt – wir sind schon auf dem Weg zu dir! *(gebaut)* |
+| danach, über Funk | Joshi | Super, wir freuen uns auf euch! *(gebaut 31.10.)* |
 | zurück beim Eichhörnchen | Joshi | Jetzt schmücken wir hier alles zusammen. Das wird ein ganz besonderes Weihnachtsfest! |
 | … | Eichhörnchen | Au ja! Ein richtiges Weihnachtsfest! *(gebaut)* |
 | Y beim Eichhörnchen auf dem Fest | Eichhörnchen | Danke, Joshi! Das ist das schönste Weihnachtsfest, das es hier oben je gab! *(gebaut)* |
 | Y bei einem Alien | Alien | Hallo, ich bin [Piep-Blöp-Ton] … Mein Freund [anderer Ton] und ich waren neugierig, wer hier wohnt. · Es freut uns, euch kennenzulernen und mit euch zu feiern! *(gebaut; Namen: Piep-Blöp-Piep (groß), Blöp-Piep-Blöp (klein); danach die Skizze der beiden)* |
 | Gruppenfoto fertig | Erzählerin | Klasse! Alle zusammen an einer Tafel – das schönste Weihnachtsfest! *(gebaut)* |
+| nach dem Fest durch die Saaltür hinaus | Joshi | Tschüss – es war ein wirklich tolles Fest! *(gebaut 31.10.)* |
 | Schnitzen fertig | Erzählerin | Toll! Ein kleiner Planet – mit dir und Fuchsi obendrauf. *(gebaut)* |
 | in der Rakete | Erzählerin | Gib mit dem rechten Stick Schub, bis der Balken voll ist. *(gebaut)* |
 | Y an der Tür zum Saal | – | im großen Saal: alle Tiere, Gorilla und Lama, Samu mit Barki und die beiden Aliens *(Ablauf offen)* |

@@ -60,9 +60,12 @@ const T = {
     'Aber hilfst du mir? Für mein Experiment brauche ich noch Steine. Draußen liegen fünf Stück. Bringst du sie mir?'],
   nochSteine: ['Draußen liegen noch Steine. Bringst du sie mir?'],
   danke: ['Super, alle fünf Steine! Danke, Joshi!', 'Bring sie bitte ins Labor und leg sie auf den großen Tisch. Die Tür ist jetzt offen.'],
-  spurLupe: ['Schau mal, Spuren im Staub!'],
+  spurLupe: ['Sieh mal, Spuren im Staub!'],
   haarLupe: ['Ein Haarbüschel!'],
-  vergleichen: ['Vergleich sie doch mal mit den Spuren vom Tatort.'],
+  vergleichen: ['Vergleich doch die Haare und die Fußspuren mit denen vom Tatort.'],   // Live-Wunsch 31.10.2026
+  // ist eines verglichen, nennt die Erzaehlerin das andere (Live-Wunsch 31.10.2026); fehlt seine Seite noch: erst unter die Lupe
+  nochHaare: ['Jetzt vergleich noch die Haare.'], nochSpur: ['Jetzt vergleich noch die Fußspuren.'],
+  lupeHaare: ['Schau dir jetzt noch die Haare mit der Lupe an.'], lupeSpur: ['Schau dir jetzt noch die Fußspuren mit der Lupe an.'],
   vergleichStart: ['Schau mal genau hin ...'],
   passtSpur: ['Die Spur passt genau – sie ist auch auf dem Packpapier!'],
   passtSpurTisch: ['Und auf dem Festtisch ist sie auch!'],
@@ -82,7 +85,8 @@ const T = {
   idee: ['Ich verstehe dich. So ganz allein hier oben wäre ich auch traurig.', 'Ich hab vielleicht eine bessere Idee!'],
   funkspruch: ['Hallo Lama. Sag den anderen Tieren Bescheid. Das Weihnachtsessen ist gerettet. Kommt alle zum Mond!'],
   // das Lama antwortet ueber Funk (Live-Wunsch 28.10.2026): angekommen, alle sind schon unterwegs
-  lamaFunk: ['Hallo Joshi, hier ist das Lama! Deine Nachricht ist angekommen.', 'Ich hab allen Bescheid gesagt – wir sind schon alle auf dem Weg zum Mond!'],
+  lamaFunk: ['Hallo Joshi, hier ist das Lama! Deine Nachricht ist angekommen.', 'Ich hab allen Bescheid gesagt – wir sind schon auf dem Weg zu dir!'],
+  joshiFunk: Object.assign(['Super, wir freuen uns auf euch!'], { ohneVor: true }),   // Joshi antwortet (Live-Wunsch 31.10.2026), ein Rauschen dazwischen reicht
   schmuecken: ['Jetzt schmücken wir hier alles zusammen. Das wird ein ganz besonderes Weihnachtsfest!'],
   auJa: ['Au ja! Ein richtiges Weihnachtsfest!'],
   tuerZu: ['Die Tür ist verschlossen.'],
@@ -279,10 +283,10 @@ function teleskopLaden(g){
     o.scale.multiplyScalar(k); o.position.set(-c.x * k, -bb.min.y * k, -c.z * k);
     const h = new THREE.Group(); h.add(o); h.position.set(P.teleskop.x, 0.3, P.teleskop.z); h.rotation.y = -Math.PI / 2 - 0.6; g.add(h); mb.teleskop = h;
     if(!mb.drin) story.sichtTeile(h, false);
-    if(mb.stufe !== 'neu') teleskopAnmelden();
+    teleskopAnmelden();   // gleich von Anfang an: das erste X markiert es mit, Y geht sofort (Live-Wunsch 31.10.2026 – vorher erst nach dem ersten Gespraech)
   });
 }
-// Y am Teleskop: der Himmel mit der Erde und vorn die drei Orte (teleskop.js Modus 'mond'); erst nach dem ersten Gespraech
+// Y am Teleskop: der Himmel mit der Erde und vorn die drei Orte (teleskop.js Modus 'mond'); gleich von Anfang an
 function teleskopAnmelden(){
   if(mb.teleInter || !mb.teleskop) return;
   const p = welt(P.teleskop.x + 0.2, P.teleskop.z + 1.4), q = welt(P.teleskop.x, P.teleskop.z);   // vorn (Richtung Eingang), weg von der Labortuer
@@ -443,7 +447,9 @@ const fertigVorher = story.e5StelleFertig;
 story.e5StelleFertig = (id) => { if(id === 'labor_spur' || id === 'labor_haare') story.e5LaborStelleFertig(id); else if(fertigVorher) fertigVorher(id); };
 story.e5LaborStelleFertig = function(id){
   mb.lupen = mb.lupen || {}; mb.lupen[id] = true;
-  if(mb.lupen.labor_spur && mb.lupen.labor_haare && mb.stufe === 'spuren'){ mb.stufe = 'vergleich'; story.spaeter(0.6, () => story.sprich(T.vergleichen)); }
+  if(mb.lupen.labor_spur && mb.lupen.labor_haare && mb.stufe === 'spuren'){ mb.stufe = 'vergleich';
+    const v = mb.verglichen || {}, satz = v.spur && v.haare ? null : v.spur ? T.nochHaare : v.haare ? T.nochSpur : T.vergleichen;   // schon verglichen: nur das andere
+    if(satz) story.spaeter(0.6, () => story.sprich(satz)); else vergleichFertig(); }
 };
 // Spur unter der Lupe und im Notizbuch
 story.e5SpurModell = function(){
@@ -474,12 +480,16 @@ const VERGLEICHE = [
 ];
 const zielVon = (V) => { const z = V.v.ziele.filter(q => seitenIndex(q[0]) >= 0); return z[V.i] || null; };   // das aktuelle Ziel (nur vorhandene Seiten)
 const seitenIndex = (name) => story.notizSeiten().findIndex(s => s.name === name);
+// Vergleichen geht gleich, sobald die Seite im Notizbuch ist (Live-Wunsch 31.10.2026: auf beiden ein A, die Reihenfolge ist egal)
+const vergleichOffen = () => mb.stufe === 'spuren' || mb.stufe === 'vergleich';
+// die andere, noch nicht verglichene Seite (Index im Notizbuch, -1 = noch nicht da)
+const andereSeite = (v) => { const w = VERGLEICHE.find(q => q !== v && !mb.verglichen[q.id]); return w ? seitenIndex(w.seite) : -1; };
 const offenerVergleich = (lage) => VERGLEICHE.find(v => !mb.verglichen[v.id] && lage && lage.some(q => q.s && q.s.name === v.seite));
 const vor = { A: story.buchA, Sperre: story.buchSperre, Tick: story.buchTick, Ueber: story.buchUeber };
 story.buchSperre = () => (e5() && !!(mb.vg && !mb.vg.fertig)) || !!(vor.Sperre && vor.Sperre());
 story.buchA = function(lage){
   if(!e5()) return vor.A ? vor.A(lage) : false;
-  if(mb.stufe !== 'vergleich' || mb.vg) return false;
+  if(!vergleichOffen() || mb.vg) return false;
   const v = offenerVergleich(lage); if(!v) return false;
   mb.vg = { v, phase: 'hin', t: 0, i: 0, bild: v.bild() };
   if(story.gehaltenVergessen){ story.gehaltenVergessen(T.vergleichen); story.gehaltenVergessen(T.hVergleich); }
@@ -489,21 +499,22 @@ story.buchTick = function(dt, lage){
   if(!e5()) return vor.Tick ? vor.Tick(dt, lage) : false;
   if(!lage) return false;
   const V = mb.vg;
-  if(!V) return mb.stufe === 'vergleich' && !!offenerVergleich(lage);
+  if(!V) return vergleichOffen() && !!offenerVergleich(lage);
   if(V.fertig) return false;
   const Z = zielVon(V); if(!Z && V.phase !== 'zurueck') V.phase = 'zurueck';
   if(V.phase === 'hin'){ if(story.buchZuSeite(seitenIndex(Z[0]))){ V.phase = 'vergleich'; V.t = 0; } return true; }
   if(V.phase === 'vergleich'){ const t0 = V.t; V.t += dt;
     if(t0 < 1.6 && V.t >= 1.6) story.sprich(Z[1], null, 'inventar');
     if(V.t > 4.4){ V.i++; V.phase = zielVon(V) ? 'hin' : 'zurueck'; } return true; }   // weiter zum naechsten Fund, sonst zurueck
-  if(V.phase === 'zurueck'){ if(story.buchZuSeite(seitenIndex(V.v.seite))){ V.fertig = true; mb.verglichen[V.v.id] = true; mb.vg = null; vergleichFertig(); } return true; }
+  if(V.phase === 'zurueck'){ const a = andereSeite(V.v);
+    if(story.buchZuSeite(a >= 0 ? a : seitenIndex(V.v.seite))){ V.fertig = true; mb.verglichen[V.v.id] = true; mb.vg = null; vergleichFertig(V.v); } return true; }
   return false;
 };
 story.buchUeber = function(c, lage){
   if(!e5()){ if(vor.Ueber) vor.Ueber(c, lage); return; }
   if(!lage) return;
   const V = mb.vg;
-  if(!V && mb.stufe === 'vergleich'){ const v = offenerVergleich(lage), f = v && lage.find(q => q.s && q.s.name === v.seite); if(!f || !story.knopfTextur) return;
+  if(!V && vergleichOffen()){ const v = offenerVergleich(lage), f = v && lage.find(q => q.s && q.s.name === v.seite); if(!f || !story.knopfTextur) return;
     const a = story.knopfTextur('A').image, g = 90 * (1 + Math.sin(mb.t * 5) * 0.08); c.drawImage(a, f.x + f.w / 2 - g / 2, f.y + f.h + 6, g, g); return; }
   if(!V || V.phase !== 'vergleich') return;
   const Z = zielVon(V), name = Z ? Z[0] : V.v.seite, f = lage.find(q => q.s && q.s.name === name); if(!f) return;
@@ -546,7 +557,10 @@ function eichAufSpurseite(){
   g.fillStyle = '#f4ecd8'; g.fillRect(0, 0, c.width, c.height); g.drawImage(alt, 0, 0); g.drawImage(e, 0, H - 40, W, H);
   s.bild = c; s.mitEich = true;
 }
-function vergleichFertig(){
+function vergleichFertig(v){
+  // erst eines verglichen: die Erzaehlerin nennt das andere – ist seine Seite schon da, liegt sie jetzt offen (buchTick 'zurueck')
+  if(v && !(mb.verglichen.spur && mb.verglichen.haare)){ const da = andereSeite(v) >= 0;
+    story.sprich(v.id === 'spur' ? (da ? T.nochHaare : T.lupeHaare) : (da ? T.nochSpur : T.lupeSpur), null, 'inventar'); return; }
   if(!(mb.verglichen.spur && mb.verglichen.haare) || mb.stufe !== 'vergleich') return;
   mb.stufe = 'ueberfuehrt';
   eichAufSpurseite();
@@ -593,7 +607,7 @@ function szeneTakt(dt){
   }
   // der Strahler: mindestens 6 s (das Morsen sehen), sonst bis die Erzaehlerin fertig ist, hoechstens 13 s
   if(S.art === 'strahler'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 13 || (S.t > 6 && !mb.funkVorgelesen)){ mb.szene = { art: 'blende', t: 0, dann: 'buero' }; } return; }
-  if(S.art === 'zurueck'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 0.5){ blende(0); mb.szene = null; mb.stufe = 'gesendet'; story.spaeter(1.2, () => story.sprich(T.lamaFunk, null, 'funk:lama')); } }
+  if(S.art === 'zurueck'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 0.5){ blende(0); mb.szene = null; mb.stufe = 'gesendet'; story.spaeter(1.2, () => { story.sprich(T.lamaFunk, null, 'funk:lama'); story.sprich(T.joshiFunk, null, 'funk:joshi'); }); } }
 }
 story.mondbasisSzene = () => !!mb.szene;
 // Kamera der Strahler-Szene: vom Mondboden schraeg vor dem Eingang hinauf zum Strahler und seinem Lichtkegel

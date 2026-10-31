@@ -395,7 +395,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | X | – | Fuchsi zeigt die Mondbasis und den Strahler *(gebaut)* |
 | Y am Strahler | Erzählerin | Ein Strahler – und er morst das Wort HALLO. *(gebaut; danach zeigt Fuchsi den Skizzenring ohne Ansage)* |
 | Skizze fertig (Basis, Erde, Sternschnuppe) | Erzählerin | Wow. Die Mondbasis, dahinter die Erde – und eine Sternschnuppe! *(gebaut)* |
-| Hinweis-Taste nach dem Umschauen | Erzählerin | Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Drück dort Y. |
+| Hinweis-Taste nach dem Umschauen | Erzählerin | Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Geh einfach durch die Tür hinein. |
 | Y vor der Luke (hinein geht es durch die Luke) | Erzählerin | Das ist die Mondbasis. Geh doch mal rein und schaue, wer da wohnt. *(gebaut 31.10.)* |
 
 ### Im Büro – das erste Gespräch

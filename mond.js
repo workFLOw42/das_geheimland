@@ -31,7 +31,7 @@ story.e5DarfFliegen = false;
 // steht ein Y ueber dem X-Wing (yUeberJet)
 const TEXT_AUSGESTIEGEN = ['Du bist auf dem Mond gelandet! Hier bist du ganz leicht und kannst richtig hoch springen.'];
 const TEXT_HINWEIS_X = ['Schau dich mal um. Drück X.'];
-const TEXT_HINWEIS = ['Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Drück dort Y.'];
+const TEXT_HINWEIS = ['Schau doch mal in die Mondbasis hinein. Der Eingang ist vorn, neben dem großen Strahler. Geh einfach durch die Tür hinein.'];   // nicht mehr "Drück dort Y": Y ist dort nur ein Infotext (31.10.2026)
 const TEXT_HINWEIS_JET = ['Steig mit Y aus.'];
 const TEXT_BASIS = ['Das ist die Mondbasis. Geh doch mal rein und schaue, wer da wohnt.'];   // Y vor der Luke (Live-Wunsch 31.10.2026, wie am Observatorium)
 const TEXT_STRAHLER = ['Ein Strahler – und er morst das Wort HALLO.'];   // der Skizzenring kommt erst nach dem Fest (e5StelleFrei)

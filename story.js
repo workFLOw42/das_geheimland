@@ -1684,7 +1684,7 @@ function stimmeFuer(rolle){
   return (S.zweite && passend[1]) || passend[0] || de[0] || null;
 }
 function satzDauer(s){ return 1200 + s.length / 14 * 1000; }
-let sprichtGerade = null, gehalten = null;
+let sprichtGerade = null, gehalten = null, abbruchT = -1e9;   // abbruchT: wann zuletzt ein laufender Satz abgebrochen wurde (sprich: nachAbbruch)
 const sprichWarte = [];
 // Spricht gerade jemand (oder wartet noch ein Satz)? notizbuch.js: Detektivhut und blaues X erst danach (Live-Wunsch 26.10.2026)
 story.redetGerade = () => !!(sprichtGerade || gehalten || sprichWarte.length);
@@ -1696,7 +1696,7 @@ function halten(){
   const me = sprichtGerade; if(!me || me.rolle === 'inventar') return;
   me.pause(true); me.wiederholen = !!me.satzLaeuft;
   gehalten = me; sprichtGerade = null;
-  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  if(window.speechSynthesis){ window.speechSynthesis.cancel(); abbruchT = performance.now(); }
 }
 // Einen gehaltenen Satz vergessen, statt ihn nach dem Inventar zu wiederholen (Live-Befund 26.10.2026: nach dem Spurvergleich im
 // Notizbuch kam beim Schliessen noch einmal der Hinweis, die Spur zu vergleichen – er war beim Oeffnen gehalten worden)
@@ -1715,13 +1715,17 @@ const FUNK_RAHMEN = 1;
 function sprich(saetze, fertig, rolle){
   // (der Uhu bekam hier zum Ausprobieren "Uhu!" vorn und hinten – wieder weg, Live-Wunsch 29.10.2026: sein Text hat schon sein
   // eigenes "Huhu", es kam doppelt)
+  // Live-Befund 01.11.2026 (Mond-Teleskop: A, waehrend noch der Name gesprochen wird -> "es verschluckt sich"): sprach gerade etwas,
+  // wird es gleich mit cancel() abgebrochen – der neue Satz startet dann erst kurz danach (nachAbbruch, s. los), nicht im selben Augenblick
+  // (das Teleskop ruft stimmeStopp schon vorher selbst – darum zaehlt auch ein Abbruch gerade eben, abbruchT)
+  const nachAbbruch = rolle === 'inventar' && (!!(window.speechSynthesis && window.speechSynthesis.speaking) || performance.now() - abbruchT < 150);
   if(rolle === 'inventar'){ story.stimmeStopp(); halten(); }
   else if(sprichtGerade || gehalten){ sprichWarte.push(() => sprich(saetze, fertig, rolle)); return; }
   // saetze darf eine Funktion sein: sie entscheidet erst, wenn die Ansage drankommt (leer = nichts mehr zu sagen; hoehle_innen.js)
   if(typeof saetze === 'function'){ saetze = saetze() || []; if(!saetze.length){ if(fertig) fertig(); const n = sprichWarte.shift(); if(n) n(); return; } }
   const synth = window.speechSynthesis;
   let i = -1, timer = null, done = false;
-  const me = sprichtGerade = { rolle, saetze };
+  const me = sprichtGerade = { rolle, saetze, nachAbbruch };
   // Rauschen davor/danach: beim Funk (Maennerstimme) und bei der Erklaerung des Funkgeraets ('funkRahmen', Erzaehlerin)
   const funk = story.istFunk(rolle);
   // Pausierbarer Timer (Pause: Restzeit merken, danach weiter) – Notfall-Timer und Funkrauschen-Takt
@@ -1782,16 +1786,18 @@ function sprich(saetze, fertig, rolle){
         // (Spielsaetze warten auch im Inventar – nur die Erklaerungen selbst sprechen dort)
         if(sprichtGerade !== me) return;
         if(hilfeOffen() && rolle !== 'inventar'){ stelle(los, 200); return; }
+        if(me.nachAbbruch){ me.nachAbbruch = false; stelle(los, 250); return; }   // Chrome braucht nach cancel() einen Moment
         // Live-Befund 19.10.2026: hier stand heute zuerst ein cancel() vor JEDEM Satz (gegen den Stau eines fremden Tabs) –
         // zu grob, seitdem gab es "Probleme, die es vorher nie gab" (Schnitzen, Aussteigen). Jetzt wird nur freigeraeumt, wenn
         // ein Satz nachweislich nicht anfaengt: kein onstart nach START_WARTE ms -> verwerfen, freiraeumen, neu (einmal).
         synth.resume(); story.stimmePausiert = false;
-        const START_WARTE = 1500;
+        const START_WARTE = 2500;                                    // 01.11.2026: vorher 1500 – unter Last (Mondbasis) kam onstart spaet, der Satz wurde neu begonnen
         const versuch = (n) => {
           const u = aktU = neuU(); synth.speak(u); me.satzLaeuft = true;
           setTimeout(() => {
             if(aktU !== u || u.lief || sprichtGerade !== me || me.angehalten) return;
             aktU = null; synth.cancel(); synth.resume();      // zuerst aktU weg: das onerror des Verworfenen geht ins Leere
+            console.warn('Stimme: Satz fing nicht an, Versuch ' + (n + 1) + ': ' + s.slice(0, 40));   // zur Fehlersuche in der Konsole
             if(n < 2) versuch(n + 1);
             else { me.satzLaeuft = false; stelle(weiter, satzDauer(s)); }   // spricht gar nicht: weiter wie ohne Stimme
           }, START_WARTE);
@@ -1810,7 +1816,7 @@ story.stimmeFrei = () => !sprichtGerade && !gehalten && !sprichWarte.length;   /
 story.stimmeStopp = function(){
   const me = sprichtGerade; if(!me || me.rolle !== 'inventar') return;
   sprichtGerade = null; me.stopp(); untertitel('');
-  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  if(window.speechSynthesis){ window.speechSynthesis.cancel(); abbruchT = performance.now(); }
 };
 // Live-Befund 19.10.2026 (in "Reise nach Japan" kein Ton, bis der Browser neu gestartet war): die Sprachausgabe ist in
 // Chrome EINE Warteschlange fuer den ganzen Browser. Steht dieser Tab mitten im Satz in der Pause (synth.pause, siehe

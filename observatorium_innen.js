@@ -540,24 +540,9 @@ function schnipp(){
   const q = audioCtx.createBufferSource(); q.buffer = b; const f = audioCtx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500;
   const gn = audioCtx.createGain(); gn.gain.value = 0.35; q.connect(f); f.connect(gn); gn.connect(audioCtx.destination); q.start();
 }
-// Hinausgehen (Live-Wunsch 26.10.2026, wie in Etappe 2): ist draussen etwas Neues frei (Skizzenring, Holzscheit am Parkplatz), sagt die
-// Erzaehlerin "Sieh nur, dein Fuchs hat noch etwas gefunden", und der Fuchs laeuft alle noch offenen Ringe draussen ab
-const DRAUSSEN = ['obs_skizze', 'schluessel_schnitzen'];
-function draussenZeigen(){
-  const fertig = (id) => story.stelleZustand && story.stelleZustand(id) === 'fertig';
-  const offen = DRAUSSEN.filter(id => story.obsStelleFrei && story.obsStelleFrei(id) && !fertig(id));
-  const neu = offen.filter(id => !(oi.gezeigt || (oi.gezeigt = {}))[id]);
-  if(!neu.length) return;
-  oi.skizzeZeigen = false;
-  story.spaeter(1.2, () => {
-    if(oi.drin || !eva || !story.fuchsRundgang) return;
-    const ks = offen.map(id => story.kreisZielVon && story.kreisZielVon(id)).filter(Boolean); if(!ks.length) return;
-    for(const id of neu) oi.gezeigt[id] = true;
-    ks.forEach(k => { k.frei = true; });
-    story.sprich(T.fuchsFund);
-    story.spaeter(0.6, () => { if(!oi.drin && eva) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0, true, q => ks.includes(q)); });
-  });
-}
+// Hinausgehen: die Ringe draussen (Skizze, Holzscheit am Parkplatz) erscheinen erst nach X (Live-Wunsch 01.11.2026: "erscheint X, aber
+// die Markierungen sind schon da") – vorher schaltete das Hinausgehen (draussenZeigen) sie frei, sagte "Sieh nur, dein Fuchs hat noch
+// etwas gefunden" und schickte den Fuchs hin. Jetzt die normale Regel: Hut und blaues X, X druecken, der Fuchs markiert, der Ring ist da.
 function fuchsZu(id){
   const k = story.kreisZielVon && story.kreisZielVon(id); if(!k) return;
   k.frei = true;
@@ -833,7 +818,7 @@ story.obsSkizzeAufnahme = function(an){
   }
 };
 // Teleskop zu (teleskop.js): danach ist der Skizzenring draussen frei; der Fuchs zeigt ihn, sobald Joshi hinausgeht
-story.teleskopDanach = function(){ if(!e4() || !oi.drin || oi.stufe === 'x') return; const k = story.kreisZielVon && story.kreisZielVon('obs_skizze'); if(k){ k.frei = true; oi.skizzeZeigen = true; } };
+story.teleskopDanach = function(){ if(!e4() || !oi.drin || oi.stufe === 'x') return; const k = story.kreisZielVon && story.kreisZielVon('obs_skizze'); if(k) oi.skizzeZeigen = true; };   // nicht mehr frei: der Ring kommt mit X (01.11.2026)
 
 // ---- Draussen: Holzscheit (von Anfang an, ohne Kreis), Schnitzring, Raumschiff mit Schluessel, Abflug -------------------
 const SCHEIT_P = { x: -22.5, z: 9.5 };                    // am Parkplatz (notizbuch.js STELLEN schluessel_schnitzen)
@@ -1007,7 +992,6 @@ function setzeUm(ziel){
     oi.drin = false; story.innen.drin = false; story.innen.wo = null;
     if(Z) Z.drin = false;
     story.spaeter(0.1, () => { if(typeof szeneVorwaermen === 'function' && !oi.drin) szeneVorwaermen(); });
-    draussenZeigen();
   }
   g.rotation.y = eva.yaw; evaOrbit = 0; evaPitch = 0;
   const back = new THREE.Vector3(Math.sin(eva.yaw), 0, Math.cos(eva.yaw));

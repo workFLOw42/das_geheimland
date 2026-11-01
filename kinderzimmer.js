@@ -277,7 +277,8 @@ function aufstehen(B, base, danach){
     if(s < 0.8) deckeSetzen(d, 2 - w(s / 0.8));                                            // zurueckschlagen (ans Fussende)
     else if(s < 2.1){ const k = w((s - 0.8) / 1.3); kz.halte.lerpVectors(liegen, neben, k); if(f) f.rotation.x = Math.PI / 2 * (1 - k); }
     else if(s < 2.8){ if(kz.halte){ aufstehenFigur(true); eva.group.position.copy(neben); } deckeSetzen(d, 1 - w((s - 2.1) / 0.7)); }   // steht: Decke glattziehen
-    else { deckeSetzen(d, 0); if(danach) danach(); return; }
+    else { if(kz.halte){ if(f) f.rotation.x = 0; aufstehenFigur(true); eva.group.position.copy(neben); }   // Zeit uebersprungen (Fenster im Hintergrund): trotzdem aufstehen
+      deckeSetzen(d, 0); if(danach) danach(); return; }
     requestAnimationFrame(schritt);
   })();
 }

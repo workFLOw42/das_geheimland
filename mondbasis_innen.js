@@ -384,6 +384,12 @@ const STUFEN = ['neu', 'steine', 'labor', 'spuren', 'vergleich', 'ueberfuehrt', 
 const stufeAb = (s) => STUFEN.indexOf(mb.stufe) >= STUFEN.indexOf(s);
 story.mondbasisStufe = () => mb.stufe;
 function fuchsZeigt(o){ if(!o || !eva || !story.fuchsRundgang) return; o.entdeckt = false; o.frei = true; story.spaeter(0.6, () => story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === o)); }
+// Fuchsi zeigt das Eichhoernchen (nach dem Vergleich und nach dem Funkspruch des Lamas, Live-Wunsch 01.11.2026): es bleibt dabei mit Y
+// ansprechbar (entdeckt), der Fuchs laeuft hin, pfotet, es leuchtet auf
+function eichZeigen(){
+  const o = mb.inter; if(!o || !eva || !mb.drin) return; o.entdeckt = true; o.frei = true;
+  if(story.fuchsRundgang) story.spaeter(0.6, () => { if(mb.drin && eva) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === o); });
+}
 function eichY(o){
   if(o.spricht) return; o.spricht = true;
   const fertig = () => { o.spricht = false; eichAnim('stehen'); };
@@ -607,7 +613,7 @@ function szeneTakt(dt){
   }
   // der Strahler: mindestens 6 s (das Morsen sehen), sonst bis die Erzaehlerin fertig ist, hoechstens 13 s
   if(S.art === 'strahler'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 13 || (S.t > 6 && !mb.funkVorgelesen)){ mb.szene = { art: 'blende', t: 0, dann: 'buero' }; } return; }
-  if(S.art === 'zurueck'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 0.5){ blende(0); mb.szene = null; mb.stufe = 'gesendet'; story.spaeter(1.2, () => { story.sprich(T.lamaFunk, null, 'funk:lama'); story.sprich(T.joshiFunk, null, 'funk:joshi'); }); } }
+  if(S.art === 'zurueck'){ blende(Math.max(0, 1 - S.t / 0.5)); if(S.t > 0.5){ blende(0); mb.szene = null; mb.stufe = 'gesendet'; story.spaeter(1.2, () => { story.sprich(T.lamaFunk, null, 'funk:lama'); story.sprich(T.joshiFunk, eichZeigen, 'funk:joshi'); }); } }   // danach zeigt Fuchsi das Eichhoernchen (01.11.2026)
 }
 story.mondbasisSzene = () => !!mb.szene;
 // Kamera der Strahler-Szene: vom Mondboden schraeg vor dem Eingang hinauf zum Strahler und seinem Lichtkegel
@@ -627,7 +633,8 @@ story.e5BasisHinweis = function(){
   if(s === 'labor') return T.hLabor;
   if(s === 'spuren') return T.hLaborX;
   if(s === 'vergleich') return T.hVergleich;
-  if(s === 'ueberfuehrt' || s === 'gesendet') return T.hFragen;
+  if(s === 'gesendet'){ eichZeigen(); return T.hFragen; }        // Hinweis-Taste: Fuchsi zeigt es nochmal
+  if(s === 'ueberfuehrt') return T.hFragen;
   if(s === 'idee') return T.hComputer;
   if(s === 'fest') return story.mondfestHinweis ? story.mondfestHinweis() : T.hSaal;
   return null;
@@ -678,9 +685,11 @@ function kurzSchwarz(mitte, danach){
     if(s < 0.5) blende(s / 0.5);
     else if(s < 1.7){ blende(1); if(!gemacht){ gemacht = true; if(mitte) mitte(); } }
     else if(s < 2.3) blende(1 - (s - 1.7) / 0.6);
-    else { blende(0); if(danach) danach(); return; }
+    else { blende(0); if(!gemacht){ gemacht = true; if(mitte) mitte(); } if(danach) danach(); return; }
     requestAnimationFrame(f); })();
 }
+// (Live-Befund 01.11.2026: beim Schmuecken war das Browserfenster im Hintergrund – requestAnimationFrame stand, danach war die Zeit schon
+// ueber 2,3 s und mitte() – das Fest mit den Gaesten – fiel aus; nur die Saaltuer ging auf. Darum holt das Ende mitte() nach.)
 function setzeUm(ziel, wo){
   const g = eva.group;
   if(ziel === 'innen'){

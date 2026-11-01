@@ -444,7 +444,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | … | Joshi | Moment mal … Ich hab doch gar nicht gesagt, dass das Essen auf der Waldinsel gestohlen wurde! · Und am Tisch lagen überall Haare. Genau die gleichen Haare liegen hier in deinem Labor. |
 | … | Eichhörnchen | Ähm … die sind bestimmt vom Hamster! Der wohnt nämlich auch hier oben und hat genau so ein Fell. |
 | … | Joshi | Ein Hamster? Du hast doch vorhin gesagt, dass vor mir noch nie jemand hier oben war. · Und diese Haare sind weiß mit rotbraunen Streifen. Genau wie deine! |
-| … | Eichhörnchen | Du hast recht … Ich war es. Ich hab das ganze Essen genommen. · Aber es ist noch alles da, drüben im großen Saal. · Seit Wochen sende ich Signale, aber keiner hat geantwortet, und keiner ist mich besuchen gekommen. Da war ich so sauer, dass ich die anderen Tiere ärgern wollte. · Es tut mir total leid. Hilfst du mir, alles wieder zurückzubringen? |
+| … | Eichhörnchen | Du hast recht … Ich war es. Ich hab das ganze Essen genommen. · Aber es ist noch alles da, drüben im großen Saal. · Seit Wochen sende ich Signale, aber keiner hat geantwortet, und keiner ist mich besuchen gekommen. Da war ich so sauer, dass ich die anderen Tiere ärgern wollte. · Es tut mir furchtbar leid. Hilfst du mir, alles wieder zurückzubringen? |
 | … | Joshi | Ich verstehe dich. So ganz allein hier oben wäre ich auch traurig. · Ich hab vielleicht eine bessere Idee! |
 | danach | Erzählerin | Geh ins Büro zum Computer und drück Y. |
 

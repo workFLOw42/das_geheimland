@@ -81,7 +81,7 @@ const T = {
     'Und diese Haare sind weiß mit rotbraunen Streifen. Genau wie deine!'],
   gestaendnis: ['Du hast recht … Ich war es. Ich hab das ganze Essen genommen.', 'Aber es ist noch alles da, drüben im großen Saal.',
     'Seit Wochen sende ich Signale, aber keiner hat geantwortet, und keiner ist mich besuchen gekommen. Da war ich so sauer, dass ich die anderen Tiere ärgern wollte.',
-    'Es tut mir total leid. Hilfst du mir, alles wieder zurückzubringen?'],
+    'Es tut mir furchtbar leid. Hilfst du mir, alles wieder zurückzubringen?'],
   idee: ['Ich verstehe dich. So ganz allein hier oben wäre ich auch traurig.', 'Ich hab vielleicht eine bessere Idee!'],
   funkspruch: ['Hallo Lama. Sag den anderen Tieren Bescheid. Das Weihnachtsessen ist gerettet. Kommt alle zum Mond!'],
   // das Lama antwortet ueber Funk (Live-Wunsch 28.10.2026): angekommen, alle sind schon unterwegs

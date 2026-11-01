@@ -865,6 +865,7 @@ function baue(){
   }
   // Gasse am Waldweg: ab kurz hinter dem Ring je Seite eine Reihe dunkler Tannen dicht am Weg, eine zweite dahinter
   const kurve = new THREE.CatmullRomCurve3(WEG_LINIE.map(p => new THREE.Vector3(p.x, 0, p.z)));
+  let ueberWeg = null;                                            // die beiden vordersten Gassenbaeume gegenueber (Lichterkette quer)
   for(let i = 0; i < 40; i++){
     const u = 0.05 + i / 40 * 0.6, p = kurve.getPointAt(u), t = kurve.getTangentAt(u);   // Gasse vom Eingang ein gutes Stueck in den Wald
     for(const seite of [-1, 1]) for(const reihe of [0, 1, 2]){
@@ -875,8 +876,10 @@ function baue(){
       const ab = WEG_GASSE + auf * 1.6 + reihe * 2.4 + rnd() * 0.5, x = p.x - t.z * seite * ab, z = p.z + t.x * seite * ab;
       if(Math.hypot(x - SCHALE.x, z - SCHALE.z) < 3) continue;   // der braune Ring bleibt offen
       story.setze('tanne', 2, { x, z, h: 9 + rnd() * 5, dunkel: true, schmal: true, schnee: false, dreh: rnd() * 6.3, fest: true });
-      baeume.push({ x, z });
+      baeume.push({ x, z, gasse: true });
+      if(reihe === 0 && !ueberWeg && Math.hypot(p.x - WEG.x, p.z - WEG.z) > 4.5){ (wi.kettePaar = wi.kettePaar || {})[seite] = { x, z }; }
     }
+    if(wi.kettePaar && wi.kettePaar[-1] && wi.kettePaar[1]) ueberWeg = [wi.kettePaar[-1], wi.kettePaar[1]];
   }
   // Aeste ueber dem Weg (Live-Wunsch: "ab der dritten, vierten Baumreihe die Aeste auch ueber den Weg wachsen lassen") –
   // dunkle, flache, schraege Astkegel von beiden Seiten, die sich ueber der Wegmitte treffen; unten frei ab ~2,6 m
@@ -887,10 +890,14 @@ function baue(){
   // Dunst im Wald: schon von der Lichtung aus zu sehen (nicht erst beim Betreten)
   wi.nebel = story.waldNebel({ welt: 2, linie: WEG_LINIE, von: 0.1, bis: 0.62, farbe: 0xb4c2cf });
   // Lichterketten zwischen den vordersten Baeumen um die Lichtung (etwas Weihnachtsschmuck an den Baeumen)
-  const rand = baeume.filter(b => Math.hypot(b.x - LICHTUNG.x, b.z - LICHTUNG.z) < WALD_AB + 5 && b.z < LICHTUNG.z + 8)
+  // ohne die Gasse am Waldweg (Live-Befund 01.11.2026: dort hingen die Ketten laengs in der dunklen Baumreihe, unsichtbar) – ueber
+  // den Weg kommt dafuer eine eigene Kette quer zwischen die beiden vordersten Gassenbaeume, man laeuft darunter hindurch
+  const rand = baeume.filter(b => !b.gasse && Math.hypot(b.x - LICHTUNG.x, b.z - LICHTUNG.z) < WALD_AB + 5 && b.z < LICHTUNG.z + 8)
     .sort((a, b) => Math.atan2(a.z - LICHTUNG.z, a.x - LICHTUNG.x) - Math.atan2(b.z - LICHTUNG.z, b.x - LICHTUNG.x));
   for(let i = 0; i + 1 < rand.length; i += 2){ const a = rand[i], b = rand[i + 1];
     if(Math.hypot(a.x - b.x, a.z - b.z) < 9){ const gl = girlande(a, b, 3.2, 14); w.add(gl); gl.traverse(o => { if(o.userData.lichterkette) wi.lichter.push(o); }); } }
+  if(ueberWeg){ const gl = girlande(ueberWeg[0], ueberWeg[1], 3.5, 20); w.add(gl); gl.traverse(o => { if(o.userData.lichterkette) wi.lichter.push(o); }); }
+  if(story.moewenWaldinsel) story.moewenWaldinsel(w);             // insel.js: Moewen am Strand und ueber dem Wasser
   story.lagerAm = { x: FEUER.x, z: FEUER.z };
   for(const T of TIERE) tierLaden(T);
   zusammenfassen(w);

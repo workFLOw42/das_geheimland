@@ -343,7 +343,9 @@ function feuerDanach(d){
 // ---- Moewen: fliegen ueber der Insel, ein paar sitzen am Strand -------------------------------
 // Ring-Billed Gull (+ in Flight) by Oregon State University Ecampus, CC-BY-4.0 (moewe_glb.js aus Spiel_SFG).
 // Kopf im Modell auf +Z. Messen in der gehaeuteten Haltung wie in SFG (etappe4.js / tiere.js).
-const moewen = { sitz: [], flug: [], flugV: null, rnd: null, w: null };
+const neueMoewen = () => ({ sitz: [], flug: [], flugV: null, rnd: null, w: null });
+const moewen = neueMoewen();                                      // Joshis Insel (Etappe 1)
+const moewenWald = neueMoewen();                                  // Waldinsel (Etappe 2/3, Live-Wunsch 01.11.2026)
 // eine Handvoll naeher am Steg (Live-Wunsch 16.10.: "aber nicht zu nah") – rechts vom Steg, ~12 m daneben am Strand
 const STEG_GRUPPE = Math.PI / 2 - 0.14;
 function moeweVorlage(gltf, mass, achse){
@@ -368,11 +370,16 @@ function moeweKlon(v, w, rnd){
   if(v.clip){ mixer = new THREE.AnimationMixer(k); mixer.clipAction(v.clip).play(); mixer.setTime(rnd() * v.clip.duration); mixer.timeScale = 0.8 + rnd() * 0.4; }
   return { k, mixer };
 }
-function ladeMoewen(w){
+function ladeMoewen(w, M, ort){
+  M = M || moewen;
   let s = 31; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  moewen.rnd = rnd; moewen.w = w;
+  M.rnd = rnd; M.w = w;
   story.ladeGlb(window.MOEWE_SITZ_GLB, 'Moewe', (g) => {
     const v = moeweVorlage(g, 0.55, 'z');
+    if(ort){ for(const p of ort.sitz(rnd)){ const o = moeweKlon(v, w, rnd); o.M = M;
+        o.k.position.set(p.x, p.y, p.z); o.k.rotation.y = p.blick + (rnd() - 0.5) * 1.4; o.k.scale.multiplyScalar(0.9 + rnd() * 0.2);
+        o.platz = { x: p.x, y: p.y, z: p.z }; M.sitz.push(o); }
+      return; }
     // kleine Gruppen rund um den Sandstreifen, Blick aufs Meer (Live-Wunsch 16.10.: mehr – vorher drei Gruppen, man sah
     // meist nur zwei Moewen); nicht am Steg (Winkel PI/2)
     for(const a0 of [Math.PI / 2 + 0.55, Math.PI / 2 - 0.7, -0.4, Math.PI / 2 + 1.3, Math.PI / 2 - 1.45, Math.PI, -1.25, 2.6, -2.3, STEG_GRUPPE]){
@@ -384,25 +391,27 @@ function ladeMoewen(w){
         o.k.position.set(Math.cos(a) * r, ISLAND_Y, Math.sin(a) * r);
         o.k.rotation.y = Math.atan2(Math.cos(a), Math.sin(a)) + (rnd() - 0.5) * 1.4;   // Kopf (+Z) nach aussen
         o.k.scale.multiplyScalar(0.9 + rnd() * 0.2);
-        o.a = a; o.r = r;
-        moewen.sitz.push(o);
+        o.a = a; o.r = r; o.M = M;
+        M.sitz.push(o);
       }
     }
   });
   story.ladeGlb(window.MOEWE_FLUG_GLB, 'Moewe fliegend', (g) => {
     const v = moeweVorlage(g, 1.3, 'x');
-    moewen.flugV = v;                                               // auch fuer die auffliegenden Sitzmoewen
+    M.flugV = v;                                                    // auch fuer die auffliegenden Sitzmoewen
     for(let i = 0; i < 10; i++){
       const o = moeweKlon(v, w, rnd);
+      if(ort){ o.kreis = ort.kreis(rnd); M.flug.push(o); continue; }
       const dreh = rnd() < 0.5 ? 1 : -1, r = 25 + rnd() * 70;
       o.kreis = { r, y: 14 + rnd() * 18, w: dreh * (6 + rnd() * 3) / r, a: rnd() * Math.PI * 2, hub: 1 + rnd() * 2, t: rnd() * 10,
         mx: (rnd() - 0.5) * 40, mz: (rnd() - 0.2) * 60 };
-      moewen.flug.push(o);
+      M.flug.push(o);
     }
   });
 }
 function moeweAuf(o, fig){
-  if(!o.flieg && moewen.flugV) o.flieg = moeweKlon(moewen.flugV, moewen.w, moewen.rnd);
+  const M = o.M || moewen;
+  if(!o.flieg && M.flugV) o.flieg = moeweKlon(M.flugV, M.w, M.rnd);
   if(!o.flieg) return;                                              // fliegendes Modell noch nicht geladen
   o.weg = 'auf'; o.t = 0; o.vy = 3; o.v = 6;
   o.yaw = Math.atan2(o.k.position.x - fig.x, o.k.position.z - fig.z) + (Math.random() - 0.5) * 0.8;
@@ -411,14 +420,14 @@ function moeweAuf(o, fig){
 }
 const MOEWE_HOCH = 9;          // m ueber dem Strand im Bogen
 function moeweFliegt(o, dt, fig){
-  o.t += dt; const p = o.k.position, platz = { x: Math.cos(o.a) * o.r, z: Math.sin(o.a) * o.r };
+  o.t += dt; const p = o.k.position, platz = o.platz || { x: Math.cos(o.a) * o.r, y: ISLAND_Y, z: Math.sin(o.a) * o.r };
   let neig = 0, kipp = 0;
   if(o.weg === 'auf'){
     o.vy = Math.max(0.8, o.vy - dt * 0.6); p.y += o.vy * dt; neig = -0.25;
     if(o.t > 6){ o.weg = 'kreis'; o.t = 0; }
   } else if(o.weg === 'kreis'){
     o.yaw += o.dreh * dt; kipp = Math.sign(o.dreh) * 0.35;
-    p.y += (ISLAND_Y + MOEWE_HOCH - p.y) * Math.min(1, dt * 0.5);
+    p.y += (platz.y + MOEWE_HOCH - p.y) * Math.min(1, dt * 0.5);
     if(o.t > o.tKreis){ o.weg = 'anflug'; o.t = 0; }
   } else if(o.weg === 'anflug'){
     const dx = platz.x - p.x, dz = platz.z - p.z, d = Math.hypot(dx, dz);
@@ -426,9 +435,9 @@ function moeweFliegt(o, dt, fig){
     let soll = Math.atan2(dx, dz) - o.yaw; soll = Math.atan2(Math.sin(soll), Math.cos(soll));
     o.yaw += klemmeM(soll, -1.2 * dt, 1.2 * dt); kipp = klemmeM(soll, -0.4, 0.4);
     o.v = Math.max(2, Math.min(6, d * 0.4));
-    const hoch = ISLAND_Y + Math.min(MOEWE_HOCH, d * 0.25);
+    const hoch = platz.y + Math.min(MOEWE_HOCH, d * 0.25);
     p.y += (hoch - p.y) * Math.min(1, dt * 1.5); neig = 0.15;
-    if(d < 0.4){ p.set(platz.x, ISLAND_Y, platz.z); o.weg = 0; o.k.rotation.y = o.yaw; return; }   // gelandet
+    if(d < 0.4){ p.set(platz.x, platz.y, platz.z); o.weg = 0; o.k.rotation.y = o.yaw; return; }   // gelandet
   }
   p.x += Math.sin(o.yaw) * o.v * dt; p.z += Math.cos(o.yaw) * o.v * dt;
   o.k.rotation.y = o.yaw;
@@ -439,12 +448,13 @@ const klemmeM = (v, a, b) => Math.max(a, Math.min(b, v));
 // Sitzende fliegen auf, wenn man ihnen zu nahe kommt, und landen spaeter wieder an ihrem Platz. Beim Auffliegen wird aus
 // der sitzenden die FLIEGENDE Moewe (Live-Wunsch 16.10.: sie flogen in Sitzhaltung davon) – je eine eigene, beim ersten
 // Auffliegen gebaut; die sitzende ist so lange unsichtbar
-function updateMoewen(dt){
+function updateMoewen(dt, M){
+  M = M || moewen;
   const cp = camera.position;
   const fig = eva ? eva.group.position : null;
   // auch Fuchsi scheucht sie auf (Live-Wunsch 16.10.) – nur draussen (in der Huette ist er in einer anderen Welt)
   const fu = story.fuchs && story.fuchs.obj && story.fuchs.obj.visible && !(story.innen && story.innen.drin) ? story.fuchs.obj.position : null;
-  for(const o of moewen.sitz){
+  for(const o of M.sitz){
     if(o.mixer) o.mixer.update(dt);
     const dJ = fig ? Math.hypot(fig.x - o.k.position.x, fig.z - o.k.position.z) : 1e9;
     const dF = fu ? Math.hypot(fu.x - o.k.position.x, fu.z - o.k.position.z) : 1e9;
@@ -458,7 +468,7 @@ function updateMoewen(dt){
     o.k.visible = locale === 'earth' && !fliegt;
     if(o.flieg) o.flieg.k.visible = locale === 'earth' && fliegt;
   }
-  for(const o of moewen.flug){
+  for(const o of M.flug){
     const kr = o.kreis;
     kr.a += kr.w * dt; kr.t += dt;
     o.k.position.set(kr.mx + Math.cos(kr.a) * kr.r, kr.y + Math.sin(kr.t * 0.7) * kr.hub, kr.mz + Math.sin(kr.a) * kr.r);
@@ -476,10 +486,31 @@ story.updateE1 = function(dt){
   // das Lagerfeuer flackert in jeder Etappe, in der es gesetzt ist (Waldinsel, Etappe 2: dort etwas schwaecher – es ist Tag)
   if(insel.feuerMixer) insel.feuerMixer.update(dt);
   if(insel.licht) insel.licht.intensity = (story.etappe === 1 ? 1.2 : 0.8) + Math.sin(insel.t * 13) * 0.18 + Math.sin(insel.t * 7.3) * 0.12;
-  if(story.etappe !== 1) return;
+  if(story.etappe !== 1){ if(moewenWald.w && story.inselVon && story.inselVon(story.etappe) === 'waldinsel') updateMoewen(dt, moewenWald); return; }
   updateMoewen(dt);
 };
 story.baueInsel = function(){ if(story.etappe !== 1) return; baueInsel(); ladeMoewen(story.welt(1)); };
+// Waldinsel (Live-Wunsch 01.11.2026: "gar keine Moewen, weder am Strand noch in der Luft"): Strand gibt es dort nur im Sueden an der
+// Lichtung (die Insel ist viel groesser, Mitte z -159) – darum nach dem Wasser gesetzt, nicht im Kreis um eine Mitte: je Spalte x
+// das Ufer (erstes Wasser von der Lichtung aus), die Moewen ein paar Meter davor im Sand, Blick aufs Meer (+z). Fliegend: Kreise
+// ueber Strand und Wasser vor der Lichtung (nicht ueber dem Wald und der Hoehle – dort ist das Meer zu weit weg, hoehle.js)
+story.moewenWaldinsel = function(w){
+  if(moewenWald.w || typeof wasserTiefe !== 'function') return;                                       // global-ok: Engine
+  const ufer = (x) => { for(let z = 75; z < 160; z += 0.5) if(wasserTiefe(x, z) > 0) return z; return null; };   // global-ok: Engine
+  const S = story.steg, mitte = ufer(0) || 100;
+  ladeMoewen(w, moewenWald, {
+    sitz: (rnd) => { const out = [];
+      for(const gx of [-46, -31, -19, 13, 24, 38, 52]){                                    // Gruppen links und rechts vom Steg
+        const n = 3 + Math.floor(rnd() * 3);
+        for(let i = 0; i < n; i++){ const x = gx + (rnd() - 0.5) * 5, zu = ufer(x); if(zu === null) continue;
+          if(S && Math.abs(x - S.x) < S.B / 2 + 4) continue;                                 // nicht am Steg
+          const z = zu - 1.5 - rnd() * 3.5; out.push({ x, y: evaFootY(x, z), z, blick: 0 }); } }   // global-ok: Engine
+      return out; },
+    kreis: (rnd) => { const dreh = rnd() < 0.5 ? 1 : -1, r = 14 + rnd() * 30;
+      return { r, y: ISLAND_Y + 12 + rnd() * 12, w: dreh * (6 + rnd() * 3) / r, a: rnd() * Math.PI * 2, hub: 1 + rnd() * 2, t: rnd() * 10,
+        mx: (rnd() - 0.5) * 70, mz: mitte + 4 + rnd() * 30 }; },
+  });
+};
 
 const hookVorher = window.STORY_HOOK;
 window.STORY_HOOK = function(){ if(hookVorher) hookVorher(); hookInsel(); };

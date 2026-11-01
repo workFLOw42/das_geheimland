@@ -487,6 +487,10 @@ story.updateE3 = function(dt){
   if(!e3()) return;
   baue(); hw.t += dt;
   waldwegZurueck();
+  // Live-Befund 01.11.2026 ("zurueck mit den Bananen ist es ruhig im Wald"): auf dem hellen Waldweg dieser Seite zwitschern die
+  // Voegel wie auf dem Wegstueck der Lichtung (waldinsel.js voegel, dieselbe Aufnahme) – nur zu Fuss draussen, nahe am Weg
+  if(story.e2Voegel){ const p = eva && eva.group.position, an = !!(hw.hell && p && !eva.boat && !iw.an && !(story.hoehleInnen && story.hoehleInnen.drin) && abstandWeg3(p.x, p.z) < 8);
+    story.e2Voegel(an); }                                          // jedes Bild wie in waldinsel.js (laedt beim ersten Mal, startet dann)
   if(story.gestartet) gorillaLaden();
   if(hw.eingang && hw.eingang.userData.flammen){ const t = hw.t, fl = hw.eingang.userData.flammen;
     fl.children.forEach((f, i) => { f.scale.y = 0.8 + 0.35 * Math.abs(Math.sin(t * (7 + i * 2.3) + i)); f.rotation.z = Math.sin(t * 5 + i) * 0.12; });

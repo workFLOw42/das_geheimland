@@ -586,7 +586,7 @@ story.e4HinweisInnen = function(){
   const T2 = story.obsText;
   if(!oi.drin) return oi.stufe === 'fertig' ? T2.hinweisScheit : oi.stufe === 'schluessel' ? T2.hinweisFliegen : null;   // draussen (sonst wueste.js)
   if(oi.stufe === 'spur') return T2.hinweisVergleich;
-  if(oi.stufe === 'verglichen') return T2.hinweisFragen;
+  if(oi.stufe === 'verglichen'){ story.spaeter(0.6, fuchsZumLama); return T2.hinweisFragen; }   // Fuchsi zeigt das Lama nochmal (Live-Wunsch 01.11.2026)
   if(oi.stufe === 'erzaehlt') return T2.hinweisPapier;
   if(oi.stufe === 'papier') return T2.hinweisWem;
   if(oi.stufe === 'fertig') return T2.hinweisFertig;
@@ -771,6 +771,9 @@ story.buchUeber = function(c, lage){
 // Nach dem Vergleich (Live-Wunsch 26.10.2026): der Fuchs laeuft zum Lama und zeigt es (es leuchtet auf) – sobald das Buch zu ist
 function fuchsZumLama(){
   if(!oi.inter || !eva || !story.fuchsRundgang) return;
+  // frei/entdeckt sicher setzen (Live-Wunsch 01.11.2026): ohne frei liess fuchsRundgang das Lama still aus. Er laeuft los, sobald das
+  // Notizbuch zu ist (im Inventar steht das Spiel), pfotet und das Lama leuchtet auf – wie bei jedem markierten Ding
+  oi.inter.frei = true; oi.inter.entdeckt = true;
   story.fuchsRundgang(eva.group.position.x, eva.group.position.z, true, 0, true, q => q === oi.inter);
 }
 // Unter die Spur auf derselben Seite: das Lama als Bleistift-Skizze (aus dem Modell im Observatorium, schraeg von vorn)

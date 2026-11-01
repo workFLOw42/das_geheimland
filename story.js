@@ -1278,8 +1278,11 @@ function updateFuchs(dt){
     } else if(fuchs.ziel){
       // mit Wegsuche (Live-Befund 26.10.2026: zwischen den Stuehlen in der Huette und hinter dem Festtisch zwischen den Tieren
       // lief er sich fest und drehte sich im Kreis) – und spaetestens nach 8 s ist das Ziel egal
-      const d = fuchsGeheZu(dt, fuchs.ziel.x, fuchs.ziel.z, fuchs.ziel.tempo);
-      if((fuchs.ziel.t = (fuchs.ziel.t || 0) + dt) > 8 && d >= 0.3){ fuchs.ziel = null; fuchs.warte = 0.5; }
+      // Live-Befund 01.11.2026 (Absturz nach dem Festfoto im Saal): findet er gar keinen Weg, loescht fuchsLaufe das Ziel selbst –
+      // danach hier nie mehr auf fuchs.ziel zugreifen (vorher: TypeError, die Spielschleife stand)
+      const zl = fuchs.ziel, d = fuchsGeheZu(dt, zl.x, zl.z, zl.tempo);
+      if(fuchs.ziel !== zl){ fuchs.warte = 0.5; }
+      else if((zl.t = (zl.t || 0) + dt) > 8 && d >= 0.3){ fuchs.ziel = null; fuchs.warte = 0.5; }
       else if(d < 0.3){ fuchs.ziel = null; fuchs.warte = 1.5 + Math.random() * 4; fuchs.tun = fuchsLaune(); }
     } else {
       fuchs.warte -= dt;

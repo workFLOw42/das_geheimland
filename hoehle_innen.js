@@ -431,21 +431,6 @@ story.e3Hinweis = function(){
 // Suchblick in der Hoehle (story.js fuchsRundgang ruft vor dem Freischalten): ab jetzt passiert etwas
 story.e3Gesucht = function(){ if(hi.drin && hi.stufe === 'x') hi.stufe = 'gesucht'; };
 
-// Testzugang "E3 Abflug" (story.js): alles in der Hoehle erledigt, Joshi draussen am Waldausgang
-story.testE3 = function(){
-  baueRaum();
-  const warte = () => { if(!hi.gorilla){ story.spaeter(0.3, warte); return; }
-    hi.stufe = 'ruhe';
-    let k = Promise.resolve();
-    for(const id of ['entchen_lupe', 'entchen_schnitzen']) k = k.then(() => story.testStelle ? story.testStelle(id) : null);
-    k.then(() => { kaputtWeg(); hi.stufe = 'froh'; entchenZeigen(); gorillaAnim('stehen'); if(hi.korb && hi.korb.userData.fell) hi.korb.userData.fell.visible = true;
-      korbZurueck(); hi.stufe = 'korb'; return story.testStelle ? story.testStelle('fell_lupe') : null; })
-     .then(() => { hi.stufe = 'fell'; story.e3MustangFrei = true; hi.warDrin = true;
-      return story.testStelle ? story.testStelle('gorilla_foto') : null; })
-     .then(() => { hi.stufe = 'foto'; if(story.e3Draussen) story.e3Draussen(); });
-  };
-  warte();
-};
 // ---- Hinein / hinaus (wie die Huette: Blende, eigene Welt) -----------------------------------------------------------
 const HUELLE = 15, KOERPER = 0.32;
 function imRaum(x, z){ return Math.hypot(x - RAUM.x, z - RAUM.z) < RAUM.R + HUELLE; }

@@ -21,30 +21,11 @@ const story = window.STORY = { etappe: 1, gestartet: false, ton: false, abenteue
 // Zwischen zwei Etappen wird die Seite neu geladen (globus.js: alles zuruecksetzen). Vorher merkt sich das Spiel in
 // sessionStorage, wo es weitergeht: Etappe, die Reise auf dem Globus, was im Rucksack ist und die Seiten im Notizbuch
 // (Bilder als PNG). Das liest hier jedes Skript beim Laden (story.spielstand). Nur fuer diesen Tab und diese Sitzung –
-// Schliessen faengt wieder auf Joshis Insel an. Zum Testen: index.html?etappe=2 springt direkt hin (mit voller
-// Ausruestung, ohne Seiten), ?etappe=1 loescht den Spielstand.
+// Schliessen faengt wieder auf Joshis Insel an. (Testzugaenge ueber die Adresse und den Startbildschirm: entfernt am 01.11.2026)
 const SPIELSTAND = 'geheimland.stand';
-story.urlParameter = location.search;                         // vor dem Aufraeumen der Adresse (Testzugaenge, z. B. teleskop.js)
 story.spielstand = (function(){
   let stand = null;
-  try {
-    const q = new URLSearchParams(location.search).get('etappe');
-    if(q === '1') sessionStorage.removeItem(SPIELSTAND);
-    else if(q) stand = { etappe: +q, reise: [0, 1], rucksack: { notizbuch: true, lupe: true, kompass: true, messer: true, stift: true, kamera: true }, seiten: [], test: true };
-    // Testzugang ?etappe=5&labor (Live-Wunsch 29.10.2026): auf dem Mond im Labor, bevor die Spuren gesammelt sind; alles davor ist
-    // gespielt – die Notizbuch-Seiten (echt aufgenommen) kommen aus _intern/teststand_mond.js, damit die Huette am Ende voll ist;
-    // den Rest setzt mondbasis_innen.js (laborTest)
-    if(q === '5' && /[?&]labor\b/.test(location.search)){ Object.assign(stand, { reise: [0, 1, 2, 3, 4], laborTest: true, e3Besucht: true }); stand.rucksack.bananen = true;
-      document.write('<script src="_intern/teststand_mond.js"></script>'); }
-    // Testzugang ?etappe=5&abflug: draussen auf dem Mond nach dem Fest (Seiten bis zum Gruppenfoto: _intern/teststand_mond_ende.js),
-    // den Rest setzt heimflug.js (abflugTest)
-    if(q === '5' && /[?&]abflug\b/.test(location.search)){ Object.assign(stand, { reise: [0, 1, 2, 3, 4], mondEnde: true, e3Besucht: true });
-      document.write('<script src="_intern/teststand_mond_ende.js"></script>'); }
-    if(!stand) stand = JSON.parse(sessionStorage.getItem(SPIELSTAND) || 'null');
-    // ?etappe=... nur einmal auswerten: aus der Adresse nehmen, sonst loeschte das Neuladen nach dem Globus (location.reload)
-    // den eben gemerkten Spielstand gleich wieder (?etappe=1) bzw. sprang immer zum Test-Stand
-    if(q && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
-  } catch(e){ stand = null; }
+  try { stand = JSON.parse(sessionStorage.getItem(SPIELSTAND) || 'null'); } catch(e){ stand = null; }
   if(stand && stand.etappe > 1) story.etappe = stand.etappe;
   if(stand && stand.e3Besucht) story.e3Besucht = true;          // schon bei der Hoehle gewesen: der Waldweg fuehrt per Blende hin
   return stand;
@@ -1874,7 +1855,7 @@ function startbildschirm(weiter){
     if(fertig || performance.now() - t0 > START_MAX * 1000){ knopfZeigen(); return; }
     requestAnimationFrame(warte);
   })();
-  function start(test){
+  function start(){
     if(los || !bereit || story.updateLaedt) return; los = true;   // story.updateLaedt: erst die neue Version (pwa.js)
     // Ton freischalten: Knopf und Taste fangen das Ereignis ab (stopPropagation), die Engine bekam es nie (wie in Trip to Japan)
     if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
@@ -1882,7 +1863,6 @@ function startbildschirm(weiter){
     if(eva) eva.group.visible = true;
     story.titelbild = false; if(fuchs.obj) fuchs.obj.visible = true;   // Intro und Heimkehr blenden ihn danach selbst wieder aus
     removeEventListener('keydown', taste, true);
-    if(test){ testStarten(test); return; }                 // Testzugang: eigener Einstieg (Ton und Stimme schaltet er selbst frei)
     // Das A, das gestartet hat, ist noch gedrueckt: nicht gleich als Sprung zaehlen (erst nach dem Loslassen)
     tasten.prevA = true; tasten.a = false;
     story.ton = true; story.gestartet = true;
@@ -1894,51 +1874,13 @@ function startbildschirm(weiter){
     if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     weiter();
   }
-  // ---- Testzugang (Live-Wunsch 21.10.2026, wie in Trip to Japan): X 3 s halten blendet unter "Los geht's" eine Leiste ein.
-  // Jeder Zugang startet mitten in einer Etappe – mit allem freigeschaltet, was davor im Spiel passiert waere (TEST_ZUGANG).
-  // Waehlen: links/rechts (Pfeile, Stick, D-Pad) oder Maus; A / Enter startet den gewaehlten; B / Esc blendet sie wieder aus.
-  let testAn = false, testWahl = -1, xSeit = 0, xTaste = false;
-  function testZeigen(){
-    let leiste = el.querySelector('#testleiste');
-    if(!testAn){ if(leiste) leiste.remove(); testWahl = -1; return; }
-    if(!leiste){ leiste = document.createElement('div'); leiste.id = 'testleiste';
-      leiste.style.cssText = 'margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:10px';
-      leiste.innerHTML = '<div style="font-size:16px;opacity:.8">Testzugang</div><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:94vw">'
-        + TEST_ZUGANG.map((z, i) => '<button data-t="' + i + '" style="height:42px;padding:0 14px;border-radius:10px;border:2px solid rgba(255,255,255,.45);'
-          + 'background:rgba(255,255,255,.1);color:#fff;font:600 16px system-ui;cursor:pointer">' + z.t + '</button>').join('') + '</div>'
-        + '<div style="font-size:13px;opacity:.7;max-width:760px">← → wählen · A / Enter starten · B / Esc zurück · ' + TEST_ZUGANG.map(z => z.t + ': ' + z.info).join(' · ') + '</div>';
-      platz.appendChild(leiste);
-      leiste.querySelectorAll('button').forEach(b => { const i = +b.dataset.t;
-        b.addEventListener('pointerenter', () => { testWahl = i; testMalen(); });
-        b.addEventListener('pointerdown', (e) => { e.stopPropagation(); testWahl = i; start(TEST_ZUGANG[i]); }); }); }
-    testMalen();
-  }
-  function testMalen(){
-    const knopf = platz.querySelector('button:not([data-t])');
-    if(knopf) knopf.style.opacity = testWahl >= 0 ? '0.55' : '1';
-    el.querySelectorAll('#testleiste button').forEach(b => { const an = +b.dataset.t === testWahl;
-      b.style.background = an ? '#ffd23f' : 'rgba(255,255,255,.1)'; b.style.color = an ? '#1a1a1a' : '#fff'; b.style.borderColor = an ? '#ffd23f' : 'rgba(255,255,255,.45)'; });
-  }
-  function testSchritt(d){ if(!testAn) return; const n = TEST_ZUGANG.length; testWahl = testWahl < 0 ? (d > 0 ? 0 : n - 1) : (testWahl + d + n) % n; testMalen(); }
-  function xPruefen(gedrueckt){
-    if(!gedrueckt){ xSeit = 0; return; }
-    if(!xSeit) xSeit = performance.now();
-    if(bereit && !testAn && performance.now() - xSeit > 3000){ testAn = true; testZeigen(); }
-  }
-  (function xWache(){ if(los) return; let xPad = false;
-    for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[2] && gp.buttons[2].pressed) xPad = true;
-    xPruefen(xTaste || xPad); requestAnimationFrame(xWache); })();
   function taste(e){
-    if(e.code === 'KeyX'){ e.preventDefault(); e.stopPropagation(); xTaste = true; return; }
-    if(testAn && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')){ e.preventDefault(); e.stopPropagation(); testSchritt(e.code === 'ArrowRight' ? 1 : -1); return; }
-    if(testAn && (e.code === 'Escape' || e.code === 'KeyB')){ e.preventDefault(); e.stopPropagation(); testAn = false; testZeigen(); return; }
-    if(e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter'){ e.preventDefault(); e.stopPropagation(); start(testWahl >= 0 ? TEST_ZUGANG[testWahl] : null); }
+    if(e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter'){ e.preventDefault(); e.stopPropagation(); start(); }
   }
   addEventListener('keydown', taste, true);
-  addEventListener('keyup', (e) => { if(e.code === 'KeyX') xTaste = false; }, true);
   // A an JEDEM Controller (vorher nur am ersten in der Liste – war das ein anderer als der der Engine, reagierte der erste
   // Druck nicht, und beim zweiten sprang Joshi). Erst nach dem Loslassen zaehlen.
-  const prevA = {}, prevTest = {};
+  const prevA = {};
   // Der Druck, der den Controller "aufweckt", kommt als gamepadconnected – auch der zaehlt (sofern das Spiel bereit ist)
   addEventListener('gamepadconnected', (e) => { const gp = e.gamepad; if(!los && bereit && gp && gp.buttons[0] && gp.buttons[0].pressed) start(); });
   (function pad(){
@@ -1948,78 +1890,11 @@ function startbildschirm(weiter){
       const a = !!(gp.buttons[0] && gp.buttons[0].pressed);
       // Chrome meldet einen Controller oft erst mit dem ersten Tastendruck (Live-Befund 16.10.: man musste immer 2x A
       // druecken, egal wie lange man wartete) – dann ist A beim ersten Sehen schon unten und zaehlt sofort
-      if(a && prevA[gp.index] !== true && bereit){ start(testWahl >= 0 ? TEST_ZUGANG[testWahl] : null); return; }
+      if(a && prevA[gp.index] !== true && bereit){ start(); return; }
       prevA[gp.index] = a;
-      // Testleiste: links/rechts waehlen (Stick, D-Pad), B schliesst sie
-      const r = (gp.axes[0] || 0) > 0.5 || !!(gp.buttons[15] && gp.buttons[15].pressed), l = (gp.axes[0] || 0) < -0.5 || !!(gp.buttons[14] && gp.buttons[14].pressed);
-      const bb = !!(gp.buttons[1] && gp.buttons[1].pressed), alt = prevTest[gp.index] || {};
-      if(r && !alt.r) testSchritt(1); if(l && !alt.l) testSchritt(-1); if(bb && !alt.b && testAn){ testAn = false; testZeigen(); }
-      prevTest[gp.index] = { r, l, b: bb };
     }
     requestAnimationFrame(pad);
   })();
-}
-// ---- Testzugaenge: was in der Etappe vorher geschehen waere, wird hier freigeschaltet -------------------------------
-// stufe je Etappe (siehe die Dateien): E1 'detektiv' = Ausruestung im Rucksack, alles entdeckt und angesehen, die Detektiv-
-// Phase laeuft (vier Kreise frei); E1 'segeln' = dazu alle vier Bilder im Notizbuch, der Funkspruch angenommen, Joshi im
-// Boot am Steg, das Ziel auf dem Radar. E2 = Waldinsel nach dem Globus (Rucksack + die vier Seiten); 'spuren' = die Tiere
-// haben erzaehlt, beide Ringe offen; 'weg' = Foto und Lupe gemacht, beide Gespraeche vorbei, der Weg in den Wald frei.
-const TEST_ZUGANG = [
-  { t: 'E1 Detektiv', info: 'Ausrüstung, alles entdeckt, die vier Kreise', etappe: 1, stufe: 'detektiv' },
-  { t: 'E1 Segeln', info: 'alle Bilder, Funk angenommen, im Boot', etappe: 1, stufe: 'segeln' },
-  { t: 'E2', info: 'Waldinsel, Ankunft', etappe: 2, stufe: 'start' },
-  { t: 'E2 Spuren', info: 'Tiere gehört, Foto- und Lupenring', etappe: 2, stufe: 'spuren' },
-  { t: 'E2 Waldweg', info: 'Foto und Lupe fertig, Weg frei', etappe: 2, stufe: 'weg' },
-  { t: 'E3', info: 'vor der Höhle des Gorillas', etappe: 3, stufe: 'start' },
-  { t: 'E3 Abflug', info: 'Gorilla froh, alle Bilder, Mustang frei', etappe: 3, stufe: 'abflug' },
-  // Der Mond braucht einen eigenen Ladevorgang (Spielstand mit allen Seiten, _intern/teststand_mond.js): die Seite laedt mit
-  // ?etappe=5&labor neu, danach wie immer "Los geht's" (Ton und Stimme brauchen den Tastendruck)
-  { t: 'E5 Labor', info: 'Mond, im Labor vor den Spuren – alles davor gespielt', etappe: 5, stufe: 'labor', adresse: '?etappe=5&labor' },
-  { t: 'E5 Abflug', info: 'Mond, draußen nach dem Fest – Skizze, Schnitzen, Rakete', etappe: 5, stufe: 'abflug', adresse: '?etappe=5&abflug' },
-];
-story.testZugang = TEST_ZUGANG;
-// E1: alles vor der Detektiv-Phase (Rucksack, alle Objekte draussen und in der Huette entdeckt und benutzt)
-function testE1Basis(){
-  const A = story.ausruestung; for(const n of ['notizbuch', 'lupe', 'kompass', 'messer', 'stift', 'kamera']) A[n] = true; A.komplett = true;
-  hinweisStand.aussenGeschaut = hinweisStand.innenGeschaut = true; hinweisStand.xSatz = 2;
-  for(const o of interListe) if(o.welt === 1){ o.entdeckt = true; o.frei = true; o.benutzt = Math.max(1, o.benutzt); if(o.einmal) o.erledigt = true; }
-  // die Ausruestung liegt nicht mehr auf Tisch und Regal (der Raum wird erst beim Betreten gebaut: dann leer – ausruestung.js)
-  if(story.innen) story.innen.warDrin = true;
-}
-// E1: Funkspruch angenommen – das Funkgeraet rauscht nur noch, das Boot ist frei, das Ziel auf dem Radar
-function testFunkAngenommen(){
-  radio.fall1 = 'angenommen'; radio.an = false;
-  const o = interListe.find(i => i.obj === radio.obj); if(o){ o.entdeckt = true; o.aktion = null; o.danach = () => funkRauschen(3); o.benutzt = Math.max(1, o.benutzt); }
-  story.abenteuerLos = true; if(story.fall1Angenommen) story.fall1Angenommen();
-}
-function testStarten(z){
-  if(z.adresse){ location.href = location.pathname + z.adresse; return; }   // eigener Ladevorgang (E5 Labor)
-  // wie start(): Ton und Stimme freischalten, Joshi zeigen
-  const el = document.getElementById('ladebild'); if(el) el.remove();
-  if(typeof armAudio === 'function'){ armAudio(); if(typeof audioArmed !== 'undefined') audioArmed = true; }
-  if(eva) eva.group.visible = true;
-  tasten.prevA = true; tasten.a = false;
-  story.ton = true; story.gestartet = true; story.test = z;
-  if(!soundOn) story.tonAn();
-  funkLaden(); gitarreLaden();
-  if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
-  if(z.etappe === 1){
-    testE1Basis();
-    const e1 = story.testE1 ? story.testE1(z.stufe === 'segeln' ? 'fertig' : 'detektiv') : Promise.resolve();
-    e1.then(() => { if(z.stufe !== 'segeln') return; testFunkAngenommen(); if(story.imBootStarten) story.imBootStarten(); });
-    return;
-  }
-  // E2 und spaeter: Etappe 1 komplett (Rucksack, alle Bilder) – dann wie nach dem Globus direkt in die Waldinsel
-  testE1Basis();
-  (story.testE1 ? story.testE1('fertig') : Promise.resolve()).then(() => {
-    testFunkAngenommen();
-    if(story.etappe === 1){ if(story.reise) story.reise.push(1); if(story.e2Wechsel) story.e2Wechsel(); }   // nach einem Neuladen schon in E2
-    if(z.etappe === 2){ if(story.testE2) story.testE2(z.stufe); return; }
-    // E3: Etappe 2 komplett (Foto, Lupe, Gespraeche), dann wie nach dem Globus vom Waldweg
-    if(story.testE2) story.testE2('weg');
-    story.spaeter(0.5, () => { const warte = () => { if(!(story.e2Hinweis && story.e2Hinweis() && /Folge dem Weg/.test(story.e2Hinweis()[0]))){ story.spaeter(0.3, warte); return; }
-      if(story.reise) story.reise.push(2); if(story.e3Wechsel) story.e3Wechsel(); if(z.stufe === 'abflug' && story.testE3) story.testE3(); }; warte(); });
-  });
 }
 // Laufen, springen, knien, umschauen: erst nach dem Start – und nicht, waehrend etwas in den Rucksack gesteckt wird
 // (Live-Befund 16.10.: man konnte waehrend der Einpack-Animation weglaufen)

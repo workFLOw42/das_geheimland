@@ -1,6 +1,6 @@
 // Das Geheimland – Etappe 2: die Waldinsel, am Festtisch (Fall 1 "Das Weihnachtsessen", Konzept Abschnitt 7).
 // Laedt als letztes Spielskript (nach insel.js: Typ 'lagerfeuer'; nach steg.js), vor der Engine. Aktiv nur, wenn story.etappe === 2 (nach dem Globus und dem Neuladen, siehe
-// spielstand in story.js; zum Testen index.html?etappe=2).
+// spielstand in story.js).
 // Es ist Tag. Die Insel liegt wie Joshis Insel bei 0, 0 und ist genauso gross (insel.js baut Sand und Gras – hier mit
 // Schnee); Joshi kommt mit dem Segelboot an einem Steg an, der genauso gebaut ist wie zu Hause (steg.js). Vom Steg aus
 // liegt nahe am Strand eine Lichtung: Lagerfeuer, Festtisch mit Baenken und Resten, ein geschmueckter Weihnachtsbaum,
@@ -973,19 +973,6 @@ story.e2Los = function(){
 // Testzugaenge (story.js Startbildschirm): 'spuren' = die Tiere haben erzaehlt, beide Ringe sind offen; 'weg' = dazu Foto
 // und Lupe gemacht (echte Bilder im Notizbuch), beide Gespraeche vorbei, der Weg in den Wald frei. Wartet, bis die Tiere
 // geladen sind (ihre Interaktionen entstehen erst dann).
-story.testE2 = function(stufe){
-  if(stufe !== 'spuren' && stufe !== 'weg') return;
-  const warte = () => { if(wi.tiere.length < TIERE.length || !story.interListe.some(o => o.name === 'Tiere am Tisch')){ story.spaeter(0.2, warte); return; }
-    for(const o of story.interListe) if(o.welt === 2){ o.entdeckt = true; o.frei = true; o.benutzt = Math.max(1, o.benutzt); if(o.einmal) o.erledigt = true; }
-    if(story.hinweisStand) story.hinweisStand.aussenGeschaut = true;
-    wi.angekommen = true; wi.spurGesagt = true;
-    for(const id of ['tisch_foto', 'weg_lupe']) if(story.testStelleFrei) story.testStelleFrei(id);
-    if(stufe !== 'weg') return;
-    story.testStelle('tisch_foto').then(() => story.testStelle('weg_lupe')).then(() => {
-      wi.spurGefragt = wi.spurBesprochen = wi.gorillaGesagt = wi.gorillaBesprochen = wi.wegFrei = wi.fuchsZurLupe = true; });
-  };
-  warte();
-};
 // Direkt aus Etappe 1 (globus.js, im Schwarzen): umschalten ohne Neuladen. Joshi sitzt noch im Boot – steg.js legt es an
 // und laesst ihn aussteigen; die Inselzelle 0, 0 wird mit Winterwiese neu gebaut (insel.js fragt story.etappe); Steg und
 // Boot ziehen in die Welt der Waldinsel um; Tageshimmel, Licht.

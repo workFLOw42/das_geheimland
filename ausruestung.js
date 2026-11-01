@@ -624,7 +624,6 @@ function buchSteuern(k){
 // Von aussen blaettern (observatorium_innen.js): je Aufruf hoechstens ein Blatt Richtung Seite i; true, wenn sie offen liegt
 story.buchZuSeite = function(i){ if(!buch.offen || buch.um) return false; const ziel = i - i % 2; if(buch.seite === ziel) return true; blaettern(ziel > buch.seite ? 1 : -1); return false; };
 story.buchNeuMalen = () => { if(buch.offen && !buch.um) buchMalen(); };
-story.testBuch = () => ({ oeffnen: buchOeffnen, buch });                // Tests
 // Umblaettern (Live-Wunsch 16.10.: nicht das ganze Buch wackeln lassen, nur die Seite): die neue Doppelseite liegt schon
 // darunter, ein Blatt klappt um die Bindung herum – erst die alte Seite (schmaler werdend, dunkler), dann die
 // Rueckseite = neue Seite auf der anderen Seite (breiter werdend). Gemalt aus zwei Canvas-Bildern (alt/neu).
@@ -752,7 +751,6 @@ story.inselIcon = function(c, cx, cy, g, art){
 // Ortssymbol neben der Seitenzahl, wie mit dem Bleistift gezeichnet: Insel = die Insel mit Huette und Palmen
 // (weitere Orte bekommen hier ihr Symbol, sobald sie feststehen)
 // (x, y) = Mitte, g = Groesse
-story.testOrtSymbol = (c, ort, x, y, g) => ortSymbol(c, ort, x, y, g);   // Test (Vorschau des Symbols)
 function ortSymbol(c, ort, x, y, g){
   if(ort === 'insel') story.inselIcon(c, x, y, g, 'stift');
   if(ort === 'waldinsel') tannenIcon(c, x, y, g);

@@ -170,18 +170,8 @@ function xwingSatz(){
 }
 
 // ---- Takt und Einhaengen ---------------------------------------------------------------------------------------------------
-// Testzugang ?etappe=5&abflug (story.js): nach der Landung aussteigen; das Fest ist gefeiert (Foto, Aliens, Musik), die Basis erledigt
-function abflugTest(){
-  if(rk.testFertig || !(story.spielstand && story.spielstand.mondEnde)) return;
-  const Z = story.e5Zustand; if(!Z || (Z.phase !== 'gelandet' && Z.phase !== 'zuFuss')) return;
-  if(!eva){ if(typeof evaExit === 'function') evaExit(); return; }                          // global-ok: Engine
-  const F = story.mondfest, B = story.mondbasis; if(!F || !B) return; rk.testFertig = true;
-  B.stufe = 'fest'; B.warDrin = true; Object.assign(F, { foto: true, alienGeredet: true, gespielt: true, endeGesagt: true, alienSkizze: true });
-  if(story.ausruestung) story.ausruestung.bananen = false;
-}
 function takt(dt){
   if(!e5()) return;
-  abflugTest();
   const fest = story.e5FestFertig && story.e5FestFertig(), drin = story.mondbasis && story.mondbasis.drin;
   if(fest && !drin){ raketeBauen(); schnitzRingSetzen(); if(eva) xwingSatz(); }
   raketeTakt(dt);

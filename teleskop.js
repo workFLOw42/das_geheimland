@@ -429,5 +429,4 @@ window.STORY_START = function(){
   };
   if(startVorher) return startVorher.apply(this, arguments);
 };
-if(/[?&]teleskop/.test(story.urlParameter || location.search)) story.teleskopTest = true;   // story.js hat die Adresse da schon aufgeraeumt
 })();

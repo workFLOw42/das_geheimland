@@ -736,19 +736,6 @@ function blinken(){
   const f = story.morseLicht(mb.stufe === 'gesendet' || mb.stufe === 'fest' ? 'KOMMT ALLE' : 'HALLO', mb.t);
   mb.lampe.material.color.setHex(f !== null ? f : 0x30343c);
 }
-// Testzugang ?etappe=5&labor (story.js): nach der Landung aussteigen, hinein, ins Labor; die Steine liegen schon auf dem Labortisch
-// (Eichhoernchen getroffen, Steine gesammelt, Teleskop da) – jetzt kommen die Spuren
-function laborTest(){
-  if(mb.laborTest || !(story.spielstand && story.spielstand.laborTest)) return;
-  const Z = story.e5Zustand; if(!Z || (Z.phase !== 'gelandet' && Z.phase !== 'zuFuss')) return;
-  if(!eva){ if(typeof evaExit === 'function') evaExit(); return; }                          // global-ok: Engine
-  if(!mb.drin){ if(!mb.wechsel) mb.wechsel = { t: 0, ziel: 'innen', gesetzt: false }; return; }
-  if(mb.wechsel || !mb.tisch || !mb.tueren.labor) return;
-  mb.laborTest = true; mb.stufe = 'labor'; mb.warDrin = true;
-  teleskopAnmelden(); tuerAuf('labor'); labortischAnmelden(); if(mb.tischInter) steineAblegen(mb.tischInter);
-  const p = welt(P.labortisch.x + 0.4, P.labortisch.z + 2.2); eva.group.position.set(p.x, BODEN_Y, p.z); eva.yaw = 0; eva.group.rotation.y = 0;
-  if(story.fuchs && story.fuchs.obj){ story.fuchs.obj.position.set(p.x + 0.9, BODEN_Y, p.z + 0.4); story.fuchs.ziel = null; }
-}
 story.updateMondbasis = function(dt){
   // Live-Wunsch 29.10.2026: auf dem Weg vom Landeplatz zur Basis nach und nach bauen und vorwaermen (story.vorbereiten) – vorher
   // kam alles beim ersten Betreten auf einmal
@@ -757,7 +744,6 @@ story.updateMondbasis = function(dt){
   }
   if(!e5()) return;
   mb.t += dt;
-  laborTest();
   updateWechsel(dt);
   szeneTakt(dt);
   if(mb.mixer && mb.drin) mb.mixer.update(dt);

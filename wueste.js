@@ -9,7 +9,7 @@
 // Die Oase (Blick von der Landestelle nach Norden, -z): ein kleiner See von der Mitte bis an den rechten Rand mit Strand und
 // Palmen, links eine Wiese mit Palmen und dem Observatorium, daneben ein Parkplatz mit einem X-Wing (noch nicht benutzbar), um die
 // ganze Oase ein Ring aus Palmen – dahinter Sand.
-// Neu laden in Etappe 4 (?etappe=4): Joshi steht gleich an der Landestelle.
+// Neu laden in Etappe 4 (Spielstand): Joshi steht gleich an der Landestelle.
 (function(){
 'use strict';
 const story = window.STORY;

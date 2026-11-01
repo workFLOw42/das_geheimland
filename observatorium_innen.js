@@ -585,8 +585,7 @@ story.e4HinweisInnen = function(){
 story.obsPositionen = { MESSER_P, SPUR_P, TISCH, RAUM };
 // Durch das Teleskop schauen (teleskop.js, Live-Wunsch 23.10.2026): freiwillig, erst wenn alle Aufgaben der Etappe erledigt
 // sind (stufe 'fertig'). Dann meldet sich das Teleskop als Interaktionsobjekt – wie alles erst nach dem Suchblick (X).
-// Test: index.html?etappe=4&teleskop (story.teleskopTest) – frei von Anfang an, und gleich nach dem Hineingehen offen.
-function teleskopFrei(){ return oi.stufe === 'fertig' || !!story.teleskopTest; }
+function teleskopFrei(){ return oi.stufe === 'fertig'; }
 function teleskopMelden(){
   if(oi.teleInter || !oi.podest || !teleskopFrei() || !story.teleskopAuf) return;
   oi.teleInter = story.interaktion(oi.podest, { name: 'Teleskop', welt: 4, innen: true, x: PODEST.x, z: PODEST.z, r: PODEST.r, yHoehe: 3.4,
@@ -983,7 +982,6 @@ function setzeUm(ziel){
     // die Tuer draussen (wueste.js, "Observatorium") ist damit gefunden – sonst verlangte das Spiel beim Hinausgehen noch X
     // (Live-Befund 26.10.2026: wer gleich hineinlief, sollte draussen X druecken, obwohl die Ringe schon da waren)
     for(const o of story.interListe || []) if(o.welt === 4 && o.name === 'Observatorium' && !o.innen) o.erledigt = true;
-    if(story.teleskopTest && story.teleskopAuf) story.spaeter(2.5, () => { if(oi.drin) story.teleskopAuf(); });
   } else {
     himmel(false); innenZeigen(false);
     // (Live-Wunsch 29.10.2026, gilt fuer jedes Gebaeude: so weit draussen, dass die Kamera hinter Joshi nicht im Gebaeude haengt)

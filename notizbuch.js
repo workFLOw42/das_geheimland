@@ -1189,36 +1189,11 @@ function updateDetektiv(){
   // ... und der Fuchs laeuft sie gleich ab und markiert sie (Live-Wunsch 16.10.) – ohne dass Joshi X druecken muss
   story.spaeter(1.2, () => { if(story.fuchsRundgang && eva) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0); });
 }
-// ---- Testzugaenge (story.js Startbildschirm, 3 s X) -----------------------------------------------------------------
-// detektiv: die Detektiv-Phase laeuft (Markierungen erklaert, alle vier frei – ohne Ansage). fertig: zusaetzlich alle vier
-// Bilder gemacht – echt aufgenommen wie im Spiel (Huettenfoto, Steg-Skizze) bzw. die Modellskizze (Holzfuchs,
-// Schmetterling), im Notizbuch, die Dinge in der Huette. Rueckgabe: Promise, wenn alles fertig ist.
-story.testE1 = function(stufe){
-  detektiv.wartet = true; detektiv.erklaert = true;
-  story.notizFreischalten();
-  for(const s of E1) kreisZiel(s).frei = true;
-  if(stufe !== 'fertig') return Promise.resolve();
-  let kette = Promise.resolve();
-  for(const s of E1) kette = kette.then(() => stelleErledigen(s));
-  return kette.then(() => { if(scheit.d && scheit.d.obj && story.entferne){ story.entferne(scheit.d); scheit.d = { weg: true }; } });
-};
-// Eine Stelle wie im Spiel erledigen, ohne Szene: Bild echt aufnehmen (bzw. Modellskizze), ins Notizbuch, gemacht
-function stelleErledigen(s){
-  zustand.gemacht[s.id] = true;
-  const dreh = zustand.seiten.length % 2 ? 0.03 : -0.025;
-  if(!s.modell){ const vorher = ab.s; ab.s = s; const b = aufnehmen(s); ab.schichten = null; ab.s = vorher;
-    zustand.seiten.push({ art: s.art, bild: s.art === 'foto' ? b : mitSignatur(b), name: s.name, ort: s.ort || 'insel', dreh }); return Promise.resolve(); }
-  return (s.bau ? s.bau() : story.modellKlon(s.modell)).then(({ g, L }) => { sz.modell = g; sz.L = L;
-    zustand.seiten.push({ art: 'skizze', bild: s.seite ? s.seite() : modellSkizze(s), name: s.name, ort: s.ort || 'insel', dreh }); sz.modell = null; fertigInHuette(s); });
-}
-// Test (waldinsel.js): Stelle id freischalten (wie nach dem Suchblick) bzw. erledigen
 story.kreisZielVon = (id) => { const s = STELLEN.find(q => q.id === id); return s ? kreisZiel(s) : null; };
-story.stelleBlick = (id) => { const s = STELLEN.find(q => q.id === id); return s ? s.blick : null; };   // Tests: der Blick einer Stelle
+story.stelleBlick = (id) => { const s = STELLEN.find(q => q.id === id); return s ? s.blick : null; };   // der Blick einer Stelle (mondfest.js)
 // Ring und Blick erst zur Laufzeit (mond.js: die Mondbasis steht, wo die Engine sie hinstellt)
 story.stelleSetzen = (id, x, z, blick, mehr) => { const s = STELLEN.find(q => q.id === id); if(!s) return;
   s.kreis.x = x; s.kreis.z = z; if(blick) s.blick = blick; if(mehr) Object.assign(s, mehr); const k = kreisZiele[id]; if(k){ k.x = x; k.z = z; } };
-story.testStelleFrei = (id) => { const s = STELLEN.find(q => q.id === id); if(s){ const k = kreisZiel(s); k.frei = true; k.entdeckt = true; } };
-story.testStelle = (id) => { const s = STELLEN.find(q => q.id === id); return s ? stelleErledigen(s) : Promise.resolve(); };
 // ---- Detektivmuetze unten rechts: es gibt in der Naehe etwas zu entdecken (Live-Wunsch 16.10.) -----------------------
 // Ein unentdecktes Objekt (Suchblick X) oder eine offene Markierung in MUETZE_R m -> die Muetze erscheint (sanft, leicht
 // wippend). Gezeichnet: braune Sherlock-Muetze mit Schild vorn und hinten und einer Schleife. Genau auf dem Platz von

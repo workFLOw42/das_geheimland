@@ -178,31 +178,26 @@ function abspann(){
   el.style.cssText = 'position:absolute;inset:0;z-index:58;pointer-events:none;overflow:hidden;color:#fff;font-family:system-ui,sans-serif;'
     + 'text-shadow:0 2px 6px rgba(0,0,0,.75);background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.2) 40%,rgba(0,0,0,.45));opacity:0;transition:opacity 1.5s';
   const roll = document.createElement('div');
-  roll.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:100%;display:flex;flex-direction:column;align-items:center;text-align:center;';
-  const z = (t, g) => '<div style="font-size:' + (g || 20) + 'px;margin:4px 0;opacity:.92">' + t + '</div>', u = (t) => '<div style="font-size:24px;font-weight:700;margin:40px 0 10px;color:#ffd23f">' + t + '</div>';
-  roll.innerHTML = '<div style="font-size:48px;font-weight:800;margin-bottom:6px">🌙 Das Geheimland</div>'
-    + '<div style="font-size:21px;opacity:.88;margin-bottom:24px">Joshi hat seinen ersten kniffligen Fall gelöst!</div>'
+  const z = (t, g) => '<div style="font-size:' + (g || 20) + 'px;margin:4px 0;opacity:.92">' + t + '</div>', u = (t) => '<div style="font-size:24px;font-weight:700;margin:28px 0 8px;color:#ffd23f">' + t + '</div>';
+  roll.innerHTML = '<div><div style="font-size:48px;font-weight:800;margin-bottom:6px">Das Geheimland</div><div style="font-size:22px;opacity:.88">Das verschwundene Weihnachtsessen</div></div>'
+    + '<div><div style="font-size:21px;opacity:.88">Joshi hat seinen ersten kniffligen Fall gelöst!</div>'
     + u('Mit dabei') + z('Joshi') + z('Fuchsi') + z('die Tiere der Waldinsel') + z('der Gorilla') + z('das Lama') + z('das Eichhörnchen') + z('Samu und Barki') + z('Piep-Blöp-Piep und Blöp-Piep-Blöp')
-    + u('Danke') + z('allen Künstlerinnen und Künstlern der 3D-Modelle und Töne', 18) + z('(Namen und Lizenzen: README)', 16)
-    + '<div style="font-size:40px;font-weight:800;margin-top:140px;color:#ffd23f">Für Joshi!</div>'
-    + '<div style="font-size:30px;font-weight:700;margin-top:6px">Hab’ dich lieb!</div>';
+    + u('Danke') + z('allen Künstlerinnen und Künstlern der 3D-Modelle und Töne', 18) + z('(Namen und Lizenzen: github.com/workFLOw42/das_geheimland)', 16) + '</div>'
+    + '<div><div style="font-size:40px;font-weight:800;color:#ffd23f">Für Joshi!</div><div class="ab-hdl" style="font-size:30px;font-weight:700;margin-top:6px;display:inline-block">Hab’ dich lieb!</div></div>';
   const sig = document.createElement('div');
   sig.style.cssText = 'position:absolute;right:18px;bottom:14px;font-size:15px;opacity:.85;font-weight:600;text-align:right';
   sig.innerHTML = '<div style="font-size:13px;font-weight:500;opacity:.9;margin-bottom:6px">Weitere Infos siehe:<br>github.com/workFLOw42/das_geheimland</div>by workFLOw42 ©2026';
   el.appendChild(roll); el.appendChild(sig); document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.opacity = '1'; });
-  // wie im SFG-Spiel (Spiel_SFG/abspann.js, Live-Wunsch 29.10.2026): er bleibt stehen, sobald alles zu sehen ist – das Ende knapp ueber
-  // dem B; passt er nicht ins Bild, wird er kleiner. Dann erscheint unten mittig das B, damit endet er
-  const h = roll.offsetHeight, s = Math.min(1, (innerHeight - 130) / Math.max(1, h));
-  if(s < 1){ roll.style.transformOrigin = 'top center'; roll.style.transform = 'translateX(-50%) scale(' + s.toFixed(3) + ')'; }
-  hk.ab = { el, roll, t: 0, h, ziel: Math.max(16, innerHeight - 110 - h * s) };
+  abspannLage(roll);
+  hk.ab = { el, roll, sig, t: 0 };
 }
 function abspannB(){
   const A = hk.ab, k = A.b = document.createElement('div');
-  k.style.cssText = 'position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:58px;height:58px;border-radius:50%;background:#e8352b;'
+  k.style.cssText = 'position:absolute;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#e8352b;'
     + 'border:4px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.45);color:#fff;font:800 32px system-ui,sans-serif;display:flex;align-items:center;'
     + 'justify-content:center;opacity:0;transition:opacity .6s;text-shadow:none';
-  k.textContent = 'B'; A.el.appendChild(k); requestAnimationFrame(() => { k.style.opacity = '1'; });
+  k.textContent = 'B'; abspannBLage(k, A.roll, A.sig); A.el.appendChild(k); requestAnimationFrame(() => { k.style.opacity = '1'; });
   const taste = (e) => { if(e.code !== 'KeyB' && e.code !== 'Escape') return; e.preventDefault(); e.stopPropagation(); if(!e.repeat) abspannEnde(); };
   A.taste = taste; addEventListener('keydown', taste, true);
   let pB = true;                                                    // erst nach dem Loslassen zaehlen
@@ -220,9 +215,29 @@ function abspannEnde(){
 story.heimkehrAbspann = abspann;
 function abspannTakt(dt){
   const A = hk.ab; if(!A) return;
-  A.t += dt; const top = Math.max(A.ziel, innerHeight - A.t * 42);   // ~42 px/s herein, dann bleibt er stehen
+  A.t += dt; const top = Math.max(0, innerHeight - A.t * 42);         // ~42 px/s herein, bis der Rahmen den Bildschirm fuellt
   A.roll.style.top = top + 'px';
-  if(top <= A.ziel && !A.b) abspannB();
+  if(top <= 0 && !A.b) abspannB();
+}
+// Abspann-Aufteilung (Live-Wunsch 02.11.2026, in beiden Spielen gleich): ein bildschirmhoher Rahmen mit drei Bloecken – oben Titel und
+// Untertitel, in der Mitte das Gemachte und die Danksagung, unten die Widmung –, gleichmaessig verteilt (space-evenly: Rand oben = Rand
+// unten = die beiden Luecken dazwischen). Passt der Inhalt nicht, wird alles gleichmaessig kleiner. Er rollt von unten herein und haelt,
+// sobald er den Bildschirm genau fuellt (Titel oben). Copyright unten rechts; das B auf Hoehe von "Hab' dich lieb!", waagerecht in der Mitte
+// zwischen dessen Ende und dem Copyright-Block (zu eng: mittig darunter).
+function abspannLage(roll){
+  const H = innerHeight, W = innerWidth;
+  roll.style.cssText = 'position:absolute;left:50%;top:' + H + 'px;width:' + W + 'px;height:' + H + 'px;display:flex;flex-direction:column;'
+    + 'align-items:center;justify-content:space-evenly;text-align:center;transform-origin:top center;transform:translateX(-50%);';
+  const summe = [...roll.children].reduce((s, c) => s + c.offsetHeight, 0), luft = 4 * 24;
+  const s = Math.min(1, (H - luft) / Math.max(1, summe));
+  if(s < 1){ roll.style.width = (W / s) + 'px'; roll.style.height = (H / s) + 'px'; roll.style.transform = 'translateX(-50%) scale(' + s.toFixed(3) + ')'; }
+  return s;
+}
+function abspannBLage(k, roll, sig){
+  const hdl = roll.querySelector('.ab-hdl'), r = hdl ? hdl.getBoundingClientRect() : null, q = sig.getBoundingClientRect(), B = 66;
+  if(r && q.left - r.right >= B + 16){ k.style.left = Math.round((r.right + q.left) / 2) + 'px'; k.style.top = Math.round((r.top + r.bottom) / 2) + 'px'; }
+  else if(r){ k.style.left = Math.round((r.left + r.right) / 2) + 'px'; k.style.top = Math.round(Math.min(innerHeight - B / 2 - 6, r.bottom + (innerHeight - r.bottom) / 2)) + 'px'; }
+  else { k.style.left = '50%'; k.style.top = (innerHeight - 55) + 'px'; }
 }
 
 // ---- Takt und Einhaengen ------------------------------------------------------------------------------------------------------

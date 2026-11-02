@@ -130,7 +130,7 @@ function funkTakt(dt){
 // Nur, was die Heimkehr braucht: alle anderen Dinge der Insel ruhen (o.aus)
 function nurHeimkehr(){
   if(!story.interListe) return;
-  for(const o of story.interListe){ if(o.welt !== 1) continue;
+  for(const o of story.interListe){ if(o.welt !== 1 || o.eigenesAus) continue;   // eigenesAus: schaltet sich selbst (das Schlagzeug im Kinderzimmer)
     o.aus = !((o.name === 'Funkgerät' && hk.phase === 'zuFuss') || o === hk.bettInter || o.name === 'Aufstehen'); }
 }
 // Die Huette leuchtet auf (bis Joshi drin ist); drinnen einmal: Erinnerungen an den Waenden, Trophaeen im Regal, das Bett

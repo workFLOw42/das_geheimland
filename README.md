@@ -161,6 +161,7 @@ NC-Lizenzen bedeuten: **nicht kommerziell** – das Spiel darf mit diesen Werken
 | Silverback Gorilla Roar (Pixabay-ID 491076) | **flutie8211** (Pixabay) | Pixabay-Lizenz | Brummen aus der Gorilla-Höhle |
 | Carving Wood (Pixabay-ID 546387) | **pineframestudios** (Pixabay) | Pixabay-Lizenz | Schnitzgeräusch |
 | Pencil on Paper (Pixabay-ID 20007) | **freesound_community** (Pixabay) | Pixabay-Lizenz | Bleistift beim Skizzieren (12,5-s-Ausschnitt) |
+| Rock Drum Solo 2 (Pixabay-ID 62465) | **freesound_community** (Pixabay) | Pixabay-Lizenz | Schlagzeug am Ende im Kinderzimmer (Schleife) |
 | Birds Singing (Audio Tune, Pixabay-ID 165801) | **oliviaaydin** (Pixabay) | Pixabay-Lizenz | Vogelgezwitscher im hellen Waldweg |
 | Prop Plane (Pixabay-ID 14513) | **freesound_community** (Pixabay) | Pixabay-Lizenz | Motor der Mustang |
 | Car Crash Sound Effect (Pixabay-ID 376874) | **Dragon Studio** (Pixabay) | Pixabay-Lizenz | Absturz |

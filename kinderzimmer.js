@@ -15,6 +15,8 @@ const T = {
   // Texte: Live-Wunsch 29.10.2026
   start: ['Es ist spät am Abend. Joshi ist in seinem Zimmer und hat viel gespielt. Er hatte einen tollen Tag. Aber jetzt ist er müde und möchte ins Bett gehen.'],
   hinweis: ['Geh zu deinem Bett und drück Y.'],
+  hSchlagzeug: ['Da drüben in der Ecke steht ein Schlagzeug. Stell dich davor und drück Y.'],   // am Ende, nach dem Aufstehen
+  hAufhoeren: ['Drück Y, wenn du aufhören möchtest.'],
   bett: ['Das Bett ist sehr kuschelig und warm. Bestimmt wird Joshi sehr schnell einschlafen und etwas Schönes träumen.'],
   morgen: ['Guten Morgen, Joshi. Es ist Zeit zum Aufstehen. Ich hoffe, Du hattest einen schönen Traum und bist bereit für einen tollen Tag im Kindergarten.'],
 };
@@ -134,7 +136,7 @@ function frei(x, z){ const t = tiefe(x, z); if(t <= 0) return true; const von = 
 // ---- Ablauf -------------------------------------------------------------------------------------------------------------
 // Nur laufen (Intro und Outro im Zimmer): kein Hut, kein X, kein Knien, kein Inventar, keine Gitarre (story.js, notizbuch.js)
 story.nurLaufen = () => kz.drin || !!kz.halte;   // im Bett (auch in der Huette): auch kein Knien, kein X, kein Inventar
-story.zimmerHinweis = () => (kz.drin && !kz.liegt ? T.hinweis : null);
+story.zimmerHinweis = () => { if(!kz.drin || kz.liegt) return null; if(kz.outro) return dr.spielt ? T.hAufhoeren : (dr.frei && !dr.ende && dr.obj ? T.hSchlagzeug : null); return T.hinweis; };
 // Neues Spiel (story.js startbildschirm -> weiter): erst das Zimmer, nach dem Traum geht es mit weiter() in Etappe 1
 story.introStart = function(weiter){
   bauen(); if(!kz.gruppe || !eva){ weiter(); return; }
@@ -151,7 +153,8 @@ story.introAktiv = () => kz.drin;
 story.zimmerOutro = function(abspann){
   bauen(); if(!kz.gruppe || !eva){ if(abspann) abspann(); return; }
   if(story.spielFertigMerken) story.spielFertigMerken(DIESES_SPIEL);
-  kz.drin = true; kz.gruppe.visible = true; kz.outro = true;
+  kz.drin = true; kz.gruppe.visible = true; kz.outro = true; kz.abspannFn = abspann;
+  schlagzeugBauen(); tonLaden();                                                                  // erst jetzt: das Schlagzeug in der Ecke
   const S = story.notizSeiten ? story.notizSeiten() : [];
   if(!kz.erinnert){ kz.erinnert = true; erinnerungsWand(kz.gruppe, ZIMMER, S); if(story.trophaeenBord && story.trophaeenAusSeiten) story.trophaeenBord(kz.gruppe, story.trophaeenAusSeiten());
     if(story.trophaeenAusSeiten && story.trophaeenAusSeiten().includes('schmetterling') && story.zimmerFalter) story.zimmerFalter(kz.gruppe); }   // er fliegt herum
@@ -161,7 +164,7 @@ story.zimmerOutro = function(abspann){
   // Y: aufstehen (das Y steht ueber dem Bett), dann noch ein paar Sekunden laufen
   const bx = ZIMMER.x + kz.bett.position.x, bz = ZIMMER.z + kz.bett.position.z;
   const o = story.interaktion(kz.bett, { name: 'Aufstehen', welt: 1, x: bx - 0.1, z: bz + 0.1, r: 0.9, yx: bx, yz: bz, yHoehe: BODEN_Y - ISLAND_Y + 1.6,   // global-ok: Engine
-    aktion: (q) => { q.erledigt = true; if(q.zeichen) q.zeichen.visible = false; aufstehen(kz.bett, ZIMMER, () => story.spaeter(8, () => { if(abspann) abspann(); })); } });
+    aktion: (q) => { q.erledigt = true; if(q.zeichen) q.zeichen.visible = false; aufstehen(kz.bett, ZIMMER, endeStarten); } });   // dann Schlagzeug oder nach 30 s der Abspann
   if(o) o.entdeckt = true;
 };
 story.zimmerAbspannKamera = (an) => { kz.abspann = an; };
@@ -332,6 +335,80 @@ function traum(mitte){
 story.traumUebergang = traum;
 
 // ---- Einhaengen ---------------------------------------------------------------------------------------------------------
+// ---- Das Schlagzeug am Ende (Live-Wunsch 02.11.2026) ------------------------------------------------------------------
+// Wacht Joshi am Ende in seinem Zimmer auf, steht in der freien Ecke vorn rechts (von oben gesehen unten rechts) ein Schlagzeug,
+// leicht schraeg zum Raum, dahinter ein Hocker – nur hier, nicht in der Huette, und erst am Ende (zimmerOutro). Nach dem Aufstehen:
+// Y davor -> Joshi sitzt hinten in der Ecke und spielt ('drums'), die Kamera zeigt ihn von vorn, "rock drum solo 2"
+// (freesound_community, Pixabay – schlagzeug_snd.js) laeuft in Schleife. Y -> Musik aus, kurze Schwarzblende, Joshi steht in der
+// Mitte des Raums, der Abspann beginnt. Spielt er nicht, beginnt der Abspann 30 s nach dem Aufstehen (Zeit zum Umsehen).
+// Die Schleife: ab dem Einsatz nach dem Einzaehlen, Laenge gemessen (das Muster wiederholt sich nach 30,385 s).
+const DRUM = { x: 3.7, z: 2.7, dreh: 0.44, gross: 1.6, abstand: 0.75 };   // Hocker (Zimmer-Koordinaten), Drehung zum Raum (25 Grad), Breite m, Hocker -> Mitte
+const DRUM_LOOP = { von: 2.58, bis: 2.58 + 30.385 }, DRUM_VOL = 0.6, DRUM_AUS = 0.4, ENDE_NACH = 30;
+const dr = { obj: null, hocker: null, inter: null, laedt: false, frei: false, spielt: false, ende: false, endeNr: 0, buf: null, tonLaedt: false, quelle: null, gain: null, yVor: true };
+const drumF = () => ({ x: -Math.sin(DRUM.dreh), z: -Math.cos(DRUM.dreh) });                       // Blickrichtung von der Ecke in den Raum
+const drumMitte = () => { const f = drumF(); return { x: DRUM.x + f.x * DRUM.abstand, z: DRUM.z + f.z * DRUM.abstand }; };
+function schlagzeugBauen(){
+  if(dr.obj || dr.laedt || !kz.gruppe || !window.SCHLAGZEUG_GLB || !story.ladeGlb) return; dr.laedt = true;
+  const f = drumF(), D = drumMitte();
+  const hocker = new THREE.Group(); hocker.position.set(DRUM.x, 0, DRUM.z); kz.gruppe.add(hocker); dr.hocker = hocker;
+  const sitz = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 16), new THREE.MeshLambertMaterial({ color: 0x222428 })); sitz.position.y = 0.3; hocker.add(sitz);   // wie im Saal (mondfest.js)
+  const bein = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 8), new THREE.MeshLambertMaterial({ color: 0x9aa3ad })); bein.position.y = 0.15; hocker.add(bein);
+  story.ladeGlb(window.SCHLAGZEUG_GLB, 'Schlagzeug (Zimmer)', (gl) => {
+    const o = gl.scene, weg = []; o.traverse(m => { if(/^Stool/.test(m.name)) weg.push(m); if(m.isMesh) m.frustumCulled = false; }); for(const m of weg) if(m.parent) m.parent.remove(m);   // ohne den Hocker aus dem Modell
+    o.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3()), k = DRUM.gross / Math.max(0.01, sz.x, sz.z);
+    o.scale.multiplyScalar(k); o.position.set(-c.x * k, -bb.min.y * k, -c.z * k);
+    const h = new THREE.Group(); h.add(o); h.position.set(D.x, 0, D.z); h.rotation.y = Math.atan2(f.x, f.z); kz.gruppe.add(h); dr.obj = h;   // Modell +z = zum Publikum
+    if(story.ding){ story.ding(h, { welt: 1, typ: 'schlagzeug_zimmer', form: 'kreis' }); story.ding(hocker, { welt: 1, typ: 'hocker_zimmer', form: 'kreis' }); }
+    dr.inter = story.interaktion(h, { name: 'Schlagzeug', welt: 1, x: ZIMMER.x + D.x + f.x * 1.35, z: ZIMMER.z + D.z + f.z * 1.35, r: 0.6, yx: ZIMMER.x + D.x, yz: ZIMMER.z + D.z,
+      yHoehe: BODEN_Y - ISLAND_Y + 1.5, aktion: trommelnAn });                                       // global-ok: Engine
+    if(dr.inter){ dr.inter.entdeckt = true; dr.inter.aus = !dr.frei; dr.inter.eigenesAus = true; }   // heimkehr.js nurHeimkehr laesst es in Ruhe
+  });
+}
+function tonLaden(){ if(dr.buf || dr.tonLaedt || !window.SCHLAGZEUG_SND || typeof decodeSound !== 'function') return; dr.tonLaedt = true;   // global-ok: Engine
+  decodeSound(window.SCHLAGZEUG_SND).then(b => { dr.buf = b; if(dr.spielt) tonAn(); }).catch(e => console.warn('Schlagzeug-Ton', e)); }   // global-ok: Engine
+function tonAn(){
+  if(!dr.spielt || dr.quelle || !dr.buf || typeof audioCtx === 'undefined' || !audioCtx || (typeof soundOn !== 'undefined' && !soundOn)) return;   // global-ok: Engine
+  const s = audioCtx.createBufferSource(), g = audioCtx.createGain(); s.buffer = dr.buf; s.loop = true;
+  s.loopStart = DRUM_LOOP.von; s.loopEnd = Math.min(DRUM_LOOP.bis, dr.buf.duration);
+  g.gain.setValueAtTime(0, audioCtx.currentTime); g.gain.linearRampToValueAtTime(DRUM_VOL, audioCtx.currentTime + 0.08);
+  s.connect(g); g.connect(audioCtx.destination); s.start(0, DRUM_LOOP.von); dr.quelle = s; dr.gain = g;
+}
+function tonAus(){
+  const s = dr.quelle, g = dr.gain; if(!s) return; dr.quelle = null; dr.gain = null;
+  const t = audioCtx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + DRUM_AUS);
+  try { s.stop(t + DRUM_AUS + 0.05); } catch(e){}
+}
+// nach dem Aufstehen: das Y am Schlagzeug, und in 30 s der Abspann (wenn er bis dahin nicht spielt)
+function endeStarten(){
+  dr.frei = true; if(dr.inter) dr.inter.aus = false;
+  const nr = ++dr.endeNr;
+  story.spaeter(ENDE_NACH, () => { if(dr.endeNr !== nr || dr.spielt || dr.ende) return; dr.ende = true; if(dr.inter){ dr.inter.aus = true; if(dr.inter.zeichen) dr.inter.zeichen.visible = false; } if(kz.abspannFn) kz.abspannFn(); });
+}
+function trommelnAn(o){
+  if(dr.spielt || dr.ende || !eva) return;
+  dr.spielt = true; dr.endeNr++; dr.yVor = true;                                                      // die 30 s gelten nicht mehr
+  o.aus = true; if(o.zeichen) o.zeichen.visible = false;
+  const f = drumF(); eva.group.position.set(ZIMMER.x + DRUM.x, BODEN_Y, ZIMMER.z + DRUM.z); eva.yaw = Math.atan2(-f.x, -f.z); eva.group.rotation.y = eva.yaw; eva.vy = 0;   // global-ok: Engine
+  const F = story.figur; if(F){ F.musik = 'drums'; F.steht = 0; F.ausschlag = 0; F.tempo = 0; }
+  kz.kamSofort = true; tonLaden(); tonAn();
+}
+function trommelnAus(){
+  if(!dr.spielt) return; dr.spielt = false; dr.ende = true; tonAus();
+  if(story.figur) story.figur.musik = null; if(dr.inter) dr.inter.erledigt = true;
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;transition:opacity .4s;pointer-events:none;z-index:44;';
+  document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => {
+    if(eva){ eva.group.position.set(ZIMMER.x, BODEN_Y, ZIMMER.z + 0.8); eva.yaw = 0; eva.group.rotation.y = 0; eva.vy = 0; }   // in der Mitte des Raums  // global-ok: Engine
+    kz.kamSofort = true; el.style.opacity = '0';
+    setTimeout(() => { el.remove(); if(kz.abspannFn) kz.abspannFn(); }, 450);
+  }, 450);
+}
+function yKante(){
+  let y = typeof keys !== 'undefined' && !!keys['KeyY'];                                              // global-ok: Engine
+  for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[3] && gp.buttons[3].pressed) y = true;
+  const k = y && !dr.yVor; dr.yVor = y; return k;
+}
 function hook(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding;                         // global-ok: Engine
   const hier = (x, z) => kz.drin && locale === 'earth' && imZimmer(x, z);                           // global-ok: Engine
@@ -342,13 +419,22 @@ function hook(){
   // die Kamera darf sich weiter umsehen. Auch im Bett der Huette (heimkehr.js)
   const evaOrig = updateEva;                                                                        // global-ok: Engine
   // auch der Stick-Ausschlag auf 0 (Live-Befund 29.10.2026: kam Joshi laufend ans Bett, blieb der letzte Wert stehen – er 'lief' im Bett)
-  updateEva = function(){ if(kz.halte && eva){ if(story.figur){ story.figur.tempo = 0; story.figur.ausschlag = 0; } return; } return evaOrig.apply(this, arguments); };   // global-ok: Engine
+  updateEva = function(){ if(kz.halte && eva){ if(story.figur){ story.figur.tempo = 0; story.figur.ausschlag = 0; } return; }
+    // am Schlagzeug: sitzt still auf dem Hocker und spielt, bis Y (kein Laufen, kein Springen)
+    if(dr.spielt && eva){ if(story.figur){ story.figur.tempo = 0; story.figur.ausschlag = 0; } eva.group.position.set(ZIMMER.x + DRUM.x, BODEN_Y, ZIMMER.z + DRUM.z); eva.vy = 0; eva.onGround = true;
+      if(yKante()) trommelnAus(); return; }
+    return evaOrig.apply(this, arguments); };   // global-ok: Engine
+  // beim Spielen ist das eine Szene: kein Sprung, kein Knien, kein anderes Y (story.js steuerbar, aktionLaeuft)
+  const szeneOrig = story.szeneLaeuft; story.szeneLaeuft = () => dr.spielt || !!(szeneOrig && szeneOrig());
   // Kamera im Zimmer: hinter Joshi, an den Waenden geklemmt (wie in der Huette die Wand)
   const camOrig = updateCamera, _s = new THREE.Vector3();                                           // global-ok: Engine
   updateCamera = function(){
     if(!((kz.drin || kz.liegt) && eva)) return camOrig.apply(this, arguments);
     if(kz.halte){ eva.group.position.copy(kz.halte); }
     if(!kz.drin && !kz.liegt) return camOrig.apply(this, arguments);                                       // im Bett der Huette: die Bettansicht
+    if(dr.spielt){ const f = drumF(), D = drumMitte(); _s.set(ZIMMER.x + D.x + f.x * 2.4, BODEN_Y + 1.45, ZIMMER.z + D.z + f.z * 2.4);   // von vorn auf Joshi am Schlagzeug
+      if(kz.kamSofort){ camera.position.copy(_s); kz.kamSofort = false; } else camera.position.lerp(_s, Math.min(1, 4 * dtCam));   // global-ok: Engine
+      camera.up.set(0, 1, 0); camera.lookAt(ZIMMER.x + DRUM.x, BODEN_Y + 0.8, ZIMMER.z + DRUM.z); return; }   // global-ok: Engine
     if(kz.abspann && kz.drin){ const a = performance.now() / 9000; camera.position.set(ZIMMER.x + Math.sin(a) * 2.6, BODEN_Y + 2.2, ZIMMER.z + Math.cos(a) * 2.0); camera.up.set(0, 1, 0); camera.lookAt(ZIMMER.x, BODEN_Y + 1.2, ZIMMER.z - 0.5); return; }   // global-ok: Engine
     const p = eva.group.position, yaw = eva.yaw + evaOrbit, mx = ZIMMER.B / 2 - 0.4, mz = ZIMMER.T / 2 - 0.4;   // global-ok: Engine
     if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);   // global-ok: Engine

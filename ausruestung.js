@@ -50,7 +50,11 @@ const TEXT_FUND = {
   bananen:   ['Das sind die Bananen, die der Gorilla vom Tisch genommen hat.'],
   steine:    ['Mondsteine für das Experiment des Eichhörnchens.'],
 };
-const TEXT_KOMPLETT = ['Klasse. Du hast alles dabei, was man als Detektiv braucht.'];
+// Live-Wunsch 02.11.2026 (vom Nutzer): erklaert dabei das Steuerkreuz – unten Rucksack und Notizbuch, links Hinweis, oben Pause
+const TEXT_KOMPLETT = ['Klasse, Du hast alles eingesammelt.',
+  'Wenn Du auf dem Steuerkreuz nach unten drückst, kannst Du sehen, was Du im Rucksack und in deinem Notizbuch hast.',
+  'Wenn Du mal nicht weiter weißt, kannst Du die linke Taste am Steuerkreuz drücken.',
+  'Für eine Pause drückst Du die obere Taste.'];
 // Lage auf dem Tisch (Tisch-Koordinaten, Platte 1,4 x 0,9 m; die Laterne steht bei x 0,35). Liegt dort schon etwas,
 // rueckt story.setze es auf der Platte zur Seite. Reihenfolge = Reihenfolge beim Einblenden.
 const TISCH = [

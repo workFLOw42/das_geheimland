@@ -74,11 +74,11 @@ Mit **Y** kommt das Ding aus dem Regal bzw. vom Tisch, wird groß, dreht sich ei
 | Tisch – Taschenmesser | Dein Taschenmesser. Das ist praktisch für unterwegs. | im Code, *Entwurf* |
 | Tisch – Stift | Und ein Stift. Damit kannst du alles aufschreiben. | im Code, *Entwurf* |
 | Tisch – Kamera | Und deine Kamera! Damit machst du Fotos von allen Hinweisen. | im Code, *Entwurf* |
-| alles im Rucksack | Klasse. Du hast alles dabei, was man als Detektiv braucht. | im Code (vom Nutzer) |
+| alles im Rucksack | Klasse, Du hast alles eingesammelt. · Wenn Du auf dem Steuerkreuz nach unten drückst, kannst Du sehen, was Du im Rucksack und in deinem Notizbuch hast. · Wenn Du mal nicht weiter weißt, kannst Du die linke Taste am Steuerkreuz drücken. · Für eine Pause drückst Du die obere Taste. | im Code (vom Nutzer, 02.11.2026; vorher: Klasse. Du hast alles dabei, was man als Detektiv braucht.) |
 
 ### Funkspruch für den ersten Fall *(im Code)*
 
-Kommt direkt nach „Klasse. Du hast alles dabei …“. **Stimme:** `radio` (männlich), je 1 s Funkrauschen davor und danach; das Funkgerät am Lagerfeuer rauscht, wackelt und blinkt, und unten rechts erscheint das Funkgerät.
+Kommt nach „Klasse, Du hast alles eingesammelt …“ und den vier Markierungen. **Stimme:** `radio` (männlich), je 1 s Funkrauschen davor und danach; das Funkgerät am Lagerfeuer rauscht, wackelt und blinkt, und unten rechts erscheint das Funkgerät.
 
 | Wann | Text | Status |
 |---|---|---|
@@ -492,6 +492,9 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | Wann | Wer | Text |
 |---|---|---|
 | Joshi wacht in seinem Zimmer auf (die Objekte und Fotos sind noch da, Fuchsi ist wieder ein Kuscheltier) | Erzählerin | Guten Morgen, Joshi. Es ist Zeit zum Aufstehen. Ich hoffe, Du hattest einen schönen Traum und bist bereit für einen tollen Tag im Kindergarten. |
+| Hinweis-Taste nach dem Aufstehen (draußen ist es hell, in der Ecke steht das Schlagzeug) | Erzählerin | Da drüben in der Ecke steht ein Schlagzeug. Stell dich davor und drück Y. *(gebaut 02.11.)* |
+| Hinweis-Taste beim Schlagzeugspielen | Erzählerin | Drück Y, wenn du aufhören möchtest. *(gebaut 02.11.)* |
+| Y am Schlagzeug / nochmal Y | – | Joshi spielt in der Ecke (Musik in Schleife) / Schwarzblende, Raummitte, Abspann. Ohne Schlagzeug: Abspann 30 s nach dem Aufstehen |
 | Abspann | Erzählerin | Joshi hat seinen ersten kniffligen Fall gelöst und viele neue Freunde gefunden. Wir sind gespannt, was er beim nächsten Mal erleben wird. |
 | Abspann, unten | – | Für Joshi! Hab' dich lieb! · Copyright … |
 

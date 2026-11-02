@@ -32,6 +32,7 @@ const RAKETE_H = 9;
 // entsorgt sie nicht); die Engine kommt vom Mond zurueck auf die Erde, Nacht wie in Etappe 1, Joshi steht am X-Wing-Anker – dann
 // landet die Rakete wie nach einem Neuladen. Das Boot bleibt zu (abenteuerLos), wie beim Neuladen.
 story.heimkehrWechsel = function(){
+  if(story.raketenTonAus) story.raketenTonAus();                                                  // der Start auf dem Mond ist vorbei
   story.heimkehr = true; stimmeFertig = true;                                                                     // die Stimme ist laengst frei
   if(story.mondbasis) story.mondbasis.drin = false;
   if(eva) clearEva();                                                                                              // global-ok: Engine
@@ -71,6 +72,7 @@ function landungTakt(dt){
   if(hk.phase === 'sinken'){
     const u = Math.min(1, hk.t / 9), h = 140 * Math.pow(1 - u, 2.2);
     g.position.y = Z.y + h; hk.flamme.scale.set(1, 0.6 + (1 - u) * 0.8, 1);
+    if(story.raketenTon) story.raketenTon(u < 1 ? 0.25 + 0.75 * (1 - u) : 0);   // Raketenton (heimflug.js): zum Aufsetzen hin leiser
     if(u >= 1){ hk.phase = 'gelandet'; hk.t = 0; hk.flamme.visible = false; }
   }
   if(hk.phase === 'gelandet'){
@@ -87,8 +89,13 @@ function yGedrueckt(){
   const kante = y && !yVor; yVor = y; return kante;
 }
 story.heimkehrAussteigen = () => aussteigen();
+// Joshi sitzt noch in der Rakete (laden, sinken, gelandet bis Y): keine Gitarre im Stillstehen (Live-Befund 02.11.2026: bei der Landung
+// begann die Leerlauf-Musik) – wie beim Start auf dem Mond (heimflug.js story.figurVersteckt)
+const verstecktVorher = story.figurVersteckt;
+story.figurVersteckt = () => !!(story.heimkehr && (hk.phase === 'laden' || hk.phase === 'sinken' || hk.phase === 'gelandet')) || !!(verstecktVorher && verstecktVorher());
 function aussteigen(){
   if(hk.phase !== 'gelandet') return; hk.phase = 'zuFuss'; hk.halte = null; if(hk.yJet) hk.yJet.visible = false;
+  if(story.figur) story.figur.steht = 0;                                   // die Zeit in der Rakete zaehlt nicht als Stillstehen (Gitarre)
   const Z = hk.ziel, H = story.insel.huette, dx = H.x - Z.x, dz = H.z - Z.z, l = Math.hypot(dx, dz) || 1;
   // seitlich neben der Rakete, Blick zur Huette (Live-Befund 29.10.2026: vor ihr stand sie genau in seinem Ruecken – die Kamera hing
   // ~9 m hinter ihm in der Rakete)

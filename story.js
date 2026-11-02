@@ -1415,7 +1415,8 @@ function interNaechstes(){
   if(story.imKreis && story.imKreis()) return null;              // im Ring gehoert das Y dem Ring (notizbuch.js)
   const drin = !!(story.innen && story.innen.drin);
   const g = eva.group.position; let best = null, bd = 1e9;
-  for(const o of interListe){ if(o.welt !== story.etappe || !o.entdeckt || o.erledigt || o.aus || o.nurX || o.innen !== drin) continue;   // nurX: nur zum Entdecken, ohne Y (die Luke der Mondbasis)
+  // sofortNachX (Live-Wunsch 02.11.2026, die Mondsteine): schon nach dem X aufhebbar, nicht erst, wenn der Fuchs dort war – er zeigt sie trotzdem
+  for(const o of interListe){ if(o.welt !== story.etappe || !(o.entdeckt || (o.sofortNachX && o.frei)) || o.erledigt || o.aus || o.nurX || o.innen !== drin) continue;   // nurX: nur zum Entdecken, ohne Y (die Luke der Mondbasis)
     const d = interAbstand(o, g) - o.r; if(d < INTER_Y_R && d < bd){ bd = d; best = o; } }
   return best;
 }
@@ -1505,6 +1506,7 @@ function fuchsSchnueffeln(dt, fp){
   if(fuchs.cur === FA.aufstehen && fuchsClipLaeuft(FA.aufstehen)) return;
   const o = S.liste[S.i];
   if(!o){ fuchs.modus = 'streifen'; fuchs.such = null; fuchs.warte = 1; return; }
+  if(o.erledigt && o.sofortNachX && S.phase === 'hin'){ S.i++; S.platz = null; S.t = 0; return; }   // schon aufgehoben: gleich zum naechsten
   if(S.phase === 'hin'){
     if(!S.platz){
       // Platz vor dem Objekt, bevorzugt auf der Seite zu Joshi (damit man es sieht) – aber frei UND mit Abstand zu Joshi:

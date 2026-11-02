@@ -402,6 +402,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 
 | Wann | Wer | Text |
 |---|---|---|
+| Erstes Hereinkommen (das Eichhörnchen hüpft), danach Detektivhut und blaues X | Erzählerin | Wow! Eine richtige Mondbasis – unter einer riesigen Glaskuppel. Durch das Glas siehst du die Sterne und die Erde. · Und da vorn hüpft jemand ganz aufgeregt herum. *(gebaut 02.11., Entwurf)* |
 | Hinweis-Taste im Büro | Erzählerin | Schau dich mal um. Drück X. |
 | X im Büro | – | Fuchsi zeigt nur das Eichhörnchen |
 | Y beim Eichhörnchen | Eichhörnchen | Oh! Besuch! Endlich Besuch! · Du bist der Erste, der mich hier oben besucht. Vor dir war noch nie jemand da! · Hier oben ist es so einsam und so langweilig. Und endlich hat jemand meine Morsezeichen gesehen! · Ich hätte so gern ein bisschen Hilfe. Ich hab nämlich ganz schön viel zu tun. |

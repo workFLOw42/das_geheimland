@@ -52,6 +52,8 @@ story.raumVon = (x, z) => { if(!e5() || !mb.drin || !mb.mitte) return null; cons
 
 // ---- Texte (SPRECHTEXTE.md) -------------------------------------------------------------------------------------------
 const T = {
+  // beim ersten Hereinkommen (Live-Wunsch 02.11.2026: wie in der Hoehle und im Observatorium eine kleine Erklaerung; das X erst danach)
+  ankunft: ['Wow! Eine richtige Mondbasis – unter einer riesigen Glaskuppel. Durch das Glas siehst du die Sterne und die Erde.', 'Und da vorn hüpft jemand ganz aufgeregt herum.'],
   begruessung: ['Oh! Besuch! Endlich Besuch!', 'Du bist der Erste, der mich hier oben besucht. Vor dir war noch nie jemand da!',
     'Hier oben ist es so einsam und so langweilig. Und endlich hat jemand meine Morsezeichen gesehen!', 'Ich hätte so gern ein bisschen Hilfe. Ich hab nämlich ganz schön viel zu tun.'],
   joshiHilft: ['Ich helfe dir gern! Aber ich hab auch eine Frage.', 'Bei den Tieren ist das ganze Essen gestohlen worden, und ich suche es.',
@@ -699,7 +701,7 @@ function setzeUm(ziel, wo){
     if(!mb.gerendert && story.innenRendern){ mb.gerendert = true; for(const R of [RAUM.buero, RAUM.labor, RAUM.saal]) story.innenRendern(mb.mitte.x + R.x, BODEN_Y + 1.6, mb.mitte.z + R.z); }
     const q = wo || { x: 0, z: DOM.r - 2.6, yaw: 0 }, p = welt(q.x, q.z); g.position.set(p.x, BODEN_Y, p.z); eva.yaw = q.yaw;
     story.innen.drin = true; story.innen.wo = 'mondbasis';
-    if(!mb.warDrin){ mb.warDrin = true; story.spaeter(0.8, () => { if(mb.stufe === 'neu') eichAnim('hopsen'); story.spaeter(2.4, () => { if(mb.cur === 'hopsen' && !(mb.inter && mb.inter.spricht)) eichAnim('stehen'); }); }); }
+    if(!mb.warDrin){ mb.warDrin = true; story.einleitung(1.0, T.ankunft); story.spaeter(0.8, () => { if(mb.stufe === 'neu') eichAnim('hopsen'); story.spaeter(2.4, () => { if(mb.cur === 'hopsen' && !(mb.inter && mb.inter.spricht)) eichAnim('stehen'); }); }); }
   } else {
     mb.drin = false; innenZeigen(false);
     const Z = story.e5Zustand, t = Z && Z.tuer ? Z.tuer.position : null;

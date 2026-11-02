@@ -345,7 +345,7 @@ function steineHinlegen(){
 }
 story.e5SteineAuslegen = function(){
   if(st5.ausgelegt) return; steineHinlegen(); if(!st5.gelegt) return; st5.ausgelegt = true;
-  for(const e of st5.liste) if(e.g.parent) e.o = story.interaktion(e.g, { name: 'Mondstein', welt: 5, x: e.x, z: e.z, r: 0.6, yHoehe: e.y - ISLAND_Y + 1.0, aktion: aufheben });   // global-ok: Engine
+  for(const e of st5.liste) if(e.g.parent) e.o = story.interaktion(e.g, { name: 'Mondstein', welt: 5, sofortNachX: true, x: e.x, z: e.z, r: 0.6, yHoehe: e.y - ISLAND_Y + 1.0, aktion: aufheben });   // global-ok: Engine
 };
 function aufheben(o){
   if(o.erledigt) return; o.erledigt = true; if(o.zeichen) o.zeichen.visible = false;

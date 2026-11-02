@@ -112,13 +112,14 @@ foreach($n in $modelle.Keys){
 # eule, holz: Waldgeraeusche der Waldinsel (Pixabay: freesound_community 'owl', Dragon Studio 'breaking wood')
 # gorilla: Brummen aus der Hoehle (Pixabay: flutie8211 'silverback gorilla roar')
 # schnitzen: Schnitzgeraeusch (Pixabay: pineframestudios 'carving wood')
+# rakete: Raketenstart und -landung (Pixabay: 'rocket launch', 306441, von Pixabay-Nutzer 49053354)
 # schlagzeug: Rock-Schlagzeug am Ende im Kinderzimmer (Pixabay: freesound_community 'rock drum solo 2', 62465; Ende ab 34 s abgeschnitten)
 # stift: Bleistift auf Papier beim Skizzieren (Pixabay: freesound_community 'pencil on paper', 20007; Ausschnitt 1,0-13,4 s)
 # voegel: Vogelgezwitscher im hellen Waldweg (Pixabay: oliviaaydin 'birds singing')
 # wuestenwind: leichter Wind in der Oase, Etappe 4 (Pixabay: tanweraman 'Desert Wind 2', wie Trip to Japan Etappe 2)
 # adler1, adler2: Adlerrufe in Wald und Bergen, Etappe 3 (Pixabay: koiroylers 'eagle', u_jfkxueyart 'eagle')
 # weihnachtslied: "Tinsel and Tremolo" (vom Spieler selbst mit Gemini erstellt), Weihnachtsfeier im Saal der Mondbasis (Etappe 5)
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'stift', 'schlagzeug', 'voegel', 'wuestenwind', 'adler1', 'adler2', 'weihnachtslied')){
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'stift', 'schlagzeug', 'rakete', 'voegel', 'wuestenwind', 'adler1', 'adler2', 'weihnachtslied')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)

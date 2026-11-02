@@ -137,6 +137,7 @@ function raketeTakt(dt){
   if(rk.phase === 'schub'){
     const v = schubEingabe(); rk.schub = Math.max(0, Math.min(1, rk.schub + (v > 0 ? v * dt * 0.45 : -dt * 0.15)));
     rk.flamme.visible = rk.schub > 0.05; rk.flamme.scale.set(0.4 + rk.schub * 0.6, 0.3 + rk.schub * 0.7, 0.4 + rk.schub * 0.6);
+    story.raketenTon(rk.schub > 0.05 ? 0.15 + 0.6 * rk.schub : 0);       // mit dem Schub lauter
     rk.obj.position.x += (Math.random() - 0.5) * rk.schub * 0.02;                                       // sie zittert
     if(rk.schub >= 1){ rk.phase = 'start'; rk.t = 0; }
     if(rk.t > 1.5) rk.kam.lerp(rk.kamWeit, Math.min(1, dt * 0.25 * rk.schub));                         // mit dem Schub langsam zurueck
@@ -146,6 +147,7 @@ function raketeTakt(dt){
     rk.kam.lerp(rk.kamWeit, Math.min(1, dt * 1.5));
     const h = 0.5 * 2.6 * rk.t * rk.t; rk.obj.position.y = rk.y0 + h;   // nach START_DAUER s gut 160 m hoch
     rk.flamme.visible = true; rk.flamme.scale.set(1.1, 1.6 + Math.sin(rk.t * 30) * 0.15, 1.1);
+    story.raketenTon(Math.max(0.3, 1 - 0.7 * Math.min(1, rk.t / START_DAUER)));   // beim Abheben am lautesten, dann entfernt sie sich
     // nach Hause: der Spielstand merkt sich die Heimkehr (falls die Seite spaeter neu geladen wird), dann Globus zu Joshis Insel – weiter
     // OHNE Neuladen (Live-Wunsch 02.11.2026: vorher kamen Startbild und ein Blick auf den Spielanfang), heimkehr.js heimkehrWechsel
     if(rk.t > START_DAUER && !rk.weg){ rk.weg = true; story.heimkehrUnterwegs = true; if(story.spielstandMerken) story.spielstandMerken(1); if(story.standSetzen) story.standSetzen('heimkehr', true); if(story.globusReise) story.globusReise(0, story.heimkehrWechsel && story.inselGebaut && story.inselGebaut() ? () => story.heimkehrWechsel() : null); }
@@ -172,6 +174,29 @@ function xwingSatz(){
   if(rk.xwing) rk.xwing.entdeckt = true;
 }
 
+// ---- Raketenton (Live-Wunsch 02.11.2026: "rocket launch", Pixabay 306441 – rakete_snd.js) -----------------------------------
+// Fuer Start (hier) und Landung (heimkehr.js): der gleichmaessige Teil der Aufnahme in Schleife, die Lautstaerke folgt dem Schub
+// (beim Start steigend, bei der Landung zum Aufsetzen hin fallend). Die Aufnahme ist sehr laut – hoechstens RAKETE_VOL (dezent).
+// story.raketenTon(v): Ziel 0..1 (jedes Bild), story.raketenTonAus(): sofort aus. Pause: die Engine haelt audioCtx an; der Globus
+// blendet den ganzen Ton aus.
+const RAKETE_VOL = 0.2, RAKETE_LOOP = { von: 0.3, bis: 3.3 };
+const rton = { buf: null, laedt: false, src: null, gain: null };
+function rtonLaden(){ if(rton.buf || rton.laedt || !window.RAKETE_SND || typeof decodeSound !== 'function') return; rton.laedt = true;   // global-ok: Engine
+  decodeSound(window.RAKETE_SND).then(b => { rton.buf = b; }).catch(e => console.warn('Raketen-Ton', e)); }   // global-ok: Engine
+function rtonAus(){ const s = rton.src, g = rton.gain; if(!s) return; rton.src = null; rton.gain = null;
+  const t = audioCtx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.25);   // global-ok: Engine
+  try { s.stop(t + 0.3); } catch(e){} }
+story.raketenTon = function(v){
+  rtonLaden();
+  const an = v > 0.01 && typeof audioCtx !== 'undefined' && audioCtx && !(typeof soundOn !== 'undefined' && !soundOn);   // global-ok: Engine
+  if(!an){ rtonAus(); return; }
+  if(!rton.src){ if(!rton.buf) return;
+    const s = audioCtx.createBufferSource(), g = audioCtx.createGain(); s.buffer = rton.buf; s.loop = true;   // global-ok: Engine
+    s.loopStart = RAKETE_LOOP.von; s.loopEnd = Math.min(RAKETE_LOOP.bis, rton.buf.duration);
+    g.gain.setValueAtTime(0, audioCtx.currentTime); s.connect(g); g.connect(audioCtx.destination); s.start(0, RAKETE_LOOP.von); rton.src = s; rton.gain = g; }   // global-ok: Engine
+  rton.gain.gain.setTargetAtTime(Math.min(1, v) * RAKETE_VOL, audioCtx.currentTime, 0.08);                 // weich nachfuehren  // global-ok: Engine
+};
+story.raketenTonAus = rtonAus;
 // ---- Takt und Einhaengen ---------------------------------------------------------------------------------------------------
 function takt(dt){
   if(!e5()) return;

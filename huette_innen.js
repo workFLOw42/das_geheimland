@@ -97,7 +97,8 @@ function baueRaum(zimmer){
   });
   for(const [fx, fz, ry] of [[-2.2, -T / 2 + 0.03, 0], [2.2, -T / 2 + 0.03, 0], [-B / 2 + 0.03, 0.6, Math.PI / 2]]){
     const f = new THREE.Group(); f.position.set(fx, 1.75, fz); f.rotation.y = ry;
-    f.add(new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.9), new THREE.MeshBasicMaterial({ map: fensterTex })));
+    const bild = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.9), new THREE.MeshBasicMaterial({ map: fensterTex })); f.add(bild);
+    (R.fensterBilder || (R.fensterBilder = [])).push(bild);                 // kinderzimmer.js: am Morgen ein Tagbild
     for(const [bw, bh, bx, by] of [[1.16, 0.08, 0, 0.49], [1.16, 0.08, 0, -0.49], [0.08, 0.9, -0.54, 0], [0.08, 0.9, 0.54, 0], [0.05, 0.9, 0, 0], [1.0, 0.05, 0, 0]]){
       const r = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.06), dunkel); r.position.set(bx, by, 0.02); f.add(r);
     }
@@ -161,7 +162,7 @@ function baueRaum(zimmer){
   R.bagger = bagger; }
   // Licht: Laterne warm + gedimmtes Grundlicht (hemiLight ist nachts schwach)
   const ll = new THREE.PointLight(0xffc070, 1.0, 12, 1.6);   // Laterne (die Tischplatte gluehte sonst orange) ll.position.set(B / 2 - 1.05, 1.6, -0.6); g.add(ll);
-  const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund);
+  const grund = new THREE.PointLight(0xffe6c0, 0.9, 16, 1.2); grund.position.set(0, H - 0.4, 0.5); g.add(grund); R.grundLicht = grund;
   // Bucher im Regal liegen auf den Brettern (die Bretter sind die Grenze) – Deko ohne eigene Masse
   regal.children.forEach(c => { if(c.isGroup) c.userData.keinKoerper = true; });
   R.bett = bett;

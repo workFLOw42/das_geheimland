@@ -154,6 +154,7 @@ story.zimmerOutro = function(abspann){
   bauen(); if(!kz.gruppe || !eva){ if(abspann) abspann(); return; }
   if(story.spielFertigMerken) story.spielFertigMerken(DIESES_SPIEL);
   kz.drin = true; kz.gruppe.visible = true; kz.outro = true; kz.abspannFn = abspann;
+  morgen();                                                                                        // draussen ist es hell
   schlagzeugBauen(); tonLaden();                                                                  // erst jetzt: das Schlagzeug in der Ecke
   const S = story.notizSeiten ? story.notizSeiten() : [];
   if(!kz.erinnert){ kz.erinnert = true; erinnerungsWand(kz.gruppe, ZIMMER, S); if(story.trophaeenBord && story.trophaeenAusSeiten) story.trophaeenBord(kz.gruppe, story.trophaeenAusSeiten());
@@ -408,6 +409,25 @@ function yKante(){
   let y = typeof keys !== 'undefined' && !!keys['KeyY'];                                              // global-ok: Engine
   for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[3] && gp.buttons[3].pressed) y = true;
   const k = y && !dr.yVor; dr.yVor = y; return k;
+}
+// Der Morgen (Live-Wunsch 02.11.2026): wacht Joshi am Ende auf, ist es draussen hell – die Fenster zeigen Tag (blauer Himmel, Sonne, Wolken,
+// Wiese, ein Baum) statt Nachthimmel mit Mond, und im Zimmer ist es heller (kuehles Tageslicht von den Fenstern dazu). Das Intro bleibt Abend.
+function tagBild(){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const himmel = g.createLinearGradient(0, 0, 0, 100); himmel.addColorStop(0, '#5aa8ec'); himmel.addColorStop(1, '#bfe2ff'); g.fillStyle = himmel; g.fillRect(0, 0, 128, 100);
+  g.fillStyle = 'rgba(255,240,170,0.45)'; g.beginPath(); g.arc(92, 32, 22, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ffe36b'; g.beginPath(); g.arc(92, 32, 13, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ffffff'; for(const [x, y, s] of [[26, 26, 1], [52, 52, 0.8], [8, 62, 0.7]]){ g.beginPath(); g.ellipse(x, y, 14 * s, 6 * s, 0, 0, Math.PI * 2); g.ellipse(x + 9 * s, y - 4 * s, 9 * s, 6 * s, 0, 0, Math.PI * 2); g.ellipse(x - 9 * s, y - 2 * s, 8 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#7cc35a'; g.beginPath(); g.moveTo(0, 96); g.quadraticCurveTo(50, 82, 128, 94); g.lineTo(128, 128); g.lineTo(0, 128); g.fill();
+  g.fillStyle = '#5ea844'; g.fillRect(0, 108, 128, 20);
+  g.fillStyle = '#7a5230'; g.fillRect(26, 78, 4, 22); g.fillStyle = '#3f8f3a'; g.beginPath(); g.arc(28, 74, 11, 0, Math.PI * 2); g.fill();
+  const t = new THREE.CanvasTexture(c); return t;
+}
+function morgen(){
+  if(kz.morgen || !kz.R) return; kz.morgen = true;
+  const tex = tagBild(); for(const m of (kz.R.fensterBilder || [])) m.material = new THREE.MeshBasicMaterial({ map: tex });
+  if(kz.R.grundLicht){ kz.R.grundLicht.color.setHex(0xfff6ea); kz.R.grundLicht.intensity = 1.35; }
+  const tag = new THREE.PointLight(0xd8ecff, 0.7, 14, 1.2); tag.position.set(0, 2.2, -ZIMMER.T / 2 + 1.0); kz.gruppe.add(tag);   // von den Fenstern hinten
 }
 function hook(){
   const solidOrig = evaSolid, fussOrig = evaFootY, hitsOrig = hitsBuilding;                         // global-ok: Engine

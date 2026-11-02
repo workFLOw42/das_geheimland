@@ -57,7 +57,9 @@ function planetBauen(){
 // eine Figur als Holzkopie: eigene Pose (Clip), Holzfarbe, auf hoehe m gebracht, Fuesse auf y = 0
 const _hv = new THREE.Vector3();
 function holzKopie(obj, acts, clipName, hoehe, farbe){
-  const k = story.klonSkin(obj); k.position.set(0, 0, 0); k.rotation.set(0, 0, 0);
+  // sichtbar, auch wenn das Original gerade ausgeblendet ist (Live-Befund 02.11.2026: im Kinderzimmer fehlte Fuchsi auf dem Planeten –
+  // dort liegt er als Kuscheltier im Bett, der echte ist versteckt, und die Kopie erbte das)
+  const k = story.klonSkin(obj); k.position.set(0, 0, 0); k.rotation.set(0, 0, 0); k.visible = true;
   const a = acts && acts[clipName]; if(a){ const mx = new THREE.AnimationMixer(k); mx.clipAction(a.getClip()).play(); mx.update(0.3); }
   k.traverse(m => { if(m.isMesh){ m.material = new THREE.MeshLambertMaterial({ color: farbe, skinning: !!m.isSkinnedMesh }); m.frustumCulled = false; m.castShadow = false; } });
   k.updateMatrixWorld(true); const bb = new THREE.Box3();

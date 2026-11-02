@@ -1050,17 +1050,43 @@ story.huetteMondstein = () => { huette.mondstein = true; huetteSetzen(); };   //
 const TROPHAEE = { 'Der Holzfuchs': 'fuchs', 'Das neue Entchen': 'entchen', 'Der Schlüssel': 'schluessel', 'Der kleine Planet': 'planet', 'Die Mondsteine': 'mondstein', 'Der Schmetterling': 'schmetterling' };
 story.trophaeenAusSeiten = () => [...new Set(zustand.seiten.map(s => TROPHAEE[s.name]).filter(Boolean))];
 story.huetteVonSeiten = () => { for(const t of story.trophaeenAusSeiten()) huette[t] = true; huetteSetzen(); };
-// Ein anderes Regal mit denselben Trophaeen (kinderzimmer.js); der Schmetterling fliegt dort herum wie in der Huette (story.zimmerFalter,
-// Live-Wunsch 29.10.2026 – vorher sass er als Modell im Regal)
-story.regalBefuellen = function(bretter, liste){
-  const auf = (b, g, x, z, dreh) => { g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(x, 0.025 - bb.min.y, z); if(dreh) g.rotation.y = dreh; bretter[b].add(g); };
-  const klon = (n, L, b, x, z, dreh) => story.modellKlon(n).then(({ g, L: l }) => { g.scale.setScalar(L / l); auf(b, g, x, z, dreh); });
-  if(liste.includes('entchen')) klon('entchen', 0.22, 1, -0.6, 0.02, -0.4);
-  if(liste.includes('fuchs')) klon('holzfuchs', 0.22, 2, 0.55, 0.03, 0.5);
-  if(liste.includes('schluessel') && story.obsSchluesselModell) story.obsSchluesselModell().then(({ g, L }) => { g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6; auf(2, g, -0.72, 0.09); });
-  if(liste.includes('planet') && story.e5PlanetModell) story.e5PlanetModell().then(({ g, L }) => { g.scale.setScalar(0.3 / L); auf(1, g, 0.05, 0.02); });
-  if(liste.includes('mondstein')){ const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial({ color: 0x9aa0b4, emissive: 0x1e2a44 })); st.scale.y = 0.75; st.rotation.set(0.4, 1.1, 0.2); st.position.set(-0.7, 0.08, 0.03); bretter[0].add(st); }
-};
+// Trophaeen-Bord ueber dem Bett (Live-Wunsch 28.10.2026): ein langes Wandbord an der linken Wand fuer alle Trophaeen – im Buecherregal
+// standen sie zwischen den Buechern und waren kaum zu sehen. Dasselbe Bord an derselben Stelle in Joshis Huette (huetteSetzen) und in
+// seinem Kinderzimmer (story.trophaeenBord; Live-Wunsch 02.11.2026: nach dem Aufwachen fehlte es dort – im Zimmer stand ein eigenes
+// Regal an der rechten Wand). Plaetze entlang des Bords (z): Holzfuchs, Entchen, Schluessel, Planet, Mondstein. st: { bord, gesetzt },
+// hat(name): ob die Trophaee schon verdient ist. Der Schmetterling fliegt in beiden Raeumen frei herum.
+const TB = { fuchs: -2.2, entchen: -2.9, schluessel: -1.6, planet: -1.05, mondstein: -0.5 };
+const MONDSTEIN_R = 0.11;          // Live-Wunsch 02.11.2026: etwas groesser (vorher 0,07 – als kleiner grauer Klotz kaum zu erkennen)
+function bordSetzen(R, st, hat){
+  if(!st.bord && ['fuchs', 'entchen', 'schluessel', 'planet', 'mondstein'].some(hat)){
+    const holz = new THREE.MeshLambertMaterial({ color: 0x8a5a33 }), dunkel = new THREE.MeshLambertMaterial({ color: 0x5b3a1f });
+    const b = st.bord = new THREE.Group(); b.position.set(-4.5 + 0.18, 1.45, 0); R.add(b);
+    const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 2.8), holz); brett.position.z = -1.75; b.add(brett);
+    for(const zz of [-3.0, -1.75, -0.5]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(-0.13, -0.09, zz); k.rotation.z = -0.5; b.add(k); }
+    if(story.ding) story.ding(b, { welt: 1, typ: 'bord_trophaeen' });
+  }
+  if(!st.bord) return;
+  const bord = st.bord, G = st.gesetzt;
+  const aufsBord = (g, z, dreh) => { g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, z); g.rotation.y = dreh; bord.add(g); };
+  if(hat('fuchs') && !G.fuchs){ G.fuchs = true;
+    story.modellKlon('holzfuchs').then(({ g, L }) => { g.scale.setScalar(0.24 / L); aufsBord(g, TB.fuchs, Math.PI / 2 + 0.5); }); }
+  // das geschnitzte Entchen (Etappe 3)
+  if(hat('entchen') && !G.entchen){ G.entchen = true;
+    story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.22 / L); aufsBord(g, TB.entchen, Math.PI / 2 + 0.4); }); }
+  // der geschnitzte Schluessel (Etappe 4, Live-Wunsch 23.10.2026): groesser als das Original, der Bart nach unten, um 30 Grad geneigt
+  if(hat('schluessel') && !G.schluessel && story.obsSchluesselModell){ G.schluessel = true;
+    story.obsSchluesselModell().then(({ g, L }) => { g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6; aufsBord(g, TB.schluessel, Math.PI / 2); }); }
+  // der geschnitzte kleine Planet (Etappe 5, Live-Wunsch 28.10.2026). Joshi und Fuchsi obendrauf schauen im Modell nach -z – darum um
+  // 180 Grad gedreht (Live-Befund 02.11.2026: sie schauten an die Wand), leicht schraeg zum Raum
+  if(hat('planet') && !G.planet && story.e5PlanetModell){ G.planet = true;
+    story.e5PlanetModell().then(({ g, L }) => { g.scale.setScalar(0.3 / L); aufsBord(g, TB.planet, -Math.PI / 2 - 0.3); }); }
+  // ein Mondstein (Etappe 5, Live-Wunsch 28.10.2026): Form und Farbe wie die Steine auf dem Mond (mond.js steinForm)
+  if(hat('mondstein') && !G.mondstein){ G.mondstein = true;
+    const s = new THREE.Mesh(new THREE.DodecahedronGeometry(MONDSTEIN_R, 0), new THREE.MeshLambertMaterial({ color: 0x9aa0b4, emissive: 0x1e2a44 }));
+    s.scale.y = 0.75; s.rotation.set(0.4, 1.1, 0.2); s.position.set(0.02, 0.0175 + MONDSTEIN_R * 0.78, TB.mondstein); bord.add(s); }
+}
+const zimmerBord = { bord: null, gesetzt: {} };
+story.trophaeenBord = (R, liste) => bordSetzen(R, zimmerBord, (n) => liste.includes(n));   // kinderzimmer.js
 // Seil im weissen Oval (wie beim Schnitzen): so lang wie das Oval, die Enden laufen darin aus (observatorium_innen.js seilBauen)
 function seilLage(g, grp, H){ const B = H * innerWidth / innerHeight, oval = Math.min(B, H * 1.5) * 0.9; grp.position.set(0, -H * 0.04, 0.4); g.scale.setScalar(oval * 0.95 / sz.L); g.rotation.set(0.35, 0, -0.06); g.visible = true; }
 function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; else if(s.regal === 'schluessel') huette.schluessel = true; else if(s.regal === 'planet') huette.planet = true; else if(s.art === 'messer' && !s.seil) huette.fuchs = true;
@@ -1068,47 +1094,7 @@ function fertigInHuette(s){ if(s.regal === 'entchen') huette.entchen = true; els
 function huetteSetzen(){
   const I = story.innen; if(!I || !I.gruppe) return;               // Raum noch nicht gebaut: beim Betreten (updateHuette)
   const R = I.gruppe;
-  // Trophaeen-Regal ueber dem Bett (linke Wand, Live-Wunsch 28.10.2026): ein langes Wandbord fuer alle Trophaeen – im Buecherregal
-  // standen sie zwischen den Buechern und waren kaum zu sehen. Plaetze entlang des Bords (z): Holzfuchs, Entchen, Schluessel, Planet, Mondstein
-  const TB = { fuchs: -2.2, entchen: -2.9, schluessel: -1.6, planet: -1.05, mondstein: -0.55 };
-  if(!huette.bord && (huette.fuchs || huette.entchen || huette.schluessel || huette.planet || huette.mondstein)){
-    const holz = new THREE.MeshLambertMaterial({ color: 0x8a5a33 }), dunkel = new THREE.MeshLambertMaterial({ color: 0x5b3a1f });
-    const bord = huette.bord = new THREE.Group(); bord.position.set(-4.5 + 0.18, 1.45, 0); R.add(bord);
-    const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 2.8), holz); brett.position.z = -1.75; bord.add(brett);
-    for(const zz of [-3.0, -1.75, -0.5]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(-0.13, -0.09, zz); k.rotation.z = -0.5; bord.add(k); }
-    if(story.ding) story.ding(bord, { welt: 1, typ: 'bord_trophaeen' });
-  }
-  const aufsBord = (g, z, dreh) => { g.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, z); g.rotation.y = dreh; huette.bord.add(g); };
-  if(huette.fuchs && !huette.gesetzt.fuchs){
-    huette.gesetzt.fuchs = true; const bord = huette.bord;
-    story.modellKlon('holzfuchs').then(({ g, L }) => {
-      g.scale.setScalar(0.24 / L); g.updateMatrixWorld(true);
-      const bb = new THREE.Box3().setFromObject(g); g.position.set(0.02, 0.0175 - bb.min.y, TB.fuchs); g.rotation.y = Math.PI / 2 + 0.5;
-      bord.add(g);
-    });
-  }
-  // das geschnitzte Entchen (Etappe 3): als Kopie ins Regal, mittleres Fach rechts (Live-Wunsch: Trophaeen-Platz)
-  if(huette.entchen && !huette.gesetzt.entchen && I.regalBretter){
-    huette.gesetzt.entchen = true;
-    story.modellKlon('entchen').then(({ g, L }) => { g.scale.setScalar(0.22 / L); aufsBord(g, TB.entchen, Math.PI / 2 + 0.4); });
-  }
-  // Der geschnitzte Schluessel (Etappe 4, Live-Wunsch 23.10.2026): groesser als das Original, im Regal auf dem obersten Brett,
-  // der Bart nach unten, um 30 Grad zur Seite geneigt (an die Buecher gelehnt)
-  if(huette.schluessel && !huette.gesetzt.schluessel && I.regalBretter && story.obsSchluesselModell){
-    huette.gesetzt.schluessel = true;
-    story.obsSchluesselModell().then(({ g, L }) => { g.scale.setScalar(0.35 / L); g.rotation.z = Math.PI / 6; aufsBord(g, TB.schluessel, Math.PI / 2); });
-  }
-  // Der geschnitzte kleine Planet (Etappe 5, Live-Wunsch 28.10.2026): mittleres Brett, links
-  if(huette.planet && !huette.gesetzt.planet && I.regalBretter && story.e5PlanetModell){
-    huette.gesetzt.planet = true;
-    story.e5PlanetModell().then(({ g, L }) => { g.scale.setScalar(0.3 / L); aufsBord(g, TB.planet, Math.PI / 2 - 0.3); });
-  }
-  // Ein kleiner Mondstein (Etappe 5, Live-Wunsch 28.10.2026): unterstes Brett, links
-  if(huette.mondstein && !huette.gesetzt.mondstein && I.regalBretter){
-    huette.gesetzt.mondstein = true;
-    const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial({ color: 0x9aa0b4, emissive: 0x1e2a44 }));
-    st.scale.y = 0.75; st.rotation.set(0.4, 1.1, 0.2); st.position.set(0.02, 0.0175 + 0.055, TB.mondstein); huette.bord.add(st);
-  }
+  bordSetzen(R, huette, (n) => !!huette[n]);                    // Trophaeen-Bord ueber dem Bett (wie im Kinderzimmer)
   if(huette.schmetterling && !huette.gesetzt.schmetterling){
     huette.gesetzt.schmetterling = true;
     story.modellKlon('schmetterling').then(({ g, L }) => {
@@ -1130,8 +1116,8 @@ function huetteSetzen(){
 // Schmetterling in der Huette: fliegt zu einem zufaelligen Punkt im Raum, setzt sich ab und zu (Regal, Tisch, Bett, Fenster),
 // sitzt ein paar Sekunden mit langsam schlagenden Fluegeln, fliegt wieder los
 const SITZPLAETZE = [[0.3, 1.86, -3.2], [3.1, 0.82, -0.6], [-3.5, 0.52, -1.6], [-2.2, 2.3, -3.45], [4.3, 1.15, 1.6], [-4.3, 1.5, -2.2]];
-// im Kinderzimmer (Live-Wunsch 29.10.2026): dieselbe Flugweise, eigene Sitzplaetze (Bett, Trophaeen-Regal, Fenster – kein Tisch)
-const ZIMMER_SITZ = [[0.3, 1.86, -3.2], [-3.5, 0.6, -2.0], [-2.2, 2.3, -3.45], [4.3, 1.15, 1.6], [4.3, 1.5, -1.0]];
+// im Kinderzimmer (Live-Wunsch 29.10.2026): dieselbe Flugweise, eigene Sitzplaetze (Bett, Trophaeen-Bord, Fenster – kein Tisch)
+const ZIMMER_SITZ = [[0.3, 1.86, -3.2], [-3.5, 0.6, -2.0], [-2.2, 2.3, -3.45], [-4.3, 1.5, -2.2]];   // das Trophaeen-Bord ueber dem Bett (02.11.2026: statt des Regals rechts)
 const zimmerFalter = { f: null, mixer: null, laedt: false };
 story.zimmerFalter = function(gruppe){
   if(zimmerFalter.f || zimmerFalter.laedt || !gruppe) return; zimmerFalter.laedt = true;

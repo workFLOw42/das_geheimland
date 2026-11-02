@@ -76,11 +76,8 @@ function bauen(){
     const sitz = story.fuchs.acts && story.fuchs.acts['Fox_Sit2_Idle'];
     if(sitz){ const mx = new THREE.AnimationMixer(k); mx.clipAction(sitz.getClip()).play(); mx.update(0.4); }
     k.traverse(m => { if(m.isMesh) m.frustumCulled = false; }); kz.bett.add(k); kz.plusch = k; }
-  // Trophaeen-Regal an der rechten Wand (im Buecherregal verschwanden sie zwischen den Buechern): drei Bretter ohne Buecher, wie das Regal
-  const tr = new THREE.Group(); tr.position.set(ZIMMER.B / 2 - 0.2, 0, 0.7); tr.rotation.y = -Math.PI / 2; g.add(tr); kz.trophaeenBretter = [];
-  const holzT = new THREE.MeshLambertMaterial({ color: 0x8a5a33 }), dunkelT = new THREE.MeshLambertMaterial({ color: 0x5b3a1f });
-  for(let i = 0; i < 3; i++){ const br = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.3), holzT); br.position.y = 0.5 + i * 0.55; tr.add(br); kz.trophaeenBretter.push(br); }
-  for(const sx of [-1, 1]){ const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.7, 0.3), dunkelT); s.position.set(sx * 1.0, 0.85, 0); tr.add(s); }
+  // Trophaeen: dasselbe Bord ueber dem Bett wie in der Huette (notizbuch.js story.trophaeenBord; Live-Wunsch 02.11.2026 – vorher ein eigenes
+  // Regal an der rechten Wand, das es im Geheimland nicht gab)
   g.position.set(ZIMMER.x, BODEN_Y, ZIMMER.z); g.visible = false; story.welt(1).add(g); kz.gruppe = g;
   kz.ding = story.ding ? story.ding(g, { welt: 1, typ: 'kinderzimmer' }) : null;
   // Y am Bett (ohne Suchblick): hinlegen
@@ -94,7 +91,7 @@ function erinnerungenZeigen(){
   const S = story.fortschritt.spiele || {}, bilder = [], tro = [];
   for(const k in S) if(S[k] && S[k].fertig){ bilder.push(...(S[k].bilder || [])); tro.push(...(S[k].trophaeen || [])); }
   if(bilder.length) erinnerungsWand(kz.gruppe, ZIMMER, bilder);
-  if(tro.length && story.regalBefuellen) story.regalBefuellen(kz.trophaeenBretter, tro);
+  if(tro.length && story.trophaeenBord) story.trophaeenBord(kz.gruppe, tro);
 }
 // Was an die Wand kommt: alle Erinnerungsfotos (Huette, Festtisch, Gorilla, Lama, Weihnachtsfest) und die gemalten Skizzen
 const GEMALT = ['Der Steg', 'Das Observatorium', 'Die Mondbasis', 'Die Mondsteine', 'Die Aliens'];
@@ -153,7 +150,7 @@ story.zimmerOutro = function(abspann){
   if(story.spielFertigMerken) story.spielFertigMerken(1);
   kz.drin = true; kz.gruppe.visible = true; kz.outro = true;
   const S = story.notizSeiten ? story.notizSeiten() : [];
-  if(!kz.erinnert){ kz.erinnert = true; erinnerungsWand(kz.gruppe, ZIMMER, S); if(story.regalBefuellen && story.trophaeenAusSeiten) story.regalBefuellen(kz.trophaeenBretter, story.trophaeenAusSeiten());
+  if(!kz.erinnert){ kz.erinnert = true; erinnerungsWand(kz.gruppe, ZIMMER, S); if(story.trophaeenBord && story.trophaeenAusSeiten) story.trophaeenBord(kz.gruppe, story.trophaeenAusSeiten());
     if(story.trophaeenAusSeiten && story.trophaeenAusSeiten().includes('schmetterling') && story.zimmerFalter) story.zimmerFalter(kz.gruppe); }   // er fliegt herum
   if(story.fuchs && story.fuchs.obj){ story.fuchs.obj.visible = false; story.fuchs.aktiv = false; }
   liegtSchon(kz.bett, ZIMMER); kz.kamSofort = true;

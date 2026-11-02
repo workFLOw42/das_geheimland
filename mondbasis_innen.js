@@ -642,7 +642,7 @@ story.e5BasisHinweis = function(){
 story.e5SteineGesammelt = () => mb.stufe === 'steine' && story.e5SteineAlle && story.e5SteineAlle();
 
 // ---- Hinein / hinaus (wie die Hoehle: Blende, eigene Welt) --------------------------------------------------------------
-const HUELLE = 15, KOERPER = 0.32;
+const HUELLE = 15, KOERPER = 0.32, KOPF = 1.35;   // KOPF: Scheitel ueber den Fuessen (Decke unter der Glaskuppel)
 function lokal(x, z){ return { lx: x - mb.mitte.x, lz: z - mb.mitte.z }; }
 function imRaum(x, z){ if(!mb.mitte) return false; const { lx, lz } = lokal(x, z); return Math.hypot(lx, lz) < DOM.r + HUELLE; }
 function innenZeigen(an){ if(mb.raum) story.sichtTeile(mb.raum, an); if(mb.eich) story.sichtTeile(mb.eich, an); if(story.mondfestZeigen) story.mondfestZeigen(an); }
@@ -761,6 +761,19 @@ function hookBasis(){
   evaSolid = function(x, z){ if(e5() && mb.drin && imRaum(x, z)) return raumFrei(x, z); return solidOrig.apply(this, arguments); };
   evaFootY = function(x, z){ if(e5() && mb.drin && imRaum(x, z)) return BODEN_Y; return fussOrig.apply(this, arguments); };
   hitsBuilding = function(x, y, z){ if(e5() && mb.drin && imRaum(x, z)) return !raumFrei(x, z); return hitsOrig.apply(this, arguments); };
+  // Decke: die Glaskuppel (Live-Befund 02.11.2026: mit der Mondschwerkraft springt Joshi gut 6 m hoch – am Rand ist die Kuppel viel
+  // niedriger, er sprang durchs Glas). Der Kopf stoesst unter dem Glas an und faellt zurueck; im Ausgang gilt die Tuerhoehe.
+  const evaOrig = updateEva;                                                                     // global-ok: Engine
+  updateEva = function(){
+    const r = evaOrig.apply(this, arguments);                                                    // global-ok: Engine
+    if(e5() && mb.drin && eva && imRaum(eva.group.position.x, eva.group.position.z)){
+      const p = eva.group.position, { lx, lz } = lokal(p.x, p.z);
+      let decke = BODEN_Y + domY(lx, lz) - 0.3;
+      if(Math.abs(lx) < TUER.B / 2 && Math.hypot(lx, lz) > DOM.r - 2) decke = Math.max(decke, BODEN_Y + TUER.H - 0.1);
+      if(p.y + KOPF > decke){ p.y = Math.max(BODEN_Y, decke - KOPF); if(eva.vy > 0) eva.vy = 0; }
+    }
+    return r;
+  };
   // Kamera: an den runden Waenden und in den Gaengen geklemmt; in der Strahler-Szene draussen
   const camOrig = updateCamera, _soll = new THREE.Vector3();                                    // global-ok: Engine
   updateCamera = function(){

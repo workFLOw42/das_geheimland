@@ -54,7 +54,9 @@ story.etappeWechsel = function(n){
   if(!gleich && typeof ortNeuBerechnen === 'function') ortNeuBerechnen();   // global-ok: Engine
   // Speicher (Live-Wunsch 22.10.2026: "immer nicht Benoetigtes freigeben"): fruehere Orte weg – nicht die derselben Insel
   // (zwischen Lichtung und Hoehle kann man hin und her)
-  for(let k = 1; k < n; k++) if(story.inselVon(k) !== story.inselVon(n)) weltEntsorgen(k);
+  // Joshis Insel (Welt 1) bleibt (Live-Wunsch 02.11.2026: der Heimflug vom Mond ist ein normaler Weltwechsel ohne Neuladen –
+  // heimkehr.js heimkehrWechsel braucht Insel, Huette, Steg, Funkgeraet, Bilder und das Kinderzimmer so, wie Joshi sie verlassen hat)
+  for(let k = 2; k < n; k++) if(story.inselVon(k) !== story.inselVon(n)) weltEntsorgen(k);
 };
 // Welche Etappen liegen auf derselben Insel (eine Karte, beide Welten bleiben geladen)?
 story.inselVon = (n) => ({ 2: 'waldinsel', 3: 'waldinsel' })[n] || ('etappe' + n);

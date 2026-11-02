@@ -490,6 +490,7 @@ story.updateE1 = function(dt){
   updateMoewen(dt);
 };
 story.baueInsel = function(){ if(story.etappe !== 1) return; baueInsel(); ladeMoewen(story.welt(1)); };
+story.inselGebaut = () => insel.gebaut;   // heimflug.js: Joshis Insel ist noch da (sonst – nach einem Neuladen unterwegs – Heimkehr mit Neuladen)
 // Waldinsel (Live-Wunsch 01.11.2026: "gar keine Moewen, weder am Strand noch in der Luft"): Strand gibt es dort nur im Sueden an der
 // Lichtung (die Insel ist viel groesser, Mitte z -159) – darum nach dem Wasser gesetzt, nicht im Kreis um eine Mitte: je Spalte x
 // das Ufer (erstes Wasser von der Lichtung aus), die Moewen ein paar Meter davor im Sand, Blick aufs Meer (+z). Fliegend: Kreise

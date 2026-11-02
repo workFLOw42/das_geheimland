@@ -471,6 +471,10 @@ story.etappeWechselHooks.push(function(n){
   const w = story.welt(n);
   for(const o of [s.gruppe, s.boot, s.schatten, s.gischt, s.zeichen]) if(o) w.add(o);
   for(const d of story.dinge) if(d.obj === s.gruppe || d.obj === s.boot) d.welt = n;
+  // zurueck auf Joshis Insel (heimkehr.js): beim Entsorgen der Waldinsel gingen die Grenzen von Steg und Boot mit – neu anmelden
+  const angemeldet = (o) => story.dinge.some(d => d.obj === o);
+  if(s.gruppe && !angemeldet(s.gruppe)) story.ding(s.gruppe, { welt: n, typ: 'steg' });
+  if(s.boot && !angemeldet(s.boot)) s.koerper = story.ding(s.boot, { welt: n, typ: 'segelboot', beweglich: true });
   s.wechsel = null; blende(0); state.throttle = 0;
   if(s.imBoot && eva) setzeUm('steg');
   s.bx = BOOT.x; s.bz = BOOT.z; s.yaw = 0; s.v = 0;

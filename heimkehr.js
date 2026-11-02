@@ -27,6 +27,26 @@ const T = {
 };
 const RAKETE_H = 9;
 
+// ---- Vom Globus (Mond -> Joshis Insel), im Schwarzen: ohne Neuladen ------------------------------------------------------------
+// Live-Wunsch 02.11.2026: ein normaler Weltwechsel wie alle anderen. Joshis Insel (Welt 1) ist noch da (story.js etappeWechsel
+// entsorgt sie nicht); die Engine kommt vom Mond zurueck auf die Erde, Nacht wie in Etappe 1, Joshi steht am X-Wing-Anker – dann
+// landet die Rakete wie nach einem Neuladen. Das Boot bleibt zu (abenteuerLos), wie beim Neuladen.
+story.heimkehrWechsel = function(){
+  story.heimkehr = true; stimmeFertig = true;                                                                     // die Stimme ist laengst frei
+  if(story.mondbasis) story.mondbasis.drin = false;
+  if(eva) clearEva();                                                                                              // global-ok: Engine
+  state.crashed = false; state.falling = false; state.vel.set(0, 0, 0); state.throttle = 0;                         // global-ok: Engine
+  if(locale !== 'earth'){ if(locale !== 'space') leaveGround(); enterEarth(false); }                                 // global-ok: Engine
+  story.etappe = 1; story.ziel = null; story.abenteuerLos = false;
+  if(story.etappeWechsel) story.etappeWechsel(1);                    // Inselzelle (Etappe-1-Wiese), Steg und Boot zurueck in Welt 1
+  for(const k of [2, 3, 4, 5]) story.weltEntsorgen(k);                // die Reise ist vorbei: alle anderen Orte freigeben
+  setSky('night'); story.nacht = true; if(typeof starDome !== 'undefined' && starDome) starDome.visible = true;   // global-ok: Engine
+  placeAtStart('XWing'); evaExit();                                   // wie beim Spielstart (story.js STORY_START)  // global-ok: Engine
+  const F = story.insel && story.insel.feuer;
+  if(eva && F){ const { x, z } = story.freierPlatz(F.x - 0.6, F.z + 3.2, 'joshi'); eva.group.position.set(x, evaFootY(x, z), z); eva.yaw = 0; eva.group.rotation.y = 0; }   // global-ok: Engine
+  story.heimkehrLos();
+};
+
 // ---- Landung --------------------------------------------------------------------------------------------------------------
 story.heimkehrLos = function(){
   const H = story.insel && story.insel.huette; if(!H || !eva || !window.RAKETE_GLB || !story.ladeGlb) return;
@@ -78,7 +98,7 @@ function aussteigen(){
   if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: x + Math.cos(eva.yaw) * 1.3, z: z - Math.sin(eva.yaw) * 1.3, blick: eva.yaw, modus: 'streifen', sitzt: false, warte: 1 });
   if(story.fuchs && story.fuchs.obj) story.fuchs.obj.visible = true;
   hk.funkT = 4;                                                                                                      // der erste Ruf kurz danach
-  const f = funkObj(); if(f){ f.entdeckt = true; f.frei = true; }                 // ohne X (Live-Wunsch: draussen gibt es nichts mehr zu entdecken)
+  const f = funkObj(); if(f){ f.entdeckt = true; f.frei = true; f.erledigt = false; f.spricht = false; }                 // ohne X (Live-Wunsch: draussen gibt es nichts mehr zu entdecken)
 }
 // Kamera bei der Landung: einmal 360 Grad um die Rakete, am Ende vor ihr
 function landungKamera(){

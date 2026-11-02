@@ -111,7 +111,39 @@ function tuerBauen(){
   // Wie am Observatorium (Live-Wunsch 31.10.2026): Y vor der Luke ist ein Satz der Erzaehlerin – hinein geht es weiter einfach durch
   // die Luke (lukePruefen; vorher nurX: nur markiert, ohne Y)
   m5.platteY = gy; bodenCache.clear();                        // die Hoehe der Plattform der Basis (bodenGenau); vorher Gemerktes neu
+  basisGrenzen();
   draussenBauen();
+}
+// Grenzen der Basis (Live-Befund 02.11.2026: man lief durch die Kuppeln hindurch und auf die Roehre hinauf – bodenGenau nimmt das
+// Dach der Roehre als Boden, die Kuppeln gar nicht). Grundrisse am Modell gemessen: die runde Plattform unter der grossen Kuppel
+// (r 24 m, breiter als die Kuppel), die Roehre, das kleine Kuppelhaus (Querschnitt in Joshis Hoehe) und der Rover. Vor der Luke
+// bleibt ein Durchgang frei (lukePruefen). Gesperrt ueber evaSolid; wer schon drinsteckt, darf hinaus (wie objekte.js).
+const BASIS_KOERPER = 0.32;
+function basisGrenzen(){
+  if(m5.grenzen || !moonBaseObj) return; moonBaseObj.updateMatrixWorld(true);                                              // global-ok: Engine
+  const kasten = (re) => { let b = null; moonBaseObj.traverse(o => { if(o.isMesh && re.test(o.name)){ const q = new THREE.Box3().setFromObject(o); b = b ? b.union(q) : q; } }); return b; };   // global-ok: Engine
+  const G = [], kreis = (b, r, luke) => { if(b) G.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, r: r || Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2, luke }); };
+  const quader = (b) => { if(b) G.push({ x0: b.min.x, x1: b.max.x, z0: b.min.z, z1: b.max.z }); };
+  kreis(kasten(/^Cylinder_Metal/)); kreis(kasten(/^Icosphere_/)); quader(kasten(/^Cylinder004/)); quader(kasten(/^Cube_/));
+  const k = kasten(/^Icosphere001/);
+  if(k){ const r = (k.max.x - k.min.x) / 2, cy = (k.min.y + k.max.y) / 2, dy = Math.max(0, cy - (m5.platteY + 1.3)); kreis(k, Math.sqrt(Math.max(1, r * r - dy * dy)), true); }
+  m5.grenzen = G;
+}
+// > 0 = so tief steckt Joshi (Radius BASIS_KOERPER) in der Basis
+function basisTiefe(x, z){
+  const G = m5.grenzen, T = m5.tuer && m5.tuer.position, R = BASIS_KOERPER; let t = -Infinity;
+  const vorLuke = T && Math.abs(x - T.x) < TUER.b / 2 + 0.1 && z > T.z - 0.6;
+  for(const g of G){
+    if(g.r !== undefined){ if(g.luke && vorLuke) continue; const e = g.r + R - Math.hypot(x - g.x, z - g.z); if(e > t) t = e; continue; }
+    const dx = Math.max(g.x0 - x, x - g.x1), dz = Math.max(g.z0 - z, z - g.z1);
+    const e = dx < 0 && dz < 0 ? R - Math.max(dx, dz) : R - Math.hypot(Math.max(0, dx), Math.max(0, dz)); if(e > t) t = e;
+  }
+  return t;
+}
+function basisSperrt(x, z){
+  if(!m5.grenzen || (story.mondbasis && story.mondbasis.drin)) return false;
+  const t = basisTiefe(x, z); if(t <= 0) return false;
+  const von = story.schrittVon && story.schrittVon(); return !von || t > basisTiefe(von.x, von.z) + 1e-6;
 }
 // Hinein in die Mondbasis (mondbasis_innen.js): durch die Luke laufen (lukePruefen) oder Y – sonst vorerst "Fortsetzung folgt"
 function rein(o){
@@ -635,7 +667,7 @@ function hookMond(){
   // Fuesse auf dem Mond: genau (bodenGenau), sonst wie die Engine
   // Dinge (Holzscheit, Steine …) sind auch auf dem Mond fest (objekte.js story.dingSperrt; Live-Befund 29.10.2026)
   const solidM = evaSolid;                                                                                // global-ok: Engine
-  evaSolid = function(x, z){ if(e5() && locale === 'moon' && story.dingSperrt && story.dingSperrt(x, z)) return false; return solidM.apply(this, arguments); };   // global-ok: Engine
+  evaSolid = function(x, z){ if(e5() && locale === 'moon' && ((story.dingSperrt && story.dingSperrt(x, z)) || basisSperrt(x, z))) return false; return solidM.apply(this, arguments); };   // global-ok: Engine
   const fussOrig = evaFootY;                                                                              // global-ok: Engine
   evaFootY = function(x, z){ if(locale === 'moon'){ const y = bodenGenau(x, z); if(y !== null) return y; } return fussOrig.apply(this, arguments); };
   // waehrend des Anflugs kein Aussteigen und kein Schleudersitz (B); den X-Wing wieder besteigen erst spaeter

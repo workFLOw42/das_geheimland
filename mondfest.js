@@ -387,6 +387,7 @@ story.mondfestKamera = function(){
 // ---- Gruppenfoto -----------------------------------------------------------------------------------------------------------
 // notizbuch.js 'fest_foto' (vorher): alle setzen sich an die Tafel – von links Alien | Tiere | Barki | Samu | Joshi | Fuchsi |
 // Tiere | Alien; Fuchsi sitzt schon da (laeuft nicht ins Bild), die Kamera sucht wie immer
+const FUCHS_VOR_BANK = 0.95;
 const FOTO_STILL = { alien_klein: { t: 0, dreh: 0 } };   // Bild (s) im Tanz und Drehung dazu (im Testfoto geprueft: so schaut er nach vorn)
 story.mondfestFotoVorbereiten = function(){
   musikAus(); mf.sitzen = true;
@@ -401,9 +402,11 @@ story.mondfestFotoVorbereiten = function(){
     if(D.id === 'joshi'){ eva.group.position.set(w.x, BODEN_Y, w.z + 0.25); eva.yaw = zumRingYaw(lx, z + 0.25); eva.group.rotation.y = eva.yaw; eva.group.visible = true; continue; }
     if(D.id === 'fuchsi'){ if(story.fuchs && story.fuchs.obj){ story.fuchs.aktiv = true; story.fuchs.obj.visible = true; }
       // modus 'foto' (Live-Befund 29.10.2026: mit 'warten' stand er auf und lief weg, sobald Joshi neben ihm stand – er fehlte im Bild)
-      if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: w.x, z: w.z + 0.3, blick: zumRing(lx, z + 0.3), modus: 'foto', sitzt: true });   // zumRing: gemessen (zumRingYaw drehte ihn genau weg)
+      // vor der Bank, nicht in ihr (Live-Befund 02.11.2026: bei + 0,3 sass er in der Grenze der Sitzbank und kam nach dem Foto nicht mehr
+      // heraus): Bank r 0,24 + Rand der Raeume 0,62 (mondbasis_innen.js raumTiefe) = 0,86, dazu etwas Luft
+      if(story.fuchsAbsetzenAuf) story.fuchsAbsetzenAuf({ x: w.x, z: w.z + FUCHS_VOR_BANK, blick: zumRing(lx, z + FUCHS_VOR_BANK), modus: 'foto', sitzt: true });   // zumRing: gemessen (zumRingYaw drehte ihn genau weg)
       // genau auf seinen Platz (das Absetzen sucht einen freien Platz – vor der Tafel wich er bis ans Ende der Reihe aus)
-      if(story.fuchs && story.fuchs.obj){ story.fuchs.obj.position.set(w.x, BODEN_Y, w.z + 0.3); story.fuchs.yaw = zumRing(lx, z + 0.3); } continue; }
+      if(story.fuchs && story.fuchs.obj){ story.fuchs.obj.position.set(w.x, BODEN_Y, w.z + FUCHS_VOR_BANK); story.fuchs.yaw = zumRing(lx, z + FUCHS_VOR_BANK); } continue; }
     if(D.id === 'eich'){ const e = story.mondbasisEichhoernchen && story.mondbasisEichhoernchen(); if(e){ e.position.set(w.x, BODEN_Y + mf.bankY, w.z); e.rotation.y = zumRing(lx, z); } continue; }
     const g = mf.gaeste.find(q => q.D.id === D.id); if(!g) continue;
     g.ziel = null;

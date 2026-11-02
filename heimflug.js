@@ -144,8 +144,9 @@ function raketeTakt(dt){
     rk.kam.lerp(rk.kamWeit, Math.min(1, dt * 1.5));
     const h = 0.5 * 2.6 * rk.t * rk.t; rk.obj.position.y = rk.y0 + h;   // nach START_DAUER s gut 160 m hoch
     rk.flamme.visible = true; rk.flamme.scale.set(1.1, 1.6 + Math.sin(rk.t * 30) * 0.15, 1.1);
-    // nach Hause: der Spielstand merkt sich die Heimkehr (heimkehr.js), dann Globus zu Joshis Insel und neu laden (Etappe 1 im Heimkehr-Modus)
-    if(rk.t > START_DAUER && !rk.weg){ rk.weg = true; story.heimkehrUnterwegs = true; if(story.spielstandMerken) story.spielstandMerken(1); if(story.standSetzen) story.standSetzen('heimkehr', true); if(story.globusReise) story.globusReise(0); }
+    // nach Hause: der Spielstand merkt sich die Heimkehr (falls die Seite spaeter neu geladen wird), dann Globus zu Joshis Insel – weiter
+    // OHNE Neuladen (Live-Wunsch 02.11.2026: vorher kamen Startbild und ein Blick auf den Spielanfang), heimkehr.js heimkehrWechsel
+    if(rk.t > START_DAUER && !rk.weg){ rk.weg = true; story.heimkehrUnterwegs = true; if(story.spielstandMerken) story.spielstandMerken(1); if(story.standSetzen) story.standSetzen('heimkehr', true); if(story.globusReise) story.globusReise(0, story.heimkehrWechsel && story.inselGebaut && story.inselGebaut() ? () => story.heimkehrWechsel() : null); }
   }
 }
 // Kamera: in der Rakete vom Mondboden aus auf sie (beim Start schwenkt sie mit nach oben)

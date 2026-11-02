@@ -495,6 +495,9 @@ function knieUmschalten(){
 const kamera = { standard: false };
 story.kameraStandard = () => { kamera.standard = true; };
 story.kameraZurueck = function(){
+  // immer den kuerzesten Weg zurueck (Live-Wunsch 02.11.2026): die Raumkameras zaehlten jede Umdrehung mit – nach zwei Runden drehte sie
+  // zwei Runden zurueck. Ein voller Kreis mehr oder weniger ist dieselbe Ansicht, darum kein Sprung.
+  while(evaOrbit > Math.PI) evaOrbit -= 2 * Math.PI; while(evaOrbit < -Math.PI) evaOrbit += 2 * Math.PI;   // global-ok: Engine
   if(kamera.standard){ if(Math.abs(evaOrbit) < 0.003 && Math.abs(evaPitch) < 0.003) kamera.standard = false; else return true; }   // global-ok: Engine
   if(!eva || eva.boat || eva.rover || eva.jet || sw.aktiv) return true;
   return figur.tempo > 0.05 || !eva.onGround || figur.aktion === 'jump' || figur.aktion === 'roll';

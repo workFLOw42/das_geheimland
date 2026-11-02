@@ -14,7 +14,7 @@ const RAKETE = { quer: 13, vor: -6, h: 9 };              // neben dem X-Wing (qu
 const rk = { gebaut: false, obj: null, inter: null, drin: false, schub: 0, phase: null, t: 0, kam: null, y0: 0, flamme: null, balken: null };
 story.heimflug = rk;
 const T = {
-  hSchub: ['Gib mit dem rechten Stick Schub, bis der Balken voll ist.'],   // nur ueber die Hinweis-Taste (Live-Wunsch 29.10.2026)
+  hSchub: ['Gib mit dem rechten Stick Schub, bis der Balken voll ist. Oder drück X, dann geht es gleich mit vollem Schub los.'],   // nur ueber die Hinweis-Taste (Live-Wunsch 29.10.2026)
   los: ['Auf geht es nach Hause.'],
   xwing: ['Die Aliens haben mit dir getauscht. Du darfst gerne ihre schicke Rakete nehmen.'],
   hRaus: ['Schau dich draußen um. Drück X.'],
@@ -122,7 +122,15 @@ function einsteigen(o){
   story.sprich(T.los);                                                // der Schub-Hinweis nur ueber die Hinweis-Taste
 }
 // Schub: rechter Stick nach vorn (oben) oder W
+// X (wie bei allen Fahrzeugen: Vollgas; Live-Wunsch 02.11.2026): einmal gedrueckt geht die Rakete auf 100 % und bleibt dort – zusaetzlich
+// zum rechten Stick (bei den anderen Fahrzeugen faellt X beim Loslassen auf 50 % zurueck)
+function vollgasGedrueckt(){
+  let x = typeof keys !== 'undefined' && !!(keys['KeyX'] || keys['ShiftLeft'] || keys['ShiftRight']);                // global-ok: Engine
+  for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[2] && gp.buttons[2].pressed) x = true;
+  return x;
+}
 function schubEingabe(){
+  if(rk.vollgas || vollgasGedrueckt()){ rk.vollgas = true; return 1; }
   let v = 0; if(typeof keys !== 'undefined' && (keys['KeyW'] || keys['ArrowUp'])) v = 1;                          // global-ok: Engine
   for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])){ if(!gp) continue; const ay = gp.axes[3] || 0; if(ay < -0.3) v = Math.max(v, Math.min(1, -ay)); }
   return v;
@@ -135,7 +143,7 @@ function raketeTakt(dt){
   if(eva && rk.halte){ eva.group.position.copy(rk.halte); eva.group.visible = false; if(typeof ovalShadow !== 'undefined' && ovalShadow) ovalShadow.visible = false; }   // global-ok: Engine
   if(story.fuchs && story.fuchs.obj){ story.fuchs.obj.visible = false; story.fuchs.aktiv = false; if(story.fuchs.schatten) story.fuchs.schatten.visible = false; }
   if(rk.phase === 'schub'){
-    const v = schubEingabe(); rk.schub = Math.max(0, Math.min(1, rk.schub + (v > 0 ? v * dt * 0.45 : -dt * 0.15)));
+    const v = schubEingabe(); rk.schub = Math.max(0, Math.min(1, rk.schub + (v > 0 ? v * dt * (rk.vollgas ? 1.6 : 0.45) : -dt * 0.15)));   // Vollgas: der Balken in gut einer halben Sekunde voll
     rk.flamme.visible = rk.schub > 0.05; rk.flamme.scale.set(0.4 + rk.schub * 0.6, 0.3 + rk.schub * 0.7, 0.4 + rk.schub * 0.6);
     story.raketenTon(rk.schub > 0.05 ? 0.15 + 0.6 * rk.schub : 0);       // mit dem Schub lauter
     rk.obj.position.x += (Math.random() - 0.5) * rk.schub * 0.02;                                       // sie zittert

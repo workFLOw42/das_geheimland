@@ -464,7 +464,7 @@ Nach der Höhle führt der Waldweg mit einer Schwarzblende zurück zur Lichtung 
 | Gruppenfoto fertig | Erzählerin | Klasse! Alle zusammen an einer Tafel – das schönste Weihnachtsfest! *(gebaut)* |
 | nach dem Fest durch die Saaltür hinaus | Joshi | Tschüss – es war ein wirklich tolles Fest! *(gebaut 31.10.)* |
 | Schnitzen fertig | Erzählerin | Toll! Ein kleiner Planet – mit dir und Fuchsi obendrauf. *(gebaut)* |
-| in der Rakete | Erzählerin | Gib mit dem rechten Stick Schub, bis der Balken voll ist. *(gebaut)* |
+| in der Rakete | Erzählerin | Gib mit dem rechten Stick Schub, bis der Balken voll ist. Oder drück X, dann geht es gleich mit vollem Schub los. *(X-Satz 02.11.)* *(gebaut)* |
 | Y an der Tür zum Saal | – | im großen Saal: alle Tiere, Gorilla und Lama, Samu mit Barki und die beiden Aliens *(Ablauf offen)* |
 
 ## Der Rahmen: der Traum *(Live-Wunsch 28.10.2026, gebaut; Texte vom 29.10.2026)*

@@ -104,7 +104,7 @@ const STELLEN = [
     bedingung: () => !!(story.obsStelleFrei && story.obsStelleFrei('lama_foto')), vorher: () => story.obsFotoVorbereiten && story.obsFotoVorbereiten(),
     blick: { x: -637.0, y: 151.4, z: 626.0, yaw: -0.12, pitch: 0.06, fov: 58 }, fuchs: { x: -638.0, z: 621.2 }, fuchsVon: { x: -640.6, z: 623.0 }, ohneJoshi: true,
     text: ['Klasse! Das Lama vor seinem Teleskop.'] },
-  // Skizze draussen vor dem Observatorium (erst nach dem Blick durchs Teleskop; Live-Wunsch 26.10.2026: vorher drinnen neben dem
+  // Skizze draussen vor dem Observatorium (nach dem Lama-Raetsel, seit 02.11.2026 auch ohne Blick durchs Teleskop; Live-Wunsch 26.10.2026: vorher drinnen neben dem
   // Teleskop): das Observatorium in der Oase unter dem Nachthimmel mit dem Mond. Der Ring steht am Blickpunkt des Bildes.
   // Live-Wunsch 26.10.2026: naeher am Observatorium (vorher bei -1 / 22); Nacht und Mond nur waehrend der Aufnahme (beiAufnahme),
   // vorher blendete die Nacht sichtbar ein und wieder aus

@@ -556,7 +556,8 @@ story.obsStelleFrei = function(id){
   if(id === 'lama_spur') return oi.stufe === 'offen' || oi.stufe === 'spur';
   if(id === 'packpapier_lupe') return AB('erzaehlt', 'papier', 'fertig', 'schluessel');
   if(id === 'lama_foto') return AB('fertig', 'schluessel');
-  if(id === 'obs_skizze') return AB('fertig', 'schluessel') && !!story.teleskopGeschaut;
+  // ohne Blick durchs Teleskop (Live-Wunsch 02.11.2026: das Teleskop ist freiwillig, es sammelt Wissen – die Skizze gehoert zur Geschichte)
+  if(id === 'obs_skizze') return AB('fertig', 'schluessel');
   if(id === 'schluessel_schnitzen') return AB('fertig', 'schluessel');
   return false;
 };

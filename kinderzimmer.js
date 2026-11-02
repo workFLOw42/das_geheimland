@@ -86,10 +86,12 @@ function bauen(){
   if(kz.inter){ kz.inter.entdeckt = true; kz.inter.aus = true; }
   erinnerungenZeigen();
 }
-// Bilder und Trophaeen der schon durchgespielten Spiele (beim ersten Mal ist das Zimmer leer)
+// Bilder und Trophaeen der schon durchgespielten Spiele (beim ersten Mal ist das Zimmer leer) – nur die ANDERER Spiele (Live-Wunsch
+// 02.11.2026: spielte man Spiel 1 noch einmal, stand das Zimmer schon voll mit seinen Trophaeen, bevor man sie verdient hatte)
+const DIESES_SPIEL = 1;
 function erinnerungenZeigen(){
   const S = story.fortschritt.spiele || {}, bilder = [], tro = [];
-  for(const k in S) if(S[k] && S[k].fertig){ bilder.push(...(S[k].bilder || [])); tro.push(...(S[k].trophaeen || [])); }
+  for(const k in S) if(+k !== DIESES_SPIEL && S[k] && S[k].fertig){ bilder.push(...(S[k].bilder || [])); tro.push(...(S[k].trophaeen || [])); }
   if(bilder.length) erinnerungsWand(kz.gruppe, ZIMMER, bilder);
   if(tro.length && story.trophaeenBord) story.trophaeenBord(kz.gruppe, tro);
 }
@@ -147,7 +149,7 @@ story.introStart = function(weiter){
 story.introAktiv = () => kz.drin;
 story.zimmerOutro = function(abspann){
   bauen(); if(!kz.gruppe || !eva){ if(abspann) abspann(); return; }
-  if(story.spielFertigMerken) story.spielFertigMerken(1);
+  if(story.spielFertigMerken) story.spielFertigMerken(DIESES_SPIEL);
   kz.drin = true; kz.gruppe.visible = true; kz.outro = true;
   const S = story.notizSeiten ? story.notizSeiten() : [];
   if(!kz.erinnert){ kz.erinnert = true; erinnerungsWand(kz.gruppe, ZIMMER, S); if(story.trophaeenBord && story.trophaeenAusSeiten) story.trophaeenBord(kz.gruppe, story.trophaeenAusSeiten());

@@ -378,6 +378,9 @@ function hookFigur(){
   // dann rechnet sie mit dem alten Winkel. Die Innenraeume fragen story.kameraZurueck selbst.
   const camOrigH = updateCamera;
   updateCamera = function(){
+    // beim Eintauchen bleibt die Kamera ueber Wasser: sie rechnet mit der Schwimmhoehe statt der Tauchtiefe
+    if(eva && sw.aktiv && sw.eintauchen){ const g = eva.group.position, y0 = g.y; g.y = Math.max(y0, seaYAt(g.x, g.z) - SCHWIMM_TIEF);   // global-ok: Engine
+      try { return camOrigH.apply(this, arguments); } finally { g.y = y0; } }
     const aktiv = Math.abs(lookX) > 0.01 || Math.abs(lookY) > 0.01;                               // global-ok: Engine
     if(eva && !aktiv && (typeof sideView === 'undefined' || sideView === 0) && !story.kameraZurueck()){   // global-ok: Engine
       const k = Math.min(1, EVA_LOOK_RETURN * dtCam);                                                // global-ok: Engine
@@ -443,7 +446,8 @@ const SPRUNG_FREI = 1.5;      // s: danach darf der Stick den Sprung abbrechen
 function springen(){
   if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet) return;
   if(figur.tempo > 0.3 && figur.acts.roll){
-    figur.aktion = 'roll'; figur.aktT = 0; figur.mond = mondAnlauf();
+    figur.aktion = 'roll'; figur.aktT = 0; figur.mond = mondAnlauf(); figur.erdRolle = false;
+    if(!figur.mond && locale === 'earth' && eva.onGround && !(story.imBoot && story.imBoot())){ figur.mond = 'anlauf'; figur.erdRolle = true; }   // auf der Erde: ein echter kleiner Sprung (ERD_ROLLE)  // global-ok: Engine
     figur.rollV = klemme(figur.tempo, 2.2, 3.6); figur.rollStick = 1;
     figurAnim('roll', 0.15, ROLL_TEMPO);
   } else if(figur.acts.jump){
@@ -457,16 +461,28 @@ function springen(){
 // die Engine wirklich (Mondschwerkraft, gut 6 m hoch, wie in Trip to Japan: dort springt sie immer, der Stick bleibt), und die
 // Luftphase des Clips wird auf die ganze Flugzeit gestreckt. Setzt er auf, laeuft der Rest wieder normal (Rolle: abrollen).
 const MOND_LUFT = { jump: [0.5, 1.05, 1], roll: [0.345, 1.035, ROLL_TEMPO] };   // Clipzeit hoch, Clipzeit unten, normales Tempo
+// Die Sprungrolle auf der Erde (Live-Wunsch 02.11.2026): etwa 30 cm hoeher und etwas laenger als der Clip allein – am Absprung hebt
+// Joshi wirklich ab (v), die Flugphase ist weicher (Schwerkraft g statt 9,81) und dauert T s (vorher 0,6 s); er rollt dabei weiter
+const ERD_ROLLE = { h: 0.3, T: 0.8 }; ERD_ROLLE.g = 8 * ERD_ROLLE.h / (ERD_ROLLE.T * ERD_ROLLE.T); ERD_ROLLE.v = ERD_ROLLE.g * ERD_ROLLE.T / 2;
 const mondAnlauf = () => (locale === 'moon' && eva && eva.onGround && story.engineSprung) ? 'anlauf' : null;   // global-ok: Engine
 function mondSprungSchritt(){
   const n = figur.aktion, L = MOND_LUFT[n], A = n && figur.acts[n]; if(!figur.mond || !L || !A) return;
   if(figur.mond === 'anlauf' && A.time >= L[0]){
-    if(!eva.onGround){ figur.mond = null; return; }
+    if(!eva.onGround){ figur.mond = null; figur.erdRolle = false; return; }
+    if(figur.erdRolle){ eva.vy = ERD_ROLLE.v; eva.onGround = false; A.timeScale = (L[1] - L[0]) / ERD_ROLLE.T; figur.mond = 'flug'; return; }
     story.engineSprung();
     const g = (typeof GRAV_AT !== 'undefined' && GRAV_AT.moon) || 1.62, flug = 2 * Math.max(0.5, eva.vy) / g;   // global-ok: Engine
     A.timeScale = (L[1] - L[0]) / flug; figur.mond = 'flug';
-  } else if(figur.mond === 'flug' && (eva.onGround || A.time >= L[1])){ A.timeScale = L[2]; figur.mond = 'ab'; }
+  }
+  // Ende des Sprungs = die echte Landung (Live-Wunsch 02.11.2026, wie Samus Twirl in Trip to Japan): die Flugzeit oben ist nur geschaetzt
+  // (gleich hoch gelandet wie abgesprungen). Landet er tiefer – vom Steg auf den Sand, ins Wasser (dort zaehlt die Oberflaeche: das
+  // Eintauchen), vom Mondhuegel hinunter –, haelt er die Luftpose, bis er wirklich unten ist; dann laeuft der Rest des Clips normal.
+  const gelandet = eva.onGround && !(sw.aktiv && sw.eintauchen && sw.eintauchen.luft);
+  if(figur.mond === 'flug' && !gelandet && A.time >= L[1] - 0.02) A.timeScale = 0.001;
+  else if(figur.mond === 'flug' && gelandet){ A.timeScale = L[2]; figur.mond = 'ab'; figur.erdRolle = false; }
 }
+// Rolle auf der Erde in der Luft: die Engine zieht mit 9,81 – um den Rest zurueckgeben, dann wirkt nur ERD_ROLLE.g (weicher, laenger)
+function erdRolleSchwebe(dt){ const A = figur.acts.roll; if(figur.erdRolle && figur.mond === 'flug' && eva && !eva.onGround && A && A.time < MOND_LUFT.roll[1] - 0.02) eva.vy += (((typeof GRAV_AT !== 'undefined' && GRAV_AT.earth) || 9.81) - ERD_ROLLE.g) * dt; }   // global-ok: Engine
 // A (Controller-Knopf 0) / Leertaste: springen · X (Knopf 2) / X: umherschauen. Die Engine nutzt beide zu Fuss
 // nicht (A = Schubbremse, X = Boost, Leertaste = Vollschub – alles nur im Flieger, siehe hookFigur: readInput).
 // Tastendruecke als Ereignis merken: ein kurzer Tipp kann zwischen zwei Bildern liegen.
@@ -618,7 +634,7 @@ function updateFigur(dt){
   if(figur.aktion){
     figur.aktT += dt;
     const clip = figur.acts[figur.aktion].getClip();
-    mondSprungSchritt();
+    mondSprungSchritt(); erdRolleSchwebe(dt);
     // Mondsprung: bis er wieder unten ist (danach wie sonst: der Rest des Clips im normalen Tempo)
     if(figur.mond && figur.mond !== 'ab'){ figur.steht = 0; return; }
     if(figur.mond === 'ab' && figur.acts[figur.aktion].time < clip.duration - 0.3 * figur.acts[figur.aktion].timeScale){ figur.steht = 0; return; }
@@ -726,11 +742,33 @@ const SCHWIMM_V   = 1.6;     // m/s
 const TAUCH_V     = 1.2;     // m/s auf und ab
 const SCHWIMM_TIEF = 0.45;   // m: so tief liegt der Koerper an der Oberflaeche im Wasser (Figur 1,20 m; Swim-Clip liegt waagerecht; Live-Wunsch 23.10.2026: 10 cm tiefer)
 const sw = story.schwimm = { aktiv: false };
+// Eintauchen (Live-Wunsch 02.11.2026: "ein Untertauchen und gleich wieder Auftauchen zum Schwimmen, als wuerde ein Orca springen"; vorher
+// setzte das Schwimmen ihn hart auf die Schwimmhoehe): wer schneller als ab m/s ins Wasser faellt, taucht mit dem Schwung unter (mit = Anteil
+// der Fallgeschwindigkeit), das Wasser bremst (bremse), der Auftrieb (auftrieb) traegt ihn weich zurueck nach oben (hoechstens hoch m/s);
+// dabei gleitet er nach vorn weiter (vor m/s, wird langsamer) und neigt sich: abwaerts der Kopf nach unten, aufwaerts nach oben. Die
+// Kamera bleibt dabei ueber Wasser (er kommt ja gleich wieder hoch).
+// Kommt er von oben (Steg, Kai: das Schwimmen beginnt schon, wenn er noch ueber dem Wasser ist), faellt er erst sichtbar bis zur Oberflaeche
+// (luft) – dort spritzt es und die Ringe laufen (platsch); vorher wurde er in einem Bild auf die Schwimmhoehe versetzt (holprig).
+const EINTAUCH = { ab: 2.5, max: 7, mit: 1.0, auftrieb: 2.0, bremse: 1.0, hoch: 1.8, vor: 2.0, neigung: 0.9 };
+function platsch(x, z, fall){
+  if(story.spritzer) story.spritzer(x, seaYAt(x, z), z, 34, Math.min(1.8, 0.7 + fall * 0.12));
+  if(story.wasserRing){ story.wasserRing(x, z, 1.0); setTimeout(() => story.wasserRing(x, z, 0.75), 280); }
+}
+function aktionBeimEintauchen(){ figur.aktion = null; figur.mond = null; figur.erdRolle = false; if(figur.acts.roll) figur.acts.roll.timeScale = ROLL_TEMPO; }
 function schwimmStart(x, z){
+  const fall = -(eva.vy || 0), hoehe = eva.group.position.y - seaYAt(x, z), vorTempo = (figur.aktion === 'roll' ? (figur.rollV || 0) : (figur.tempo || 0));   // vor dem Zuruecksetzen: wie schnell kam er herein
   sw.aktiv = true;
-  figur.kniet = false; figur.aktion = null;
+  figur.kniet = false;
+  // noch in der Luft (Rolle oder Sprung vom Steg): die Bewegung laeuft weiter und endet erst beim Eintauchen (schwimmUpdate)
+  if(!(hoehe > 0.15 && (figur.aktion === 'roll' || figur.aktion === 'jump'))) aktionBeimEintauchen();
   const g = eva.group;
   g.position.set(x, seaYAt(x, z) - SCHWIMM_TIEF, z);
+  // von oben hineingesprungen (Steg, Kaimauer): erst eintauchen wie ein Orca, dann weich wieder hoch (sw.eintauchen, schwimmUpdate) –
+  // mit Spritzern und Ringen auf dem Wasser (wie der Orca, story.spritzer / story.wasserRing)
+  if(fall > EINTAUCH.ab || hoehe > 0.15){ const luft = hoehe > 0; g.position.y = seaYAt(x, z) + (luft ? hoehe : -0.1);
+    sw.eintauchen = { vy: -Math.min(Math.max(0, fall), EINTAUCH.max) * (luft ? 1 : EINTAUCH.mit), vor: Math.max(EINTAUCH.vor, vorTempo), luft };
+    sw.eintauchen.y = g.position.y; if(!luft) platsch(x, z, fall); }   // ab hier rechnet das Eintauchen (nicht ab der Schwimmhoehe)
+  else sw.eintauchen = null;
   eva.vy = 0; eva.onGround = true;
   evaJumpFrom = null;
 }
@@ -753,15 +791,15 @@ function schwimmUpdate(dt, inp){
   eva.yaw -= (inp.yaw || 0) * EVA_TURN * dt;
   g.rotation.y = eva.yaw;
   const v = -(inp.pitch || 0) * SCHWIMM_V;
-  const nx = g.position.x - Math.sin(eva.yaw) * v * dt;
-  const nz = g.position.z - Math.cos(eva.yaw) * v * dt;
+  let nx = g.position.x - Math.sin(eva.yaw) * v * dt, nz = g.position.z - Math.cos(eva.yaw) * v * dt;
+  const E = sw.eintauchen; if(E){ E.vor = Math.max(0, E.vor - E.vor * 1.2 * dt); nx -= Math.sin(eva.yaw) * E.vor * dt; nz -= Math.cos(eva.yaw) * E.vor * dt; }   // gleitet nach vorn weiter
   figur.ausschlag = Math.abs(inp.pitch || 0); figur.tempo = 0;
   // Ans Ufer: wieder zu Fuss
   // Watzone nur zum Ufer hin (Grund wird flacher) – sonst pendelt die Figur gleich nach dem Hineingehen zwischen Schwimmen
   // und Waten und laeuft auf der Stelle (Live-Befund in Trip to Japan 23.10.2026)
   const zumUfer = seabedY(nx, nz) >= seabedY(g.position.x, g.position.z) - 0.005;
   if(evaSolid(nx, nz) && !isOpenWater(nx, nz) || isOnBeach(nx, nz) || isOnLand(nx, nz) || zumUfer && watGrund(nx, nz) !== null){
-    sw.aktiv = false; figur.nass = true;                        // kommt nass heraus: an Land schuettelt er sich (schuettelStart)
+    sw.aktiv = false; sw.eintauchen = null; if(figur.obj) figur.obj.rotation.x = 0; figur.nass = true;                        // kommt nass heraus: an Land schuettelt er sich (schuettelStart)
     g.position.set(nx, evaFootY(nx, nz), nz);
     eva.vy = 0; eva.onGround = true;
     return;
@@ -775,6 +813,18 @@ function schwimmUpdate(dt, inp){
   if(t === 0 && y < oben) y = Math.min(oben, y + 0.4 * dt);     // ohne Eingabe treibt sie nach oben
   // die Oberflaeche geht vor (sonst schwimmt sie im flachen Wasser ueber der Linie, Live-Befund in Trip to Japan 23.10.2026)
   g.position.y = Math.min(oben, Math.max(unten, y));
+  if(E){                                                         // eintauchen: abwaerts gebremst, dann weich hinauf an die Oberflaeche
+    let ye = E.y === undefined ? g.position.y : E.y;
+    if(E.luft){ E.vy -= 9.81 * dt; ye += E.vy * dt;                // noch in der Luft: faellt bis zur Oberflaeche
+      const wy = oben + SCHWIMM_TIEF; if(ye <= wy - 0.1){ E.luft = false; platsch(nx, nz, -E.vy); E.vy *= EINTAUCH.mit; aktionBeimEintauchen(); } }
+    else { E.vy = Math.min(EINTAUCH.hoch, E.vy + (EINTAUCH.auftrieb - EINTAUCH.bremse * E.vy) * dt); ye += E.vy * dt; }
+    if(ye <= unten){ ye = unten; if(E.vy < 0) E.vy = 0; }
+    E.y = ye; const fig = figur.obj;
+    if(!E.luft && E.vy > 0 && ye >= oben){ g.position.y = oben; sw.eintauchen = null;             // wieder oben: kleine Spritzer, ein Ring
+      if(story.spritzer) story.spritzer(nx, oben + SCHWIMM_TIEF, nz, 12, 0.6); if(story.wasserRing) story.wasserRing(nx, nz, 0.6); }
+    else { g.position.y = ye; if(fig) fig.rotation.x = Math.max(-EINTAUCH.neigung, Math.min(EINTAUCH.neigung, -Math.atan2(E.vy, Math.max(1, E.vor + 0.5)))); }
+  }
+  else if(figur.obj && Math.abs(figur.obj.rotation.x) > 0.001) figur.obj.rotation.x *= Math.max(0, 1 - 5 * dt);   // nach dem Auftauchen die Neigung weich zurueck
   eva.onGround = true;
   state.pos.copy(eva.planeAt);
   evaKmh = Math.abs(v) * 3.6;
@@ -846,7 +896,9 @@ function hookSchwimmen(){
   const camOrig = updateCamera;
   updateCamera = function(){
     if(eva && sw.aktiv){
-      const p = eva.group.position, yaw = eva.yaw + evaOrbit;
+      const pe = eva.group.position, yaw = eva.yaw + evaOrbit;
+      // beim Eintauchen bleibt die Kamera ueber Wasser: sie rechnet mit der Schwimmhoehe statt der Tauchtiefe (Live-Wunsch 02.11.2026)
+      const p = sw.eintauchen ? { x: pe.x, y: Math.max(pe.y, seaYAt(pe.x, pe.z) - SCHWIMM_TIEF), z: pe.z } : pe;
       const tief = seaYAt(p.x, p.z) - p.y;
       const k = klemme((tief - 0.5) / 2, 0, 1);
       const dist = 5 - 1.6 * k, hoch = 1.9 - 1.5 * k;
@@ -1301,7 +1353,7 @@ function updateFuchs(dt){
     }
   }
   fuchsWaechter(dt, fp);
-  fp.y = evaFootY(fp.x, fp.z);
+  fp.y = story.fuchsBoden ? story.fuchsBoden(fp.x, fp.z, fp.y) : evaFootY(fp.x, fp.z);   // steg.js: oben auf dem Steg bleibt er oben, auch wenn Joshi schwimmt
   // Pivot-Hopser: der Clip dreht den Fuchs nicht (nur 14 Grad) – die halbe Drehung macht der Code, weich mit dem Hopser
   let dreh = 0;
   if(fuchs.cur === 'Fox_Jump_Pivot_InPlace' && fuchs.acts[fuchs.cur]){
@@ -2327,10 +2379,11 @@ function hookLoop(){
 // Controller-Hinweis, kein grosses Bestaetigungssymbol (#big, Live-Wunsch 22.10.2026).
 // Ideen, falls doch ein HUD gebraucht wird: statt "Modell: Detektiv" + Astronauten-Symbol nur der
 // Name (Joshi) und Joshis Gesicht als kleines Icon (aus dem Figur-Render ausschneiden) – sonst nichts.
-const HUD_AUS = ['hud', 'radar', 'gyro', 'pad', 'big'];
+const HUD_AUS = ['hud', 'radar', 'pad', 'big'];   // das Gyroskop nur in Flugzeug und X-Wing, links oben (segeln.js, body.gyroAn)
 function hookHudAus(){
   const st = document.createElement('style');
-  st.textContent = HUD_AUS.map(id => '#' + id).join(',') + '{display:none!important}';
+  st.textContent = HUD_AUS.map(id => '#' + id).join(',') + '{display:none!important}'
+    + ' #gyro{display:none!important} body.gyroAn #gyro{display:block!important;left:12px!important;right:auto!important;top:12px!important}';
   document.head.appendChild(st);
 }
 

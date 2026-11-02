@@ -33,15 +33,17 @@ function spritzer(x, wy, z, n, kraft){
 story.spritzer = spritzer;
 // Fuer die Skizze (notizbuch.js): alle Tropfen und Wellen kurz aus- und danach wieder einblenden (Rueckgabe: wieder an)
 story.spurenVerstecken = function(){ const weg = []; for(const t of ws.tropfen) if(t.m.visible){ t.m.visible = false; weg.push(t.m); } for(const w of ws.wellen) if(w.m.visible){ w.m.visible = false; weg.push(w.m); } return () => { for(const m of weg) m.visible = true; }; };
-function welle(x, z, rich, k, groesse){
+function welle(x, z, rich, k, groesse, rund){
   bauen();
   let w = ws.wellen.find(q => !q.m.visible);
   if(!w){ if(ws.wellen.length >= WELLEN_MAX) return; w = { m: new THREE.Mesh(ws.wGeo, ws.wMat.clone()) }; w.m.renderOrder = 2; w.m.userData.deko = true; scene.add(w.m); ws.wellen.push(w); }   // global-ok
-  w.m.position.set(x, seaYAt(x, z) + 0.06, z); w.m.rotation.y = rich; w.m.visible = true; w.t = 0; w.k = k; w.g = groesse;
+  w.m.position.set(x, seaYAt(x, z) + 0.06, z); w.m.rotation.y = rich; w.m.visible = true; w.t = 0; w.k = k; w.g = groesse; w.rund = !!rund;
 }
 // Heckwelle fuer andere (Live-Wunsch 18.10.2026: das Segelboot, segeln.js): (x, z) hinter dem Heck, rich = Fahrtrichtung
 // (Winkel ab +z), k = 0..1 Fahrt, groesse = Faktor (Orca 1,1)
 story.heckWelle = (x, z, rich, k, groesse) => welle(x, z, rich, k, groesse);
+// runder Ring, der sich gleichmaessig ausbreitet (Live-Wunsch 02.11.2026: beim Eintauchen von Joshi, wie beim Orca)
+story.wasserRing = (x, z, groesse) => welle(x, z, 0, 0.6, groesse, true);
 function orcaSpuren(dt){
   if(typeof orcas === 'undefined' || !orcas.length) return;
   const cp = camera.position;
@@ -69,7 +71,7 @@ function schritt(dt){
   }
   for(const w of ws.wellen) if(w.m.visible){
     w.t += dt; const a = w.t / 1.6, g = w.g || 1;
-    w.m.scale.set((2.4 + a * 7 * (0.5 + w.k)) * g, 1, (1.6 + a * 3) * g);
+    if(w.rund){ const s = (1.0 + a * 6) * g; w.m.scale.set(s, 1, s); } else w.m.scale.set((2.4 + a * 7 * (0.5 + w.k)) * g, 1, (1.6 + a * 3) * g);
     w.m.position.y = seaYAt(w.m.position.x, w.m.position.z) + 0.06;
     w.m.material.opacity = 0.6 * (0.4 + w.k) * (1 - a);
     if(a >= 1) w.m.visible = false;

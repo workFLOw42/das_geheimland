@@ -1,6 +1,6 @@
 // Das Geheimland – Anzeigen beim Segeln (Live-Wunsch 16.10.2026). Laedt nach ausruestung.js.
-// Rechts oben Joshis Kompass (das eingesammelte Modell; sobald er im Rucksack ist, immer – auch zu Fuss; die Nadel zeigt
-// nach Norden und pendelt nach). Im Segelboot (steg.js) oben links das Radar (gleich gross wie der Kompass) mit dem roten
+// Rechts oben Joshis Kompass (das eingesammelte Modell; sobald er im Rucksack ist – nur zu Fuss und draussen; die Nadel zeigt
+// nach Norden und pendelt nach). Im Segelboot (steg.js) an seiner Stelle oben rechts das Radar (gleich gross wie der Kompass) mit dem roten
 // Punkt zum Ziel (wie in Trip to Japan: die SPITZE des Dreiecks ist das Boot), darunter der Schubbalken
 // (senkrecht, so breit wie das Radar; Farben wie in der Engine; blendet nach 5 s aus, bei jeder Aenderung wieder da). Kein linkes HUD, kein Gyroskop.
 // In der Mustang (Etappe 3, hoehle.js story.e3FlugAnzeige) dieselben Anzeigen: Radar mit dem roten Punkt, Schubbalken.
@@ -23,32 +23,40 @@ const SCHUB_ABST = 20;          // px Luft zwischen Radar und Schubbalken (Live-
 const FLUG_WEIT = 3000;         // m am Radarrand im Flugzeug (es ist zehnmal so schnell wie das Boot)
 
 // ---- Anzeigen (DOM) ---------------------------------------------------------------------------------------------
-const hud = { radar: null, ctx: null, kompass: null, schub: null, seg: [], an: false };
+// Anordnung (Live-Wunsch 02.11.2026, wie in Trip to Japan): oben rechts zu Fuss der Kompass, in einem Fahrzeug mit Radar statt seiner das
+// Radar; darunter rechts der Schubbalken (mit der Fahrt im obersten leuchtenden Segment, beim Bremsen ganz unten), links auf derselben
+// Hoehe gespiegelt der Hoehenbalken (Flugzeuge, Rakete; nicht im Boot). Ohne Radar (Rakete) sitzen beide trotzdem dort, als waere es da.
+const BALKEN_TOP = 12 + W + SCHUB_ABST;
+const hud = { radar: null, ctx: null, kompass: null, schub: null, seg: [], an: false, hoehe: null, hseg: [], hAlt: '' };
 function bauen(){
   if(hud.radar) return;
   const c = document.createElement('canvas'); c.width = c.height = W;
-  c.style.cssText = 'position:absolute;left:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:16;display:none;';   // oben links (das linke HUD ist aus)
+  c.style.cssText = 'position:absolute;right:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:16;display:none;';   // oben rechts, an der Stelle des Kompasses
   c.dataset.etappeHud = '1'; document.body.appendChild(c); hud.radar = c; hud.ctx = c.getContext('2d');
   // Schubbalken senkrecht unter dem Radar, so breit wie das Radar (unten = rot/rueckwaerts, nach oben mehr Fahrt).
   // Nach SCHUB_SICHT s ohne Aenderung blendet er ueber SCHUB_AUS s aus; aendert sich der Schub, ist er sofort wieder da.
   const s = document.createElement('div');
-  s.style.cssText = 'position:absolute;left:12px;top:' + (12 + W + SCHUB_ABST) + 'px;width:' + (W - 6) + 'px;height:' + SCHUB_H + 'px;padding:3px;border-radius:9px;'
+  s.style.cssText = 'position:absolute;right:12px;top:' + BALKEN_TOP + 'px;width:' + (W - 6) + 'px;height:' + SCHUB_H + 'px;padding:3px;border-radius:9px;'
     + 'background:rgba(0,0,0,.45);display:none;flex-direction:column-reverse;gap:3px;pointer-events:none;z-index:15;';
   for(let i = 0; i < SCHUB_N; i++){ const q = document.createElement('div'); q.style.cssText = 'flex:1;border-radius:3px;background:' + schubFarbe(i) + ';opacity:.15;'; s.appendChild(q); hud.seg.push(q); }
   s.dataset.etappeHud = '1'; document.body.appendChild(s); hud.schub = s;
+  // Hoehenbalken: links, gespiegelt zum Schubbalken (gleiche Hoehe, Groesse, Einteilung)
+  const h = document.createElement('div'); h.style.cssText = s.style.cssText; h.style.right = 'auto'; h.style.left = '12px';
+  for(let i = 0; i < SCHUB_N; i++){ const q = document.createElement('div'); q.style.cssText = 'flex:1;border-radius:3px;opacity:.15;'; h.appendChild(q); hud.hseg.push(q); }   // global-ok: Engine
+  h.dataset.etappeHud = '1'; document.body.appendChild(h); hud.hoehe = h;
   // Kompass: eigenes kleines WebGL-Bild (das Modell aus dem Rucksack)
   const k = document.createElement('canvas'); k.width = k.height = W * 2;
   k.style.cssText = 'position:absolute;right:12px;top:12px;width:' + W + 'px;height:' + W + 'px;pointer-events:none;z-index:15;display:none;';
   k.dataset.etappeHud = '1'; document.body.appendChild(k); hud.kompass = k;
+  const gy = document.getElementById('gyro'); if(gy) gy.dataset.etappeHud = '1';   // Gyroskop der Engine: in Pause und Globus aus wie die anderen
 }
 function zeigen(an){
   if(an === hud.an) return;
   hud.an = an;
   hud.radar.style.display = an ? 'block' : 'none';
   hud.schub.style.display = an ? 'flex' : 'none';
-  if(an){ schubT = 0; schubAlt = '';                            // beim Einsteigen erst einmal zeigen
-    // Der Balken setzt UNTER dem Radar an (Live-Wunsch: das Radar nie ueberdecken) – an der gemessenen Unterkante
-    const r = hud.radar.getBoundingClientRect(); hud.schub.style.top = Math.round(r.bottom + SCHUB_ABST) + 'px'; }
+  if(!an){ hud.hoehe.style.display = 'none'; hud.hAlt = ''; }
+  if(an){ schubT = 0; schubAlt = ''; }                           // beim Einsteigen erst einmal zeigen
 }
 
 // ---- Radar: Spitze des Symbols = das Boot bzw. Flugzeug, roter Punkt = Ziel. Symbole seit 23.10.2026 aus der Engine
@@ -88,8 +96,29 @@ function malSchub(g, dt, art){
     schubSegmente(hud.seg, g, 3, art);                           // global-ok: Engine (Segelboot: gleiche Abstaende, Mustang: Flugzeug)
   } else schubT += dt;
   const op = klemme(1 - (schubT - SCHUB_SICHT) / SCHUB_AUS, 0, 1).toFixed(2);
-  if(op !== schubOp){ schubOp = op; hud.schub.style.opacity = op; }
+  if(op !== schubOp){ schubOp = op; hud.schub.style.opacity = op; if(hud.hoehe) hud.hoehe.style.opacity = op; }   // der Hoehenbalken blendet mit
 }
+const BALKEN_SCHRIFT = 'font:800 14px system-ui,sans-serif;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 4px rgba(0,0,0,.8);'
+  + 'display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:visible;';
+function segText(seg, i, txt){ seg.forEach((q, j) => { if(!q.dataset.schrift){ q.dataset.schrift = '1'; q.style.cssText += BALKEN_SCHRIFT; } const w = j === i ? txt : ''; if(q.textContent !== w) q.textContent = w; }); }
+// Fahrt (km/h, rueckwaerts negativ) im obersten leuchtenden Segment; bei 0 km/h nichts; beim Bremsen im untersten (auch 0 und negativ)
+function schubText(g, kmh){
+  const bremse = g < -0.01, an = Math.round(klemme(g, 0, 1) * 10);
+  segText(hud.seg, bremse ? 0 : (an >= 1 && kmh !== 0 ? an - 1 : -1), kmh + ' km/h');
+}
+// Hoehe: 100 % = hoechste Hoehe (max), 10 Segmente, auf 5 % gerundet (ab 95 % voll); die Meter im obersten leuchtenden Segment
+function malHoehe(m, max){
+  if(m === null){ if(hud.hoehe.style.display !== 'none'){ hud.hoehe.style.display = 'none'; hud.hAlt = ''; } return; }
+  hud.hoehe.style.display = 'flex';
+  const an = klemme(Math.round(m / max * SCHUB_N), 0, SCHUB_N), k = an + '|' + m;   // global-ok: Engine
+  if(k === hud.hAlt) return; hud.hAlt = k;
+  schubSegmente(hud.hseg, an / SCHUB_N, 3, 'flieger');                      // global-ok: Engine (Farben und Luecken wie der Schub)
+  segText(hud.hseg, an >= 1 ? an - 1 : -1, m + ' m');
+}
+const fahrtKmh = () => { const f = new THREE.Vector3(0, 0, -1).applyQuaternion(state.quat); return Math.round(state.vel.dot(f) * 3.6); };   // global-ok: Engine
+function flugHoehe(){ const ref = (GROUNDS[locale] || locale === 'death') ? surfaceY(state.pos.x, state.pos.z) : 0.3; return Math.max(0, Math.round(state.pos.y - ref)); }   // global-ok: Engine
+// 100 % = die Grenze zum Weltall (Erde SPACE_Y, Mond/Mars: wo man sie verlaesst); Flugzeuge, die nicht ins All kommen: ihre Hoechsthoehe
+const flugMax = () => locale !== 'earth' ? ((GROUNDS[locale] && GROUNDS[locale].leave) || 1000) : (isXWing() ? SPACE_Y : ((spec && spec.maxAlt) || SPACE_Y));   // global-ok: Engine
 // ---- Kompass: Modell von oben, Nadel zeigt nach Norden (-z der Welt) und pendelt gedaempft nach --------------------
 const ko = { r: null, sz: null, cam: null, obj: null, nadel: null, w: 0, v: 0, laedt: false };
 function kompassBauen(){
@@ -228,23 +257,29 @@ function update(dt){
   const s = story.stegZustand;
   const imBoot = !!(eva && s && s.imBoot && !s.wechsel && locale === 'earth');
   const flug = story.e3FlugAnzeige ? story.e3FlugAnzeige() : null;   // in der Mustang
-  const rakete = story.raketeSchub ? story.raketeSchub() : null;      // in der Rakete auf dem Mond (heimflug.js) – nur der Schub
-  zeigen(imBoot || !!flug || rakete !== null);
-  if(rakete !== null){ hud.radar.style.display = 'none'; malSchub(rakete, dt, 'flieger'); return; }
+  const rakete = story.raketeAnzeige ? story.raketeAnzeige() : null;  // in der Rakete auf dem Mond (heimflug.js): Schub, Fahrt, Hoehe – ohne Radar
+  zeigen(imBoot || !!flug || !!rakete);
+  document.body.classList.toggle('gyroAn', !!flug);              // Flugzeug, X-Wing: links oben das Gyroskop (ueber dem Hoehenbalken)
+  if(rakete){ hud.radar.style.display = 'none'; if(kompassAn){ kompassAn = false; hud.kompass.style.display = 'none'; }
+    if(rakete.fliegt) schubT = 0;                                 // beim Aufsteigen bleiben Fahrt und Hoehe sichtbar
+    malSchub(rakete.schub, dt, 'flieger'); schubText(rakete.schub, rakete.kmh); malHoehe(rakete.hoehe, rakete.max); return; }
   // Kompass (Live-Wunsch): sobald er im Rucksack ist, immer rechts oben – zu Fuss, schwimmend und im Boot. Nicht im
   // Huetten-Raum (eigene Welt, dort gibt es kein Norden) und nicht waehrend der Ausruestungs-Szene.
   // ... auch nicht in Joshis Kinderzimmer und im Abspann (kinderzimmer.js, heimkehr.js)
   const k = !!(eva && story.ausruestung && story.ausruestung.kompass && !(story.innen && story.innen.drin) && locale === 'earth'
-    && !(story.nurLaufen && story.nurLaufen()) && !(story.heimkehrZustand && story.heimkehrZustand.ab));
+    && !(story.nurLaufen && story.nurLaufen()) && !(story.heimkehrZustand && story.heimkehrZustand.ab))
+    && !imBoot && !flug && !(story.schwimm && story.schwimm.aktiv);   // nur zu Fuss und draussen (Live-Wunsch 02.11.2026): im Fahrzeug steht dort das Radar, beim Schwimmen nichts
   if(k !== kompassAn){ kompassAn = k; hud.kompass.style.display = k ? 'block' : 'none'; }
   // Blickrichtung ab +z: im Boot der Bug, sonst Joshi (Engine: Nase -Z -> yaw + PI)
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);
   if(s && story.etappe === 1) updateFahrtOptik(dt, s, imBoot);
-  if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT, 'flieger'); malSchub(state.throttle, dt, 'flieger'); return; }
+  if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT, 'flieger'); malSchub(state.throttle, dt, 'flieger');   // global-ok: Engine
+    schubText(state.throttle, fahrtKmh()); malHoehe(flugHoehe(), flugMax()); return; }   // global-ok: Engine
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);
-  malSchub(story.bootSchub ? story.bootSchub() : 0, dt, 'boot');
+  const bs = story.bootSchub ? story.bootSchub() : 0;
+  malSchub(bs, dt, 'boot'); schubText(bs, Math.round((s.v || 0) * 3.6)); malHoehe(null);   // im Boot keine Hoehe
   // Angekommen? Grob in der Naehe reicht (wie in Trip to Japan)
   const z = story.ziel;
   if(z) zielZiehen(z, s, dt);

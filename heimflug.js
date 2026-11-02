@@ -153,7 +153,10 @@ function raketeTakt(dt){
   }
   if(rk.phase === 'start'){
     rk.kam.lerp(rk.kamWeit, Math.min(1, dt * 1.5));
-    const h = 0.5 * 2.6 * rk.t * rk.t; rk.obj.position.y = rk.y0 + h;   // nach START_DAUER s gut 160 m hoch
+    // bis auf die Hoechstgeschwindigkeit des X-Wings (Live-Wunsch 02.11.2026: im Schubbalken die Fahrt, links die Hoehe): sanft anfangs
+    // (in den ersten Sekunden wie bisher, der Blick vom Mondboden bleibt), dann immer schneller – v = vmax (t/T)^3
+    const u = Math.min(1, rk.t / START_DAUER); rk.v = raketeVmax() * u * u * u;
+    const h = raketeVmax() * START_DAUER / 4 * u * u * u * u; rk.obj.position.y = rk.y0 + h;
     rk.flamme.visible = true; rk.flamme.scale.set(1.1, 1.6 + Math.sin(rk.t * 30) * 0.15, 1.1);
     story.raketenTon(Math.max(0.3, 1 - 0.7 * Math.min(1, rk.t / START_DAUER)));   // beim Abheben am lautesten, dann entfernt sie sich
     // nach Hause: der Spielstand merkt sich die Heimkehr (falls die Seite spaeter neu geladen wird), dann Globus zu Joshis Insel – weiter
@@ -175,6 +178,14 @@ story.e5Rakete = () => rk.drin;
 story.figurVersteckt = () => !!(rk.drin && e5());          // story.js figurWache
 // Schubanzeige links (segeln.js, wie bei allen Fahrzeugen): solange Joshi in der Rakete Schub gibt
 story.raketeSchub = () => (e5() && rk.drin && rk.phase === 'schub') ? rk.schub : null;
+// Anzeigen in der Rakete (segeln.js): Schub, Fahrt, Hoehe ueber dem Startplatz (am Boden 0), 100 % Hoehe = wo man den Mond verlaesst
+const raketeVmax = () => (typeof PLANE_SPECS !== 'undefined' && PLANE_SPECS.XWing && PLANE_SPECS.XWing.vMax) || 686;   // global-ok: Engine
+story.raketeAnzeige = () => {
+  if(!(e5() && rk.drin && rk.obj && (rk.phase === 'schub' || rk.phase === 'start'))) return null;
+  const fliegt = rk.phase === 'start';
+  return { fliegt, schub: fliegt ? 1 : rk.schub, kmh: fliegt ? Math.round((rk.v || 0) * 3.6) : 0, hoehe: fliegt ? Math.max(0, Math.round(rk.obj.position.y - rk.y0)) : 0,
+    max: (typeof GROUNDS !== 'undefined' && GROUNDS.moon && GROUNDS.moon.leave) || 1000 };   // global-ok: Engine
+};
 // Am X-Wing nach dem Fest (Live-Wunsch 29.10.2026): die Aliens fliegen damit heim – Joshi nimmt ihre Rakete
 function xwingSatz(){
   if(rk.xwing || typeof planeGroup === 'undefined' || !planeGroup || !story.interaktion) return; const p = planeGroup.position;   // global-ok: Engine

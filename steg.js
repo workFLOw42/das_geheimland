@@ -113,6 +113,9 @@ function hookSteg(){
     return r;
   };
 }
+// Fuchsi (story.js): steht er oben auf dem Steg (oder auf dem Sandteil), bleibt er oben – auch wenn Joshi schwimmt (dann gilt der Steg fuer
+// Joshi nicht, er schwimmt darunter durch). Live-Befund 02.11.2026: Fuchsi sackte auf die Wasserlinie und stand von unten gesehen im Wasser.
+story.fuchsBoden = (x, z, y) => (locale === 'earth' && aufSteg(x, z) && (z <= STEG.zUfer || (y !== undefined && y > stegY(z) - STUFE))) ? stegY(z) : evaFootY(x, z);   // global-ok: Engine
 story.stegBoden = (x, z) => (locale === 'earth' && eva && stegGilt(x, z, eva.group.position.y)) ? stegY(z) : null;
 
 // ---- Bauen -----------------------------------------------------------------------------------

@@ -31,8 +31,9 @@ story.fortschrittSpeichern = function(){ try { localStorage.setItem(FORTSCHRITT,
 story.zimmerSpielsachen = function(g, P){
   const farbe = (c) => new THREE.MeshLambertMaterial({ color: c }), add = (m, x, y, z, ry) => { m.position.set(P.x + x, y, P.z + z); if(ry) m.rotation.y = ry; g.add(m); return m; };
   const gelb = farbe(0xf6b80f), dunkel = farbe(0x3a3a3a);
-  // Kran: Fuss, Gitterturm, Ausleger mit Gegengewicht, Seil und Haken
-  const kran = new THREE.Group(); add(kran, 0.75, 0.03, 0.35, -0.5);
+  // Kran: Fuss, Gitterturm, Ausleger mit Gegengewicht, Seil und Haken – der Ausleger zeigt in den Raum (Live-Wunsch 02.11.2026: um 180 Grad
+  // gedreht, vorher ragte er in die Wand)
+  const kran = new THREE.Group(); add(kran, 0.75, 0.03, 0.35, Math.PI - 0.5);
   const fuss = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.34), dunkel); fuss.position.y = 0.04; kran.add(fuss);
   for(const [x, z] of [[-0.07, -0.07], [0.07, -0.07], [-0.07, 0.07], [0.07, 0.07]]){ const st = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.95, 0.025), gelb); st.position.set(x, 0.55, z); kran.add(st); }
   for(let i = 0; i < 6; i++){ const q = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.16), gelb); q.position.y = 0.16 + i * 0.16; kran.add(q); }

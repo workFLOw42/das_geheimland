@@ -147,10 +147,13 @@ function baueRaum(zimmer){
   g.add(regal);
   R.regal = regal;                                  // spaeter: Trophaeen
   // Strassen-Spielteppich (2,7 x 1,8 m) vor dem Bett – bedeckt nur einen Teil des Bodens
-  const teppich = zimmer ? story.tex.teppichMesh(4.8, 3.2) : story.tex.teppichMesh(2.7, 1.8); teppich.position.set(zimmer ? 1.65 : 0.3, 0.03, zimmer ? 0.2 : 0.9); teppich.userData.begehbar = true; g.add(teppich);   // im Zimmer bis in die Spielecke
+  // im Zimmer samt Bagger und Spielsachen Richtung Buecherregal (Rueckwand) geschoben (Live-Wunsch 02.11.2026: Platz fuer das Ende des Spiels) –
+  // die Hinterkante bleibt knapp vor dem Regal
+  const SPIEL_DZ = zimmer ? -1.55 : 0;
+  const teppich = zimmer ? story.tex.teppichMesh(4.8, 3.2) : story.tex.teppichMesh(2.7, 1.8); teppich.position.set(zimmer ? 1.65 : 0.3, 0.03, zimmer ? 0.2 + SPIEL_DZ : 0.9); teppich.userData.begehbar = true; g.add(teppich);   // im Zimmer bis in die Spielecke
   // gelber Spielzeug-Bagger auf einem kleinen Wandbord (rechte Wand, 1,1 m hoch) – auf dem Teppich stand er im Weg
-  if(zimmer){ const bagger = baueBagger(); bagger.position.set(B / 2 - 1.5, 0.03, -0.9); bagger.rotation.y = -0.6; g.add(bagger); R.bagger = bagger;
-    if(story.zimmerSpielsachen) story.zimmerSpielsachen(g, { x: B / 2 - 1.4, z: -0.6 }); }
+  if(zimmer){ const bagger = baueBagger(); bagger.position.set(B / 2 - 1.5, 0.03, -0.9 + SPIEL_DZ); bagger.rotation.y = -0.6; g.add(bagger); R.bagger = bagger;
+    if(story.zimmerSpielsachen) story.zimmerSpielsachen(g, { x: B / 2 - 1.4, z: -0.6 + SPIEL_DZ }); }
   const bord = new THREE.Group(); bord.position.set(B / 2 - 0.2, 1.1, 1.6); if(!zimmer) g.add(bord);
   const brett = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.035, 0.7), holz.clone()); bord.add(brett);
   for(const sz of [-0.28, 0.28]){ const k = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), dunkel); k.position.set(0.13, -0.09, sz); k.rotation.z = 0.5; bord.add(k); }

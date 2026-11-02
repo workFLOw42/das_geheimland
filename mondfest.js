@@ -157,7 +157,9 @@ function instrumenteBauen(){
   lade('GITARRE_SAAL_GLB', 'Gitarre', (o) => { const s0 = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
     if(s0.x >= s0.y && s0.x >= s0.z) o.rotation.z = Math.PI / 2; else if(s0.z >= s0.y && s0.z >= s0.x) o.rotation.x = Math.PI / 2; o.updateMatrixWorld(true);
     const h = passend(o, 'h', 1.05); h.position.set(GITARRE.dx, 0, GITARRE.dz); h.rotation.y = blick; h.rotation.z = 0.12; G.add(h); mf.gitarre = h; mf.gitInter = anmelden(h, GITARRE, 'Gitarre', () => musik('guitar')); });
-  lade('SCHLAGZEUG_GLB', 'Schlagzeug', (o) => { const h = passend(o, 'b', 2.0); h.position.set(SCHLAGZEUG.dx, 0, SCHLAGZEUG.dz); h.rotation.y = Math.atan2(-SCHLAGZEUG.dx, -SCHLAGZEUG.dz); G.add(h); mf.schlagzeug = h;
+  // ohne den Hocker aus dem Modell (Live-Wunsch 02.11.2026: Joshi sitzt auf dem eigenen Hocker unten, der blaugraue stand nur im Weg)
+  lade('SCHLAGZEUG_GLB', 'Schlagzeug', (o) => { const weg = []; o.traverse(m => { if(/^Stool/.test(m.name)) weg.push(m); }); for(const m of weg) if(m.parent) m.parent.remove(m);
+    const h = passend(o, 'b', 2.0); h.position.set(SCHLAGZEUG.dx, 0, SCHLAGZEUG.dz); h.rotation.y = Math.atan2(-SCHLAGZEUG.dx, -SCHLAGZEUG.dz); G.add(h); mf.schlagzeug = h;
     mf.drumInter = anmelden(h, SCHLAGZEUG, 'Schlagzeug', () => musik('drums')); });
   // Hocker hinter dem Schlagzeug (zur Wand hin)
   const a = Math.atan2(SCHLAGZEUG.dx, SCHLAGZEUG.dz), hx = SCHLAGZEUG.dx + Math.sin(a) * 0.9, hz = SCHLAGZEUG.dz + Math.cos(a) * 0.9;

@@ -391,7 +391,9 @@ function updateInnen(dt){
   if(!innen.drin){
     // in der Tueroeffnung der Huette (aussen) -> hinein; waehrend einer Aktion bleibt er davor stehen (die Tuer ist zu)
     if(Math.abs(p.x - H.x) < 0.5 && p.z < H.z + H.T / 2 + 0.05 && p.z > H.z + H.T / 2 - 0.6){
-      if(story.aktionLaeuft && story.aktionLaeuft()) p.z = H.z + H.T / 2 + 0.05; else wechsle('innen'); }
+      // wie an jedem Eingang (Standard: Observatorium wueste.js, Hoehle): ein Stueck davor stehen bleiben, nicht in der Oeffnung (Live-Befund
+      // 02.11.2026: bei + 0,05 stand Joshi mitten in der Tuer, lief auf der Stelle und die Kamera hing im Rahmen, solange noch gesprochen wurde)
+      if(story.aktionLaeuft && story.aktionLaeuft()) p.z = H.z + H.T / 2 + 0.9; else wechsle('innen'); }
   } else {
     // innen durch die Tuer hinaus
     if(Math.abs(p.x - RAUM.x) < 0.6 && p.z > RAUM.z + RAUM.T / 2 - 0.05 && !(story.aktionLaeuft && story.aktionLaeuft())) wechsle('aussen');

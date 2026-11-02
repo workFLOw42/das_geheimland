@@ -68,6 +68,6 @@ Außerdem fügt `build_engine.ps1` zwei Haken in den Boot-Block der Engine ein: 
 ## Wenn sich die Engine ändert
 
 1. Im Flugspiel ändern und committen (die Engine nie in `engine/` von Hand ändern).
-2. `powershell -File tools/build_engine.ps1` – kopiert die Engine neu, prüft die Liste `$noetig`.
+2. `powershell -File tools/build_engine.ps1 -EngineNeu` – kopiert die Engine neu, prüft die Liste `$noetig` (ohne `-EngineNeu` bleibt die eigenständige Engine, seit 02.11.2026).
 3. Diese Datei aktualisieren: Stand, Prüfsumme, neue Wrapper.
 4. Spiel_SFG gleich mitbauen, damit beide auf demselben Stand bleiben.

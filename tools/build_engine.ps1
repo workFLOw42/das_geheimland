@@ -1,6 +1,11 @@
-# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
+﻿# Baut die Engine aus dem Flugspiel-Repo nach engine/ und erzeugt index.html (Vorbild: Spiel_SFG).
 # Aufruf aus dem Projektordner:  powershell -File tools/build_engine.ps1
 # Die Engine bleibt UNVERAENDERT – die Spiellogik haengt sich in story.js per Wrapper ein.
+# Seit 02.11.2026 hat dieses Spiel eine EIGENSTAENDIGE Engine (Nutzer-Entscheidung): engine/engine.js und die Engine-Dateien in engine/
+# bleiben, wie sie sind. Ohne Schalter baut dieses Skript nur index.html und die eigenen Modelle/Toene neu - den Kopf (HUD-Markup,
+# Engine-Skripte) liest es aus engine/flugspiel_kopf.html. Nur mit -EngineNeu holt es die Engine wieder aus ../Flugspiel
+# (vorher fragen: Umbauten an einer Engine gehen nicht automatisch in die anderen).
+param([switch]$EngineNeu)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $src  = Join-Path (Split-Path -Parent $root) 'Flugspiel'
@@ -8,6 +13,8 @@ $dst  = Join-Path $root 'engine'
 $utf8 = New-Object Text.UTF8Encoding $false
 New-Item -ItemType Directory -Force $dst | Out-Null
 
+$kopfDatei = Join-Path $dst 'flugspiel_kopf.html'
+if($EngineNeu){
 $html  = [IO.File]::ReadAllText((Join-Path $src 'Flugspiel.html'), $utf8)
 $lines = $html -split "`r?`n"
 
@@ -42,6 +49,12 @@ $noetig = 'loop','updateEva','makeAstronaut','findStart','placeAtStart','evaExit
 $fehlt = $noetig | Where-Object { $engine -notmatch ('(?m)^function ' + [regex]::Escape($_) + '\(') }
 if($fehlt){ throw ('Engine-Funktionen fehlen (umbenannt?): ' + ($fehlt -join ', ')) }
 [IO.File]::WriteAllText((Join-Path $dst 'engine.js'), $engine, $utf8)
+[IO.File]::WriteAllText($kopfDatei, (($lines[0..($start-1)]) -join "`n"), $utf8)
+} else {
+  if(-not (Test-Path $kopfDatei)){ throw 'engine/flugspiel_kopf.html fehlt' }
+  $lines = [IO.File]::ReadAllText($kopfDatei, $utf8) -split "`r?`n"; $start = $lines.Count
+  'Engine bleibt (eigenstaendig, Stand engine/engine.js) - neu aus dem Flugspiel nur mit -EngineNeu'
+}
 
 # Kopf + HUD-Markup (alles vor dem Engine-Block), Script-Pfade auf engine/ umbiegen
 $head = @()
@@ -64,7 +77,7 @@ foreach($ln in $lines[0..($start-1)]){
   $ln = $ln -replace 'content="Flugspiel"', 'content="Das Geheimland"'
   $head += $ln
 }
-foreach($a in $assets){ Copy-Item -Force (Join-Path $src $a) (Join-Path $dst $a) }
+if($EngineNeu){ foreach($a in $assets){ Copy-Item -Force (Join-Path $src $a) (Join-Path $dst $a) } }
 
 # Eigene Modelle als eingebettete GLBs (wie die Flugspiel-Modelle): models/<name>.glb -> <name>_glb.js
 $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'LAGERFEUER_GLB'; segelboot = 'SEGELBOOT_GLB';
@@ -90,9 +103,9 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              # Wassertropfen ("drop of water" von furret), Kristalle ("Cristal" von lobach.dre, "CRISTAL OSCURO_" von iorko), Laborglas ("Lab Tube for P.A.L" von Charlotte Kimberly Andreassen),
              # Feder ("Day 1. Feather" von tuturu), Hammer ("Hammer Game Ready" von re1monsen); auf dem Forschungstisch der Reagenzglas-Staender ("3rd - Chemistry // Old Lab Tubes" von Ringo Gunther)
              pflanze = 'PFLANZE_GLB'; tropfen = 'TROPFEN_GLB'; kristall = 'KRISTALL_GLB'; kristall_dunkel = 'KRISTALL_DUNKEL_GLB'; laborglas = 'LABORGLAS_GLB';
-             feder = 'FEDER_GLB'; hammer = 'HAMMER_GLB'; reagenzglaeser = 'REAGENZGLAESER_GLB';
+             feder = 'FEDER_GLB'; hammer = 'HAMMER_GLB'; knochen = 'KNOCHEN_GLB'; reagenzglaeser = 'REAGENZGLAESER_GLB';
              # Starke Knochen im Mikroskop ("Bone" von Zab, CC-BY-4.0, Live-Wunsch 29.10.2026)
-             knochen = 'KNOCHEN_GLB';
+             # (knochen steht oben vor reagenzglaeser - Reihenfolge wie im index.html)
              # Etappe 5: die Erde am Mondhimmel und in der Skizze ("Earth" von Akshat, CC-BY-4.0, Textur als JPEG)
              planet_erde = 'PLANET_ERDE_GLB';
              # Etappe 5, Ende (Live-Wuensche 28.10.2026, alle CC-BY-4.0, verkleinert mit C:\tmp\gt\opt.mjs): Computer im Buero ("Old retro-futuristic
@@ -100,9 +113,13 @@ $modelle = [ordered]@{ figur = 'FIGUR_GLB'; fuchs = 'FUCHS_GLB'; lagerfeuer = 'L
              # die Rakete fuer den Heimflug ("Rocket" von stevespencer); Samu aus Spiel_SFG (nur idle, walk, dance_hiphop, dance_silly - C:\tmp\gt\tiere.mjs)
              computer = 'COMPUTER_GLB'; gitarre_saal = 'GITARRE_SAAL_GLB'; schlagzeug = 'SCHLAGZEUG_GLB'; rakete = 'RAKETE_GLB'; samu = 'SAMU_GLB' }
 $skripte = @()
+# Ein fertiges <name>_glb.js wird nur neu geschrieben, wenn models\<name>.glb neuer ist; fehlt die Quelle, bleibt das fertige drin
+# (02.11.2026: knochen_glb.js hat keine Quelle mehr in models\, samu_glb.js ist neuer als models\samu.glb)
 foreach($n in $modelle.Keys){
   $p = Join-Path $root "models\$n.glb"
-  if(-not (Test-Path $p)){ Write-Warning "models\$n.glb fehlt"; continue }
+  $js = Join-Path $root "${n}_glb.js"
+  if(-not (Test-Path $p)){ if(Test-Path $js){ $skripte += "${n}_glb.js" } else { Write-Warning "models\$n.glb fehlt" }; continue }
+  if((Test-Path $js) -and (Get-Item $js).LastWriteTime -ge (Get-Item $p).LastWriteTime){ $skripte += "${n}_glb.js"; continue }
   $b = [IO.File]::ReadAllBytes($p)
   [IO.File]::WriteAllText((Join-Path $root "${n}_glb.js"),
     "window.$($modelle[$n]) = `"data:model/gltf-binary;base64," + [Convert]::ToBase64String($b) + "`";`n", $utf8)
@@ -119,7 +136,7 @@ foreach($n in $modelle.Keys){
 # wuestenwind: leichter Wind in der Oase, Etappe 4 (Pixabay: tanweraman 'Desert Wind 2', wie Trip to Japan Etappe 2)
 # adler1, adler2: Adlerrufe in Wald und Bergen, Etappe 3 (Pixabay: koiroylers 'eagle', u_jfkxueyart 'eagle')
 # weihnachtslied: "Tinsel and Tremolo" (vom Spieler selbst mit Gemini erstellt), Weihnachtsfeier im Saal der Mondbasis (Etappe 5)
-foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'stift', 'schlagzeug', 'rakete', 'voegel', 'wuestenwind', 'adler1', 'adler2', 'weihnachtslied')){
+foreach($n in @('gitarre', 'funk', 'eule', 'holz', 'gorilla', 'schnitzen', 'schlagzeug', 'rakete', 'stift', 'voegel', 'wuestenwind', 'adler1', 'adler2', 'weihnachtslied')){
   $p = Join-Path $root "sounds\$n.mp3"
   if(-not (Test-Path $p)){ Write-Warning "sounds\$n.mp3 fehlt"; continue }
   $b = [IO.File]::ReadAllBytes($p)

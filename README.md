@@ -40,7 +40,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | Datei | Inhalt |
 |---|---|
 | `index.html` | wird von `tools/build_engine.ps1` erzeugt |
-| `engine/` | Flugspiel-Engine + Modelle, **unverändert** kopiert von `tools/build_engine.ps1` |
+| `engine/` | **eigenständige** Engine (Kopie der Flugspiel-Engine, Stand 26.10.2026) + Modelle; `engine/flugspiel_kopf.html` = HUD-Markup und Engine-Skripte für `index.html` |
 | `story.js` | Spiellogik: Welt, Nacht, Spielfigur, Schwimmen, Fuchs, Sprache, Startbildschirm |
 | `texturen.js` | gemeinsame Texturen: Tapete, Holzverkleidung, Dielen, Straßen-Spielteppich |
 | `sternbilder.js` | Sternbilder am Nachthimmel (Großer und Kleiner Bär, Kassiopeia, Orion) |
@@ -53,7 +53,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `models/*.glb` | eigene Modelle; `build_engine.ps1` bettet sie als `*_glb.js` ein |
 | `sounds/*.mp3` | eigene Töne; werden als `*_snd.js` eingebettet |
 
-Neu bauen (nach Änderungen an Engine, Modellen oder Tönen): `powershell -File tools/build_engine.ps1`
+Neu bauen (nach Änderungen an Modellen oder Tönen): `powershell -File tools/build_engine.ps1` – die Engine bleibt dabei, wie sie ist (eigenständig seit 02.11.2026). Nur mit `-EngineNeu` wird sie wieder aus dem Flugspiel geholt; vorher klären, ob die anderen Spiele dieselbe Änderung bekommen sollen.
 
 Stand der Engine, Unterschiede zu Spiel_SFG und alle überschriebenen Engine-Funktionen: [ENGINE.md](ENGINE.md).
 

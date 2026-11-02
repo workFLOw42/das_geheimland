@@ -688,6 +688,8 @@ story.bildEbeneAktiv = () => !!(ab.phase || zustand.aktiv);
 // laufen (Y und Weltwechsel bleiben bis zum Ende gesperrt: story.aktionLaeuft ueber bildEbeneAktiv)
 story.notizVollbild = () => !!(ab.phase || sz.phase || (zustand.aktiv && zustand.verstaut !== zustand.aktiv));
 story.bildEbene = function(dt, szene, pause){
+  if(stiftTon.src && (pause || !soundOn || ab.phase !== 'kritzel')) stiftTonAus();   // Stift fertig, Pause/Inventar oder Ton aus
+  if(ab.phase && ab.s && ab.s.art === 'skizze') stiftTonLaden();
   if(!pause){ scheitSetzen(); updateMarken(dt); updateDetektiv(); updateMuetze(dt); updateHuette(dt); updateSchwarm(dt); }
   updateSzene(dt, pause);
   if(!ab.phase) return;
@@ -714,6 +716,7 @@ story.bildEbene = function(dt, szene, pause){
   } else if(ab.phase === 'kritzel'){
     // erst die Zeichnung (in Schichten), dann – immer zuletzt – das J (Live-Wunsch 16.10.)
     const tZeich = ab.schichten ? T_SKIZZE : T_KRITZEL;
+    if(ab.s.art === 'skizze') stiftTonAn(ab.t < tZeich && stiftAbgesetzt(ab.t));   // Bleistiftgeraeusch (in den Absetz-Pausen still)
     if(ab.t < tZeich){ skizzeMalen(ab.t); }
     else {
       skizzeMalen(tZeich + 1);
@@ -764,6 +767,35 @@ function schnitzTonAus(){
   const q = schnitzTon.src, g = schnitzTon.gain; if(!q) return; schnitzTon.src = null; schnitzTon.gain = null;
   const t = audioCtx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + SCHNITZ_AUS);
   try { q.stop(t + SCHNITZ_AUS + 0.05); } catch(e){}
+}
+// Bleistiftgeraeusch beim Skizzieren (Live-Wunsch 02.11.2026: "pencil on paper" von freesound_community, Pixabay – stift_snd.js,
+// 12,5 s aus der 70-s-Aufnahme): nur waehrend die Skizze entsteht (Phase 'kritzel', mit dem J), sanft ein- und ausgeblendet. In den
+// kurzen Pausen zwischen den Schichten (SKIZZE_PLAN) setzt der Stift ab – dann ist es still. Pause/Inventar oder Ton aus: sofort aus.
+const STIFT_VOL = 1.1, STIFT_EIN = 0.12, STIFT_AUS = 0.3;
+const stiftTon = { buf: null, laedt: false, src: null, gain: null, leise: false };
+function stiftTonLaden(){ if(stiftTon.buf || stiftTon.laedt || !window.STIFT_SND || typeof decodeSound !== 'function' || !audioCtx) return; stiftTon.laedt = true;
+  decodeSound(window.STIFT_SND).then(b => { stiftTon.buf = b; }).catch(e => console.warn('Stift-Ton', e)); }
+function stiftTonAn(leise){
+  try { stiftTonLaden(); } catch(e){ return; } if(!stiftTon.buf || !soundOn || !audioCtx || audioCtx.state !== 'running') return;
+  if(!stiftTon.src){
+    const q = audioCtx.createBufferSource(), g = audioCtx.createGain(); q.buffer = stiftTon.buf; q.loop = true;
+    g.gain.setValueAtTime(0, audioCtx.currentTime); q.connect(g); g.connect(audioCtx.destination);
+    q.start(0, Math.random() * Math.max(0, stiftTon.buf.duration - 9)); stiftTon.src = q; stiftTon.gain = g; stiftTon.leise = null;   // nicht immer dieselbe Stelle
+  }
+  if(stiftTon.leise === leise) return; stiftTon.leise = leise;
+  const g = stiftTon.gain.gain, t = audioCtx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(leise ? 0 : STIFT_VOL, t + (leise ? 0.08 : STIFT_EIN));
+}
+function stiftTonAus(){
+  const q = stiftTon.src, g = stiftTon.gain; if(!q) return; stiftTon.src = null; stiftTon.gain = null;
+  const t = audioCtx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + STIFT_AUS);
+  try { q.stop(t + STIFT_AUS + 0.05); } catch(e){}
+}
+// in der Skizze gerade eine Absetz-Pause (zwischen zwei Schichten)?
+function stiftAbgesetzt(t){
+  if(!ab.schichten) return false;
+  for(const [d, pause] of SKIZZE_PLAN){ if(t < d) return false; t -= d; if(t < pause) return true; t -= pause; }
+  return false;
 }
 // Holzscheit: Schwarzblende, Joshi sitzt am Lagerfeuer (Arbeitsplatz), aufblenden – dann beginnt das Schnitzen
 const feuerVon = (s) => s.feuer || story.insel.feuer;

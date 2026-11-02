@@ -213,7 +213,7 @@ Fall 1 „Das Weihnachtsessen“. Nach dem Globus steht Joshi gleich auf der Wal
 | blauer Vogel | `tierK` | Piep! Nicht mal ein Krümel ist übrig geblieben. |
 | Weihnachtsbaum | Erzählerin | Ein wunderschön geschmückter Weihnachtsbaum. |
 | Hinweis-Taste (D-Pad ←) | Erzählerin | Geh doch mal zum Tisch. Dort sitzen die Tiere. Mit X kannst du sie entdecken. |
-| alle Tiere gehört | – | *(keine Ansage: die beiden Ringe erscheinen, der Fuchs zeigt sie)* |
+| alle Tiere gehört | `joshi` | Oh, das ist aber schrecklich. Ich übernehme den Fall und finde für euch heraus, wer euer Essen genommen hat! · Ich fange gleich an und untersuche den Tatort. *(erst danach erscheinen die beiden Ringe, der Fuchs zeigt sie)* |
 | Hinweis-Taste, solange ein Ring noch offen ist | Erzählerin | Hm... Wer das Essen genommen hat, hat vielleicht eine Spur hinterlassen. · Schau dich am Tisch doch noch einmal ganz genau um. |
 | Hinweis-Taste, Ring noch nicht da | Erzählerin | Schau dich am Tisch noch einmal ganz genau um. Drück dafür X. |
 | Hinweis-Taste, Ring zu sehen (der Fuchs zeigt den blauen Ring) | Erzählerin | Stell dich in den blauen Kreis vor dem Tisch und drück Y. Dann machst du ein Foto. |

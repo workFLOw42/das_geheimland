@@ -792,8 +792,17 @@ story.e2Zurueck = function(){
 story.e2FotoAusblenden = () => wi.tiere.map(t => t.obj);
 // Live-Wunsch 22.10.2026: die beiden Ringe erscheinen, sobald Joshi mit den Tieren gesprochen hat – ohne neues X und ohne
 // Ansage (Weihnachtsbaum und Waldweg spielen dafuer keine Rolle); der Fuchs zeigt sie. TEXT_SPUR nur noch ueber die Hilfe-Taste.
+// Live-Wunsch 02.11.2026: haben alle erzaehlt, uebernimmt Joshi den Fall – erst nach seinem letzten Satz erscheinen die Ringe
+// (spurGesagt = Ringe frei; joshiUebernimmt verhindert, dass er es zweimal sagt)
+const TEXT_JOSHI_FALL = ['Oh, das ist aber schrecklich. Ich übernehme den Fall und finde für euch heraus, wer euer Essen genommen hat!',
+  'Ich fange gleich an und untersuche den Tatort.'];
 function spurPruefen(){
-  if(wi.spurGesagt || !alleTiereGehoert()) return;
+  if(wi.spurGesagt || wi.joshiUebernimmt || !alleTiereGehoert()) return;
+  wi.joshiUebernimmt = true;
+  story.sprich(TEXT_JOSHI_FALL, ringeFrei, 'joshi');
+}
+function ringeFrei(){
+  if(wi.spurGesagt) return;
   wi.spurGesagt = true;
   for(const id of ['tisch_foto', 'weg_lupe']){ const k = story.kreisZielVon && story.kreisZielVon(id); if(k) k.frei = true; }
   story.spaeter(0.8, () => { if(eva && story.fuchsRundgang) story.fuchsRundgang(eva.group.position.x, eva.group.position.z, false, 0, true,

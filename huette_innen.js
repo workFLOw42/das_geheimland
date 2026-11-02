@@ -303,7 +303,7 @@ function hookInnen(){
     {
       // Umsehen mit dem rechten Stick (I/J/K/L) wie draussen, ohne Eingabe zurueck hinter die Figur
       if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam;
-      else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+      else if(story.kameraZurueck()) evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
       const p = eva.group.position, yaw = eva.yaw + evaOrbit, m = 0.3;
       _soll.set(p.x + Math.sin(yaw) * 3.4, BODEN_Y + 1.9, p.z + Math.cos(yaw) * 3.4);
       // an den Waenden klemmen – vorn an der Tuerwand INNEN (nie in die Oeffnung, dort sah man das Meer)

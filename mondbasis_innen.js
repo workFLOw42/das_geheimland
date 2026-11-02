@@ -782,7 +782,7 @@ function hookBasis(){
     if(e5() && szeneKamera()) return;
     if(!(e5() && mb.drin && eva)) return camOrig.apply(this, arguments);
     if(story.mondfestKamera && story.mondfestKamera()) return;                                   // mondfest.js: eigene Kamera (Musik)
-    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);   // global-ok: Engine
+    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else if(story.kameraZurueck()) evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);   // global-ok: Engine
     const p = eva.group.position, yaw = eva.yaw + evaOrbit, { lx, lz } = lokal(p.x, p.z);
     const gross = imSaal(lx, lz);
     let best = null;

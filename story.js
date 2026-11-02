@@ -372,6 +372,20 @@ function hookFigur(){
   // Engine-Kamera folgt der Figur weich (lerp); darauf kann man nicht jedes Bild multiplizieren (der Abstand wuchs
   // dann ins Unendliche). Deshalb hier eine eigene, ruhige Kamera: hinter der Figur in KAM_WEIT x Engine-Abstand,
   // Blick auf die Mitte zwischen Figur und Fuchs-Platz; der rechte Stick (evaOrbit) dreht sie um beide.
+  // Die Kamera bleibt stehen (Live-Wunsch 02.11.2026): mit dem rechten Stick gedreht oder gehoben, bleibt sie so, solange Joshi steht –
+  // erst wenn er laeuft oder springt, gleitet sie wie bisher zurueck hinter ihn; X stellt sie zurueck (story.kameraStandard). Die Engine
+  // (Freeze, engine.js bleibt unveraendert) zieht ohne Eingabe jedes Bild um k zurueck – darum vorher um genau so viel vergroessert,
+  // dann rechnet sie mit dem alten Winkel. Die Innenraeume fragen story.kameraZurueck selbst.
+  const camOrigH = updateCamera;
+  updateCamera = function(){
+    const aktiv = Math.abs(lookX) > 0.01 || Math.abs(lookY) > 0.01;                               // global-ok: Engine
+    if(eva && !aktiv && (typeof sideView === 'undefined' || sideView === 0) && !story.kameraZurueck()){   // global-ok: Engine
+      const k = Math.min(1, EVA_LOOK_RETURN * dtCam);                                                // global-ok: Engine
+      if(k < 0.9){ const o = evaOrbit, p = evaPitch; evaOrbit = o / (1 - k); evaPitch = p / (1 - k);   // global-ok: Engine
+        try { return camOrigH.apply(this, arguments); } finally { evaOrbit = o; evaPitch = p; } }   // global-ok: Engine
+    }
+    return camOrigH.apply(this, arguments);
+  };
   const camOrigF = updateCamera;
   const _kw = new THREE.Vector3();
   updateCamera = function(){
@@ -476,7 +490,17 @@ function knieUmschalten(){
   if(figur.kniet) aufstehen(); else hinknien();
 }
 // X: Look Around (60 fps, 4,5 s, auf der Stelle) – einmal ansehen, Stick bricht ab, danach wieder Stehen
+// Kamera zurueck hinter Joshi? Ja, wenn er laeuft oder springt, in einem Fahrzeug, beim Schwimmen – und nach X, bis sie wieder hinten ist.
+// Steht er, bleibt sie, wie man sie mit dem rechten Stick eingestellt hat (Live-Wunsch 02.11.2026).
+const kamera = { standard: false };
+story.kameraStandard = () => { kamera.standard = true; };
+story.kameraZurueck = function(){
+  if(kamera.standard){ if(Math.abs(evaOrbit) < 0.003 && Math.abs(evaPitch) < 0.003) kamera.standard = false; else return true; }   // global-ok: Engine
+  if(!eva || eva.boat || eva.rover || eva.jet || sw.aktiv) return true;
+  return figur.tempo > 0.05 || !eva.onGround || figur.aktion === 'jump' || figur.aktion === 'roll';
+};
 function umschauen(){
+  if(eva) story.kameraStandard();                // X stellt die Kamera wieder hinter Joshi (auch wenn das Umschauen gerade nicht geht)
   if(!eva || eva.boat || eva.rover || sw.aktiv || !steuerbar() || figur.aktion || figur.kniet || !figur.acts.look || !eva.onGround) return;
   figur.aktion = 'look'; figur.aktT = 0;
   figurAnim('look', 0.25, 1);

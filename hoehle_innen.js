@@ -530,7 +530,7 @@ function hookHoehle(){
   const camOrig = updateCamera, _soll = new THREE.Vector3();
   updateCamera = function(){
     if(!(hi.drin && eva)) return camOrig.apply(this, arguments);
-    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else if(story.kameraZurueck()) evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
     const p = eva.group.position, yaw = eva.yaw + evaOrbit;
     // hinter Joshi; stoesst sie an die Wand, rueckt sie an der Wand entlang zur Seite (Live-Pruefung: an der Wand geklemmt
     // stand sie fast auf ihm und schaute steil herunter) – mindestens 2,6 m Abstand, nie steiler als ~35 Grad

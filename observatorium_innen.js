@@ -1066,10 +1066,10 @@ function hookObs(){
   const camOrig = updateCamera, _soll = new THREE.Vector3();
   updateCamera = function(){
     if(!(oi.drin && eva)) return camOrig.apply(this, arguments);
-    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else if(story.kameraZurueck()) evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);
     // nach oben schauen (Live-Wunsch 26.10.2026: durch den Kuppelspalt die Sterne) – wie draussen mit dem rechten Stick hoch/runter
     if(Math.abs(lookY) > 0.01) evaPitch = Math.max(-0.2, Math.min(1.2, evaPitch + lookY * EVA_LOOK_SPEED * 0.6 * dtCam));   // global-ok: Engine
-    else evaPitch += (0 - evaPitch) * Math.min(1, EVA_LOOK_RETURN * dtCam);
+    else if(story.kameraZurueck()) evaPitch += (0 - evaPitch) * Math.min(1, EVA_LOOK_RETURN * dtCam);
     const hoch = Math.max(0, Math.sin(evaPitch));
     const p = eva.group.position, yaw = eva.yaw + evaOrbit, max = RAUM.R - 0.9;
     let best = null;

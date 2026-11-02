@@ -457,7 +457,7 @@ function hook(){
       camera.up.set(0, 1, 0); camera.lookAt(ZIMMER.x + DRUM.x, BODEN_Y + 0.8, ZIMMER.z + DRUM.z); return; }   // global-ok: Engine
     if(kz.abspann && kz.drin){ const a = performance.now() / 9000; camera.position.set(ZIMMER.x + Math.sin(a) * 2.6, BODEN_Y + 2.2, ZIMMER.z + Math.cos(a) * 2.0); camera.up.set(0, 1, 0); camera.lookAt(ZIMMER.x, BODEN_Y + 1.2, ZIMMER.z - 0.5); return; }   // global-ok: Engine
     const p = eva.group.position, yaw = eva.yaw + evaOrbit, mx = ZIMMER.B / 2 - 0.4, mz = ZIMMER.T / 2 - 0.4;   // global-ok: Engine
-    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);   // global-ok: Engine
+    if(Math.abs(lookX) > 0.01) evaOrbit -= lookX * EVA_LOOK_SPEED * dtCam; else if(story.kameraZurueck()) evaOrbit += (0 - evaOrbit) * Math.min(1, EVA_LOOK_RETURN * dtCam);   // global-ok: Engine
     let L = 3.2; const cx = () => Math.max(ZIMMER.x - mx, Math.min(ZIMMER.x + mx, p.x + Math.sin(yaw) * L)), cz = () => Math.max(ZIMMER.z - mz, Math.min(ZIMMER.z + mz, p.z + Math.cos(yaw) * L));
     // im Bett (ab dem Hinlegen, auch beim Sprung): fest von schraeg oben auf den Liegeplatz – Live-Befund 29.10.2026: hinter Joshi drehte
     // die Kamera beim Sprung mit ihm und sprang in der Luft um

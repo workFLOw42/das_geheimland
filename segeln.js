@@ -108,11 +108,17 @@ function schubText(g, kmh){
 }
 // Hoehe: 100 % = hoechste Hoehe (max), 10 Segmente, auf 5 % gerundet (ab 95 % voll); die Meter im obersten leuchtenden Segment
 let sprungH0 = null;                                              // Hoehe beim Absprung (Fallschirm): 100 %
+let hoeheStufe = null;                                            // zuletzt gezeigte Stufe (neue Stufe: einblenden)
 // luft: in der Luft leuchtet immer mindestens das unterste Segment – bis man gelandet ist (Live-Wunsch 03.11.2026, wie im Flugspiel)
 function malHoehe(m, max, luft){
-  if(m === null){ if(hud.hoehe.style.display !== 'none'){ hud.hoehe.style.display = 'none'; hud.hAlt = ''; } return; }
+  if(m === null){ hoeheStufe = null; if(hud.hoehe.style.display !== 'none'){ hud.hoehe.style.display = 'none'; hud.hAlt = ''; } return; }
   hud.hoehe.style.display = 'flex';
   const an = Math.max(luft ? 1 : 0, klemme(Math.round(m / max * SCHUB_N), 0, SCHUB_N)), k = an + '|' + m;   // global-ok: Engine
+  // Neue Stufe des Hoehenbalkens = wie eine Schubeingabe (Live-Wunsch 03.11.2026): wer gleitet, dem blenden die Anzeigen aus; wer steigt
+  // oder sinkt, sieht sie bei jeder neuen Stufe wieder (schnell steigen/sinken: dauernd). Im untersten Segment in der Luft bleiben
+  // sie immer an (dort misst man vor der Landung genau). Schub und Hoehe blenden weiter gemeinsam.
+  if((hoeheStufe !== null && an !== hoeheStufe) || (an === 1 && luft)) schubBetaetigt();
+  hoeheStufe = an;
   if(k === hud.hAlt) return; hud.hAlt = k;
   schubSegmente(hud.hseg, an / SCHUB_N, 3, 'flieger');                      // global-ok: Engine (Farben und Luecken wie der Schub)
   segText(hud.hseg, an >= 1 ? an - 1 : -1, m + ' m');

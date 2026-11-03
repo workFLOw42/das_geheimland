@@ -619,6 +619,33 @@ function gitarreMusik(an){
   s.connect(gitarre.gain); s.start();
   gitarre.quelle = s;
 }
+// Schritte (Wunsch 03.11.2026, wie im Flugspiel): leise Grasschritte, solange die Figur geht oder rennt – nicht im Wasser (Schwimmen,
+// Watzone), nicht in der Luft, nicht bei Aktionen und Tricks, nicht im Fahrzeug. Zwei Schritte je Durchlauf der Lauf-Animation (Takt
+// der Fuesse), jeder ein zufaelliger der 7 Schnipsel (schritte_snd.js), leicht verstimmt und verschieden laut. Auf dem Mond still
+// (kein Schall im Vakuum). Lautstaerke wie im Flugspiel abgestimmt (dort neben den Moewen 0,21 gerade gut hoerbar).
+const SCHRITT_VOL = { walk: 0.11, run: 0.17 };
+let schrittBufs = null, schrittLaedt = false, schrittPhase = -1, schrittLetzter = -1;
+function schrittTon(){
+  if(!soundOn || !audioCtx || audioCtx.state !== 'running' || !window.SCHRITTE_SND) return;   // global-ok: Engine
+  if(!schrittBufs){
+    if(!schrittLaedt){ schrittLaedt = true; Promise.all(window.SCHRITTE_SND.map(decodeSound)).then(b => { schrittBufs = b; }).catch(e => console.warn('Schritte:', e)); }
+    return;
+  }
+  const vol = SCHRITT_VOL[figur.cur], a = vol && figur.acts[figur.cur], p = eva && eva.group && eva.group.position;
+  const an = a && p && !eva.boat && !eva.rover && !eva.jet && !sw.aktiv && eva.onGround && !figur.aktion && !figur.kniet && !figur.schuetteln && !figur.arbeitet && !(story.figurVersteckt && story.figurVersteckt())
+    && locale !== 'moon' && watGrund(p.x, p.z) === null && !isOpenWater(p.x, p.z);
+  if(!an){ schrittPhase = -1; return; }
+  const ph = (a.time / a.getClip().duration * 2) % 1;
+  if(schrittPhase >= 0 && ph < schrittPhase){
+    let i = Math.floor(Math.random() * schrittBufs.length); if(i === schrittLetzter) i = (i + 1) % schrittBufs.length; schrittLetzter = i;
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = schrittBufs[i]; src.playbackRate.value = 0.92 + Math.random() * 0.16;
+    g.gain.value = vol * (0.85 + Math.random() * 0.3);
+    src.connect(g).connect(audioCtx.destination); src.start();
+    story.schritte = (story.schritte || 0) + 1;                     // Zaehler zum Nachsehen in der Konsole
+  }
+  schrittPhase = ph;
+}
 function updateFigur(dt){
   if(!figur.obj) return;
   // (beim Musizieren im Saal – mondfest.js, figur.musik – endet der Tanz dort, mit der Musik)
@@ -2351,6 +2378,7 @@ function hookLoop(){
     if(story.updateObjekte) story.updateObjekte(dt);   // objekte.js: Grenzen nachfuehren, Schiffe schieben beiseite
     figurTasten();
     updateFigur(dt);
+    schrittTon();
     figurWache(dt);
     spurenTakt();                                  // Staub/Wasserspuren macht die Engine (untergrundAt, spurQuelle)
     // X-Wing nur sichtbar, wenn man drin sitzt; vor der Hoehle (Etappe 3) steht die Mustang des Gorillas immer da

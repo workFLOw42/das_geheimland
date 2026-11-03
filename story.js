@@ -198,7 +198,9 @@ function hookWelt(){
     if(eva && !eva.boat && !eva.rover && ovalShadow.visible){
       const k = ovalShadow.scale.x / 0.9;                     // Engine: 0,9 m, mit Sprunghoehe groesser
       ovalShadow.scale.set(FIGUR_SCHATTEN * k, FIGUR_SCHATTEN * k, 1);
-      if(story.innen && story.innen.drin) ovalShadow.position.y = 150.045;  // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich (150,03)
+      // Raumboden (huette_innen.js BODEN_Y), knapp ueber dem Teppich (150,03); das Kinderzimmer (Intro, Outro) liegt auf derselben Hoehe
+      // (Live-Befund 03.11.2026: dort lag der Schatten unten auf dem Meer)
+      if(drinnen()) ovalShadow.position.y = 150.045;
       if(story.imBoot && story.imBoot()) ovalShadow.visible = false;         // im Boot: der Schatten laege auf dem Wasser
       if(!story.gestartet) ovalShadow.visible = false;                       // Startbildschirm: Joshi ist noch nicht da
       // Auf dem Steg: die Engine kennt ihn nicht und legte den Schatten aufs Wasser darunter (live gemeldet)
@@ -633,7 +635,7 @@ function schrittTon(){
   }
   const vol = SCHRITT_VOL[figur.cur], a = vol && figur.acts[figur.cur], p = eva && eva.group && eva.group.position;
   const an = a && p && !eva.boat && !eva.rover && !eva.jet && !sw.aktiv && eva.onGround && !figur.aktion && !figur.kniet && !figur.schuetteln && !figur.arbeitet && !(story.figurVersteckt && story.figurVersteckt())
-    && locale !== 'moon' && watGrund(p.x, p.z) === null && !isOpenWater(p.x, p.z);
+    && locale !== 'moon' && (drinnen() || (watGrund(p.x, p.z) === null && !isOpenWater(p.x, p.z)));   // die Raeume schweben ueber dem Meer
   if(!an){ schrittPhase = -1; return; }
   const ph = (a.time / a.getClip().duration * 2) % 1;
   if(schrittPhase >= 0 && ph < schrittPhase){
@@ -712,6 +714,8 @@ function updateFigur(dt){
 // (Huette und Steg Holz wie Beton, die Hoehle Erde; Etappen-Dateien melden ihre Orte mit story.untergrundHook) und wer sonst
 // Spuren macht (Fuchsi). Im Segelboot keine Spuren (das Boot zieht seine eigenen: wasserspuren.js).
 const untergrundHooks = [];
+// in der Huette (oder Hoehle) oder im Kinderzimmer: beide Raeume schweben 150 m ueber dem Meer, der Boden darunter ist Wasser
+function drinnen(){ return !!((story.innen && story.innen.drin) || (story.kinderzimmer && story.kinderzimmer.drin)); }
 story.untergrundHook = (f) => { untergrundHooks.push(f); };
 function hookUntergrund(){
   if(typeof untergrundAt !== 'function') return;
@@ -719,6 +723,7 @@ function hookUntergrund(){
   untergrundAt = function(x, z, y){
     if(locale !== 'earth') return orig.apply(this, arguments);
     if(story.innen && story.innen.drin) return story.innen.wo === 'hoehle' ? 'erde' : 'steg';
+    if(story.kinderzimmer && story.kinderzimmer.drin) return 'steg';            // Holzboden wie die Huette (sonst Meer: Ringe statt Staub)
     if(story.aufSteg && story.aufSteg(x, z) && !sw.aktiv) return 'steg';
     for(const f of untergrundHooks){ const a = f(x, z, y); if(a !== undefined) return a; }
     return orig.apply(this, arguments);

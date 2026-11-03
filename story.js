@@ -318,7 +318,10 @@ function hookFigur(){
     if(sw.aktiv && story.gestartet){ schwimmUpdate(dt, inp); return; }   // auch waehrend einer Aktion (story.aktionLaeuft)
     const roh = -(inp.pitch || 0), a = Math.abs(roh), dreh = Math.abs(inp.yaw || 0);
     if(a > 0.05 || dreh > 0.05){ figur.steht = 0; if(figur.cur === 'guitar'){ gitarreMusik(false); figurAnim('idle', 0.2); } }
-    if(figur.kniet && (a > 0.3 || dreh > 0.5) && story.gestartet) aufstehen();
+    // Aufstehen per Stick erst, nachdem er nach dem Hinknien einmal losgelassen war (Live-Wunsch 03.11.2026: hielt man ihn beim
+    // Druecken von B noch, stand Joshi sofort wieder auf)
+    if(figur.kniet && !figur.knieFrei && a < 0.15 && dreh < 0.15) figur.knieFrei = true;
+    if(figur.kniet && figur.knieFrei && (a > 0.3 || dreh > 0.5) && story.gestartet) aufstehen();
     if(figur.aktion === 'look' && (a > 0.15 || dreh > 0.3)) figur.aktion = null;   // Stick bricht das Umschauen ab
     if(figur.schuetteln && (a > 0.15 || dreh > 0.3)) schuettelEnde();              // ... und das Schuetteln
     if(figur.aktion === 'roll'){
@@ -577,7 +580,7 @@ function schuettelSchritt(dt){
 }
 function hinknien(){
   if(!figur.acts.kneel || (story.nurLaufen && story.nurLaufen())) return;
-  figur.kniet = true;
+  figur.kniet = true; figur.knieFrei = false;
   figurAnim('kneel', 0.35, 1);
   fuchsRufen();
 }

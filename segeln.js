@@ -107,10 +107,12 @@ function schubText(g, kmh){
   segText(hud.seg, bremse ? 0 : (an >= 1 && kmh !== 0 ? an - 1 : -1), kmh + ' km/h');
 }
 // Hoehe: 100 % = hoechste Hoehe (max), 10 Segmente, auf 5 % gerundet (ab 95 % voll); die Meter im obersten leuchtenden Segment
-function malHoehe(m, max){
+let sprungH0 = null;                                              // Hoehe beim Absprung (Fallschirm): 100 %
+// luft: in der Luft leuchtet immer mindestens das unterste Segment – bis man gelandet ist (Live-Wunsch 03.11.2026, wie im Flugspiel)
+function malHoehe(m, max, luft){
   if(m === null){ if(hud.hoehe.style.display !== 'none'){ hud.hoehe.style.display = 'none'; hud.hAlt = ''; } return; }
   hud.hoehe.style.display = 'flex';
-  const an = klemme(Math.round(m / max * SCHUB_N), 0, SCHUB_N), k = an + '|' + m;   // global-ok: Engine
+  const an = Math.max(luft ? 1 : 0, klemme(Math.round(m / max * SCHUB_N), 0, SCHUB_N)), k = an + '|' + m;   // global-ok: Engine
   if(k === hud.hAlt) return; hud.hAlt = k;
   schubSegmente(hud.hseg, an / SCHUB_N, 3, 'flieger');                      // global-ok: Engine (Farben und Luecken wie der Schub)
   segText(hud.hseg, an >= 1 ? an - 1 : -1, m + ' m');
@@ -258,11 +260,21 @@ function update(dt){
   const imBoot = !!(eva && s && s.imBoot && !s.wechsel && locale === 'earth');
   const flug = story.e3FlugAnzeige ? story.e3FlugAnzeige() : null;   // in der Mustang
   const rakete = story.raketeAnzeige ? story.raketeAnzeige() : null;  // in der Rakete auf dem Mond (heimflug.js): Schub, Fahrt, Hoehe – ohne Radar
+  // Fallschirmsprung (fallschirm.js, Live-Wunsch 03.11.2026 wie im Flugspiel): nur der Hoehenbalken, 100 % = die Absprunghoehe; er steht an
+  // seinem Platz, so als waeren Radar und Schubbalken da
+  if(story.fallschirmAktiv && story.fallschirmAktiv()){
+    zeigen(false); if(kompassAn){ kompassAn = false; hud.kompass.style.display = 'none'; }
+    document.body.classList.toggle('gyroAn', false);
+    const m = flugHoehe(); if(sprungH0 === null) sprungH0 = Math.max(1, m);
+    if(hud.hoehe.style.opacity !== '1') hud.hoehe.style.opacity = '1';
+    malHoehe(m, sprungH0, true); return;
+  }
+  sprungH0 = null;
   zeigen(imBoot || !!flug || !!rakete);
   document.body.classList.toggle('gyroAn', !!flug);              // Flugzeug, X-Wing: links oben das Gyroskop (ueber dem Hoehenbalken)
   if(rakete){ hud.radar.style.display = 'none'; if(kompassAn){ kompassAn = false; hud.kompass.style.display = 'none'; }
     if(rakete.fliegt) schubT = 0;                                 // beim Aufsteigen bleiben Fahrt und Hoehe sichtbar
-    malSchub(rakete.schub, dt, 'flieger'); schubText(rakete.schub, rakete.kmh); malHoehe(rakete.hoehe, rakete.max); return; }
+    malSchub(rakete.schub, dt, 'flieger'); schubText(rakete.schub, rakete.kmh); malHoehe(rakete.hoehe, rakete.max, rakete.hoehe > 0); return; }
   // Kompass (Live-Wunsch): sobald er im Rucksack ist, immer rechts oben – zu Fuss, schwimmend und im Boot. Nicht im
   // Huetten-Raum (eigene Welt, dort gibt es kein Norden) und nicht waehrend der Ausruestungs-Szene.
   // ... auch nicht in Joshis Kinderzimmer und im Abspann (kinderzimmer.js, heimkehr.js)
@@ -274,7 +286,7 @@ function update(dt){
   if(k) malKompass(imBoot ? story.bootYaw() : eva.yaw + Math.PI, dt);
   if(s && story.etappe === 1) updateFahrtOptik(dt, s, imBoot);
   if(flug){ malRadar(flug.x, flug.z, flug.kurs, flug.ziel, FLUG_WEIT, 'flieger'); malSchub(state.throttle, dt, 'flieger');   // global-ok: Engine
-    schubText(state.throttle, fahrtKmh()); malHoehe(flugHoehe(), flugMax()); return; }   // global-ok: Engine
+    schubText(state.throttle, fahrtKmh()); malHoehe(flugHoehe(), flugMax(), !state.onGround); return; }   // global-ok: Engine
   if(!imBoot) return;
   const kurs = story.bootYaw();                                  // Bug-Richtung ab +z
   malRadar(s.bx, s.bz, kurs);

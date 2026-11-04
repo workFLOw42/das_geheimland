@@ -17,6 +17,34 @@
 // erst dann kann er ins Segelboot steigen (steg.js)
 const story = window.STORY = { etappe: 1, gestartet: false, ton: false, abenteuerLos: false };
 
+// ---- Bahnbefeuerung wie im Flugspiel (Live-Wunsch 04.11.2026: "die tollen Lichter, die nachts auch leuchten") ---------------
+// Randlichter alle 15 m (gelblich weiss), Schwellen an beiden Enden (gruen), Anflugbalken hinter den Enden (weiss, 12..60 m,
+// nur wo opt.anflug(x, z) zulaesst). Unbeleuchtete Materialien (MeshBasic): sie leuchten auch nachts. Keine Grenze (flach, klein).
+// opt: { x, z, breite, laenge, y, laengsX (Bahn laengs x statt z), anflug }. Koordinaten im System der Gruppe g.
+const BAHN_LICHT = { rand: new THREE.MeshBasicMaterial({ color: 0xfff1b8 }), schwelle: new THREE.MeshBasicMaterial({ color: 0x5cff7a }),
+  anflug: new THREE.MeshBasicMaterial({ color: 0xffffff }) };
+story.bahnLichter = function(g, o){
+  const je = { rand: [], schwelle: [], anflug: [] }, hb = o.breite / 2, hl = o.laenge / 2;
+  for(let u = -hl; u <= hl + 0.1; u += 15) for(const q of [-(hb + 0.8), hb + 0.8]) je.rand.push([q, u]);
+  const n = Math.max(4, Math.round(o.breite / 3));
+  for(const s of [-1, 1]){
+    for(let i = 0; i < n; i++) je.schwelle.push([-hb + 1.5 + i * (o.breite - 3) / (n - 1), s * (hl + 0.6)]);
+    if(o.anflug) for(let d = 12; d <= 60; d += 12){ const u = s * (hl + d);
+      if(!o.anflug(o.laengsX ? o.x + u : o.x, o.laengsX ? o.z : o.z + u)) break;
+      for(let i = -2; i <= 2; i++) je.anflug.push([i * 2, u]); }
+  }
+  const geo = new THREE.BoxGeometry(0.4, 0.35, 0.4), m = new THREE.Matrix4(), grp = new THREE.Group();
+  grp.userData.keinKoerper = true; grp.userData.deko = true;
+  for(const art in je){
+    const l = je[art]; if(!l.length) continue;
+    const im = new THREE.InstancedMesh(geo, BAHN_LICHT[art], l.length);
+    l.forEach(([q, u], i) => { m.makeTranslation(o.laengsX ? o.x + u : o.x + q, o.y, o.laengsX ? o.z + q : o.z + u); im.setMatrixAt(i, m); });
+    im.instanceMatrix.needsUpdate = true; im.frustumCulled = false;
+    grp.add(im);
+  }
+  g.add(grp); return grp;
+};
+
 // ---- Spielstand ueber das Neuladen hinweg (Live-Wunsch 21.10.2026: Beginn des Falls auf der Waldinsel) ------------
 // Zwischen zwei Etappen wird die Seite neu geladen (globus.js: alles zuruecksetzen). Vorher merkt sich das Spiel in
 // sessionStorage, wo es weitergeht: Etappe, die Reise auf dem Globus, was im Rucksack ist und die Seiten im Notizbuch

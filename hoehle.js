@@ -262,6 +262,8 @@ function bauePiste(){
   const t = new THREE.CanvasTexture(c); t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 12);
   const m = new THREE.Mesh(new THREE.PlaneGeometry(PISTE.B, PISTE.L), new THREE.MeshLambertMaterial({ map: t, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
   m.rotation.set(-Math.PI / 2, 0, Math.PI / 2); m.position.set(PISTE.x, ISLAND_Y + 0.03, PISTE.z); m.renderOrder = 2; g.add(m);   // laengs x
+  // Befeuerung wie im Flugspiel (04.11.2026): Rand und Schwellen; kein Anflug (Wald und Wiese)
+  if(story.bahnLichter) story.bahnLichter(g, { x: PISTE.x, z: PISTE.z, breite: PISTE.B, laenge: PISTE.L, y: ISLAND_Y + 0.18, laengsX: true });
   return g;
 }
 // Waldkulisse: ein offener Zylinder (r kurz vor dem Ufer) mit einer Textur aus Tannenspitzen – unten dicht, oben gezackt
@@ -274,8 +276,18 @@ function waldKulisse(){
   const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(14, 1);
   // um die Inselmitte; zur Lichtung (Sueden, +z, Winkel 0) offen – dort steht der echte Wald der Lichtung und der Strand
   const R = INSEL_R * 0.93, H = 22, offen = 0.75;
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 96, 1, true, offen, Math.PI * 2 - 2 * offen), new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }));
-  m.position.set(0, ISLAND_Y + H / 2 - 0.5, MITTE_Z); m.userData.deko = true; return m;
+  // Live-Wunsch 04.11.2026: am Westende der Piste (dort steht das Band, r ~214 m) eine Luecke von +-LUECKE rad – man muss nach dem
+  // Start nicht hektisch hochreissen. Winkel wie CylinderGeometry: x = r sin, z = r cos (0 = +z)
+  const LUECKE = 0.35, voll = Math.PI * 2 - 2 * offen;
+  let ende = Math.atan2(PISTE.x - PISTE.L / 2, PISTE.z - MITTE_Z); if(ende < 0) ende += Math.PI * 2;
+  const mat = new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }), grp = new THREE.Group();
+  for(const [a0, a1] of [[offen, ende - LUECKE], [ende + LUECKE, Math.PI * 2 - offen]]){
+    if(a1 <= a0) continue;
+    const tt = t.clone(); tt.needsUpdate = true; tt.repeat.set(Math.max(1, Math.round(14 * (a1 - a0) / voll)), 1);
+    const mm = mat.clone(); mm.map = tt;
+    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, Math.max(4, Math.round(96 * (a1 - a0) / voll)), 1, true, a0, a1 - a0), mm));
+  }
+  grp.position.set(0, ISLAND_Y + H / 2 - 0.5, MITTE_Z); grp.userData.deko = true; return grp;
 }
 // Mustang = das Flugzeug der Engine (wie in Trip to Japan): aktuelles Modell, geparkt am Ostende der Piste, Joshi steht
 // als Figur daneben (eva.planeAt). Einsteigen mit Y erst, wenn der Gorilla sie geliehen hat (e3MustangFrei) – vorher kein Y.

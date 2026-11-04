@@ -23,7 +23,7 @@ vergessen wurde.
 | X | X | Suchblick – der Fuchs findet wichtige Objekte (Stick bricht ab) |
 | Y | Y | an einem entdeckten Objekt: Erzählerin erklärt es |
 | rechter Stick vor / zurück | E / Q | im Wasser abtauchen / auftauchen |
-| rechter Stick ↕ | W / S | im Segelboot: Schub stellen (bleibt stehen) · X / Shift = Vollgas · A / C = rückwärts |
+| rechter Stick ↕ | W / S | im Segelboot: Schub stellen (bleibt stehen) · Shift = Vollgas · X / C halten = rückwärts (seit 04.11.2026) |
 | linker Stick | Pfeiltasten | im Segelboot: lenken · LB / RB = Blick zur Seite |
 | rechter Stick | I J K L | umschauen |
 | D-Pad ← | T | Hinweis: die Erzählerin sagt, was als Nächstes gut wäre |
@@ -31,6 +31,22 @@ vergessen wurde.
 | D-Pad ↓ | N | Inventar: alle eingesammelten Dinge (das Spiel pausiert, nochmal = weiter) |
 
 Steht die Figur eine Weile still, holt sie die Gitarre heraus.
+
+## Steuerung in Fahrzeugen (seit 04.11.2026, einheitlich mit dem Flugspiel)
+
+| Controller | Tastatur | |
+|---|---|---|
+| rechter Stick ↕ | W / S | Schub in Stufen (bleibt stehen) |
+| X halten | C | **Bremse / Umkehrschub** – losgelassen weiter mit der jetzigen Fahrt |
+| A | — | in der Luft **geraderichten** |
+| B | B | **Spezialfunktion** des Fahrzeugs (Wasser, Kisten, Laser, Sonar …) |
+| Y | Y | **ein- und aussteigen** · in der Luft **abspringen** (Mustang und Eurofighter: Schleudersitz) |
+| — | Shift | Boost (am Controller entfallen) |
+| Y | Y | in der Wüste (Etappe 4): **abspringen** – über dem Flugzeug steht ein gelbes Y |
+
+**Stand 04.11.2026:** Fahrzeug-Belegung wie im Flugspiel (oben). In Etappe 3 hat die Schotterpiste eine **Befeuerung**, die nachts
+leuchtet, und die Waldkulisse ist am Westende der Piste offen – man muss nach dem Start nicht mehr hektisch hochziehen. Sirene und
+Crash-Geräusch einen Hauch leiser.
 
 ## Aufbau
 

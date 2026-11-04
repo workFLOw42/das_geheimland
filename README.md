@@ -42,6 +42,7 @@ unverändert, die Spiellogik hängt sich per Wrapper ein (wie bei *Trip to Japan
 | `index.html` | wird von `tools/build_engine.ps1` erzeugt |
 | `engine/` | **eigenständige** Engine (Kopie der Flugspiel-Engine, Stand 26.10.2026) + Modelle; `engine/flugspiel_kopf.html` = HUD-Markup und Engine-Skripte für `index.html` |
 | `story.js` | Spiellogik: Welt, Nacht, Spielfigur, Schwimmen, Fuchs, Sprache, Startbildschirm |
+| `kulisse.js` | Möwen und Wellen nach dem Abstand zum Strand (ersetzt `updateAmbient` der Engine) |
 | `texturen.js` | gemeinsame Texturen: Tapete, Holzverkleidung, Dielen, Straßen-Spielteppich |
 | `sternbilder.js` | Sternbilder am Nachthimmel (Großer und Kleiner Bär, Kassiopeia, Orion) |
 | `insel.js` | Etappe 1: kleine Insel, Hütte, Palmen, Lagerfeuer, Möwen |

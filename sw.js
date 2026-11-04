@@ -5,7 +5,7 @@
      schickt max-age=600, sonst kaeme bis zu 10 min lang die alte Datei in den neuen Cache).
    - MODELLE (gross, *_glb.js / *_snd.js): eigene Version, zaehlt nur hoch, wenn sich ein Modell
      aendert. So muss nicht bei jedem Update alles neu geladen werden. */
-const CACHE   = 'das-geheimland-v68';
+const CACHE   = 'das-geheimland-v69';
 const MODELLE = 'das-geheimland-modelle-v18';
 
 /* Kern-Dateien: sofort bei der Installation cachen. */
@@ -14,6 +14,7 @@ const CORE = [
   './index.html',
   './manifest.json',
   './story.js',
+  './kulisse.js',
   './pwa.js',
   './objekte.js',
   './sternbilder.js',

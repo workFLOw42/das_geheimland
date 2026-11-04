@@ -1,5 +1,5 @@
 // Das Geheimland – Fallschirmsprung als Baustein (Live-Wunsch 22.10.2026: "wie beim SFG-Spiel"; gebraucht beim Einstieg in
-// die Lama-Etappe, Konzept Abschnitt 7 / Etappe 4: ueber der Wueste mit B abspringen, der Autopilot bringt das Flugzeug
+// die Lama-Etappe, Konzept Abschnitt 7 / Etappe 4: ueber der Wueste mit Y abspringen, der Autopilot bringt das Flugzeug
 // zurueck – das wird nur gesagt, nicht gezeigt). Laedt nach story.js, vor der Engine.
 // Uebernommen aus dem Finale von Trip to Japan (finale.js: abspringen, schirmAuf, sprungSchritt, freiflugSchritt/Pose,
 // fahrtwind, Sprung-Kamera mit Seitenblick) – dort laeuft es seit Wochen. Unterschiede:
@@ -217,6 +217,9 @@ window.STORY_HOOK = function(){ if(hookVorher) hookVorher();
   stepPhysics = function(dt){ if(fs.schritt){ if(!(story.pause && story.pause())) schritt(dt); return; } return physOrig.apply(this, arguments); };
   const camOrig = updateCamera;                              // global-ok: Engine
   updateCamera = function(){ if(fs.schritt && fs.g){ kamera(); return; } return camOrig.apply(this, arguments); };
+  // im Sprung kein Geraderichten (A) – vorher drehte es das unsichtbare Flugzeug mit (geradeSchritt der Engine)
+  const geradeF = geradeMoeglich;                            // global-ok: Engine
+  geradeMoeglich = function(){ if(fs.schritt) return false; return geradeF.apply(this, arguments); };
   // Radar/Schub (segeln.js, data-etappe-hud) aus, solange er springt
   const st = document.createElement('style'); st.textContent = 'body.fallschirm [data-etappe-hud]{display:none!important}'; document.head.appendChild(st);
   (function hud(){ document.body.classList.toggle('fallschirm', !!fs.schritt); requestAnimationFrame(hud); })();

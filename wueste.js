@@ -44,7 +44,7 @@ story.oase = { see: SEE, observatorium: PLANETARIUM, parkplatz: PARKPLATZ, landu
 
 const TEXT_SPRINGEN = ['Du bist über dem Ziel angekommen. Du kannst jederzeit abspringen, wenn Du bereit bist.',
   'Das Flugzeug fliegt dann automatisch zum Gorilla zurück.'];
-const TEXT_NOCHMAL = ['Drück B, dann springst du ab!'];
+const TEXT_NOCHMAL = ['Drück Y, dann springst du ab!'];
 const TEXT_GELANDET = ['Super gelandet! Du bist am Observatorium angekommen. Hier wohnt das Lama.'];
 const TEXT_HINWEIS = ['Schau doch mal, ob du ins Observatorium kommst.'];
 const TEXT_SEE = ['Ein kleiner See mitten in der Wüste. Das Wasser ist ganz klar.'];
@@ -283,15 +283,22 @@ function hookWueste(){
   const bodenOrig = seaFloorNeeded;                                               // global-ok: Engine
   seaFloorNeeded = function(){ if(e4()){ if(typeof seabedMesh !== 'undefined' && seabedMesh) seabedMesh.visible = false; return false; } return bodenOrig.apply(this, arguments); };
   story.e4Hinweis = () => (story.innen && story.innen.drin) ? null : TEXT_HINWEIS;
-  // B im Anflug: abspringen (fallschirm.js); sonst nichts (kein Schleudersitz der Engine, wie in Etappe 3)
+  // Y im Anflug: abspringen (fallschirm.js; seit 04.11.2026 Y statt B – wie in allen Spielen: Y = aussteigen); B tut im Flugzeug nichts
   // Kreisen: der Autopilot fliegt, die Flugphysik ruht (der Fallschirm haengt sich selbst davor ein: fallschirm.js)
   const physOrig = stepPhysics;                                                   // global-ok: Engine
   stepPhysics = function(dt){ if(e4() && !eva && w4.phase === 'anflug' && locale === 'earth'){ if(!(story.pause && story.pause())) kreisen(dt); return; } return physOrig.apply(this, arguments); };
   const bOrig = buttonB;                                                          // global-ok: Engine
   buttonB = function(){
-    if(e4() && !eva){ if(w4.phase === 'anflug' && w4.t > 0.8) abspringen(); return; }
+    if(e4() && !eva) return;
     return bOrig.apply(this, arguments);
   };
+  const yOrigW = buttonY;                                                         // global-ok: Engine
+  buttonY = function(){
+    if(e4() && !eva){ if(w4.phase === 'anflug' && w4.t > 0.8) abspringen(); return; }
+    return yOrigW.apply(this, arguments);
+  };
+  const geradeW = geradeMoeglich;                                                 // global-ok: Engine
+  geradeMoeglich = function(){ if(e4() && !eva) return false; return geradeW.apply(this, arguments); };   // Autopilot: A richtet nichts
   // die Mustang ist weg (Autopilot): Y bringt Joshi nicht zurueck hinein
   const boardOrig = evaCanBoard;                                                  // global-ok: Engine
   evaCanBoard = function(){ if(e4()) return false; return boardOrig.apply(this, arguments); };
@@ -330,13 +337,14 @@ function kreisSetzen(){
   planeGroup.position.copy(state.pos); planeGroup.quaternion.copy(state.quat);   // global-ok: Engine
 }
 function kreisen(dt){ w4.kreisA -= KREIS.v / KREIS.r * dt; kreisSetzen(); }
-// B ueber dem Flugzeug (wie die Tasten-Hinweise im Spiel: rot, weisser Rand – notizbuch.js bZeigen, das Y der Objekte)
+// Y ueber dem Flugzeug (seit 04.11.2026 Y statt B: das Tasten-Zeichen wie im ganzen Spiel, ausruestung.js story.knopfTextur)
 let bTex = null;
 function bZeichen(){
+  if(!bTex && story.knopfTextur) bTex = story.knopfTextur('Y');
   if(!bTex){ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(64, 68, 56, 0, 7); g.fill();
     g.fillStyle = '#e8352b'; g.beginPath(); g.arc(64, 62, 54, 0, 7); g.fill(); g.lineWidth = 6; g.strokeStyle = '#ffffff'; g.stroke();
-    g.fillStyle = '#ffffff'; g.font = 'bold 76px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('B', 64, 66);
+    g.fillStyle = '#ffffff'; g.font = 'bold 76px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Y', 64, 66);
     bTex = new THREE.CanvasTexture(c); }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bTex, depthTest: false, transparent: true })); sp.scale.setScalar(2.4); sp.renderOrder = 999; return sp;
 }
@@ -354,7 +362,7 @@ function abspringen(){
   const ok = story.fallschirmSprung({ welt: 4, lande: { x: LANDUNG.x, z: LANDUNG.z }, anker: { x: LANDUNG.x, z: LANDUNG.z },
     fertig: () => { w4.phase = 'unten'; gelandet(); } });
   if(ok){ w4.phase = 'sprung'; bWeg(); if(window.speechSynthesis && story.stimmeStopp) story.stimmeStopp(); }
-  else if(b) planeGroup.add(b);                                                     // global-ok: Engine (nicht gesprungen: B bleibt)
+  else if(b) planeGroup.add(b);                                                     // global-ok: Engine (nicht gesprungen: das Y bleibt)
 }
 function blickZumPlanetarium(){
   if(!eva) return;

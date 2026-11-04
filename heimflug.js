@@ -126,7 +126,7 @@ function einsteigen(o){
 // zum rechten Stick (bei den anderen Fahrzeugen faellt X beim Loslassen auf 50 % zurueck)
 function vollgasGedrueckt(){
   let x = typeof keys !== 'undefined' && !!(keys['KeyX'] || keys['ShiftLeft'] || keys['ShiftRight']);                // global-ok: Engine
-  for(const gp of (navigator.getGamepads ? navigator.getGamepads() : [])) if(gp && gp.buttons[2] && gp.buttons[2].pressed) x = true;
+  // (Controller-X seit 04.11.2026 nicht mehr: die Rakete startet mit dem rechten Stick – X ist in allen Fahrzeugen die Bremse)
   return x;
 }
 function schubEingabe(){

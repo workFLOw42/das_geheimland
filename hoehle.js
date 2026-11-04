@@ -419,6 +419,9 @@ function hookFlug(){
   // (Konzept: zum Lama) ueber fallschirm.js (story.fallschirmSprung).
   const bOrig = buttonB;
   buttonB = function(){ if(e3() && !eva) return; return bOrig.apply(this, arguments); };
+  // Y in der Luft (seit 04.11.2026 das Aussteigen: Schleudersitz der Engine) ebenso nicht – aus demselben Grund
+  const yFlug = buttonY;                                                          // global-ok: Engine
+  buttonY = function(){ if(e3() && !eva && !state.onGround) return; return yFlug.apply(this, arguments); };
   // der schmale Schubbalken der Engine (rechts) gehoert nicht ins Geheimland – segeln.js zeigt den eigenen unter dem Radar
   schubBalken = function(){};
   // Einsteigen: erst, wenn der Gorilla die Mustang geliehen hat (vorher passiert bei Y nichts)

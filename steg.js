@@ -365,12 +365,11 @@ function bootFreiRoh(x, z, yaw){
   return Math.hypot(x - BOOT.x, z - BOOT.z) < FAHRT_WEIT;
 }
 // Steuerung wie in allen Fahrzeugen der Engine (Live-Wunsch 16.10.): der SCHUB (state.throttle) wird mit dem rechten
-// Stick (W/S) in 10-%-Stufen gestellt und bleibt stehen; X (Shift) = Vollgas, A (C) halten = rueckwaerts/Bremse; der
+// Stick (W/S) in 10-%-Stufen gestellt und bleibt stehen; Shift = Vollgas, X (C) halten = rueckwaerts/Bremse (seit 04.11.2026 X statt A); der
 // linke Stick lenkt. Die Engine setzt state.throttle in readInput, story.js laesst es im Boot stehen (bootSchub).
-// X = Vollgas setzt das Boot selbst (boostDruck der Engine hat X-Wing-Sonderwege).
+// Shift = Vollgas setzt das Boot selbst (boostDruck der Engine hat X-Wing-Sonderwege).
 function bootSchub(){
   if(keys['ShiftLeft'] || keys['ShiftRight']) return 1;
-  if(gamepadIndex !== null){ const gp = navigator.getGamepads()[gamepadIndex]; if(gp && gp.buttons[2] && gp.buttons[2].pressed) return 1; }
   return Math.max(-0.2, Math.min(1, state.throttle || 0));
 }
 story.bootSchub = bootSchub;

@@ -508,6 +508,7 @@ function figurTasten(){
 }
 function knieUmschalten(){
   if(!eva || eva.boat || eva.rover || sw.aktiv || figur.aktion || !steuerbar()) return;
+  if(story.imBoot && story.imBoot()) return;                    // im Segelboot kniet Joshi: B laesst ihn nicht aufstehen
   if(figur.kniet) aufstehen(); else hinknien();
 }
 // X: Look Around (60 fps, 4,5 s, auf der Stelle) – einmal ansehen, Stick bricht ab, danach wieder Stehen
@@ -2369,10 +2370,10 @@ function hookLoop(){
   let ySperreDrin = false;
   loop = function(){
     // Y waehrend einer Aktion: nichts (aeusserste Huelle um alle Y-Hooks – Interaktion, Foto, Steg/Boot, Fahrzeuge)
-    // Ausnahme: im Flug richtet Y das Flugzeug gerade (Engine geradeMoeglich) – das ist keine Objekt-Aktion (Live-Wunsch 23.10.2026)
+    // Ausnahme: in der Luft ist Y aussteigen/abspringen (seit 04.11.2026; vorher richtete Y dort das Flugzeug gerade, das ist jetzt A)
     if(!ySperreDrin){ ySperreDrin = true; const yAlle = buttonY;
-      buttonY = function(){ const gerade = !eva && typeof geradeMoeglich === 'function' && geradeMoeglich();   // global-ok: Engine
-        if(story.aktionLaeuft() && !gerade) return; return yAlle.apply(this, arguments); }; }
+      buttonY = function(){ const luft = !eva && !state.onGround;   // global-ok: Engine
+        if(story.aktionLaeuft() && !luft) return; return yAlle.apply(this, arguments); }; }
     const now = performance.now();
     const dt = Math.min(0.1, (now - tPrev) / 1000); tPrev = now;
     const p = hilfeOffen();
